@@ -1,0 +1,23 @@
+# Entorno virtual
+.venv/
+venv/
+env/
+
+# Caché de Python (se genera automáticamente al importar módulos)
+__pycache__/
+*.pyc
+*.pyo
+
+# Checkpoints de Jupyter (notebooks borradores que Jupyter guarda solo)
+.ipynb_checkpoints/
+
+# Variables de entorno / secretos (claves API, contraseñas)
+.env
+.env.local
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Configuración local de VS Code (opcional - quítalo si quieres compartir tu config)
+.vscode/

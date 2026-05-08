@@ -1,6 +1,6 @@
 #1-*EL MAPA*
 
-Para acceder a la **laptop/mapa** se usa el **sistema operativo**; ejemplos de esto son Ubuntu/Linux o Windows. El sistema operativo es la clave para **interpretar** el mapa, tiene la capacidad de **coordinar** y usar lo que la **laptop/mapa ofrece** (archivos, memoria, procesos, programas, permisos, etc.).  
+Para acceder a la #**laptop/mapa** se usa el #**sistema operativo**; ejemplos de esto son Ubuntu/Linux o Windows. El sistema operativo es la clave para **interpretar** el mapa, tiene la capacidad de **coordinar** y usar lo que la **laptop/mapa ofrece** (archivos, memoria, procesos, programas, permisos, etc.).  
 
 #2-*UNA PUERTA DE ACCESO*
 

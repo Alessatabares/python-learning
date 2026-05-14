@@ -3,15 +3,15 @@
 venv/
 env/
 
-# Caché de Python (se genera automáticamente al importar módulos)
+# Caché de Python 
 __pycache__/
 *.pyc
 *.pyo
 
-# Checkpoints de Jupyter (notebooks borradores que Jupyter guarda solo)
+# Checkpoints de Jupyter 
 .ipynb_checkpoints/
 
-# Variables de entorno / secretos (claves API, contraseñas)
+# Variables de entorno / secretos 
 .env
 .env.local
 
@@ -19,5 +19,5 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# Configuración local de VS Code (opcional - quítalo si quieres compartir tu config)
+# Configuración local de VS Code 
 .vscode/

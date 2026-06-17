@@ -48,7 +48,7 @@ python build/build_integrador.py
   **actualiza** la carta en su sitio, nunca la duplica.
 - **deck_id determinista** (`1500_AA_C`): sin colisión con el repo ECOE.
 
-Total actual: **89 tarjetas** (27 Eje Clínico + 62 Integrador).
+Total actual: **150 tarjetas** (49 Eje Clínico + 101 Integrador).
 
 ## Áreas
 
@@ -58,3 +58,10 @@ Total actual: **89 tarjetas** (27 Eje Clínico + 62 Integrador).
   rutas, app factory, blueprints, Jinja/herencia, formularios + `request`,
   flash, SQLAlchemy (ORM, relaciones, `create_all`), hashing de contraseñas y
   Flask-Login (`login_user`, `@login_required`, `current_user`, `user_loader`).
+- **Python** — el curso completo *"The Complete Python Course"* (Tech With Tim,
+  `youtu.be/sxTmJE4k0ho`): de fundamentos (tipos, operadores, condiciones,
+  bucles, listas/tuplas, slicing, strings, funciones, archivos, módulos,
+  try/except, ámbito) → POO (clases, `self`, herencia, dunder/`__init__`,
+  static/classmethod, privado) → intermedio (map/filter/lambda, `collections`)
+  → experto (compilación/bytecode, decoradores, generadores `yield`, context
+  managers `with`, metaclases).

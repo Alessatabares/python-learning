@@ -21,6 +21,7 @@ AREAS = [
     ("Frontend",          "Frontend",  "Frontend",  "frontend",  1),
     ("Backend",           "Backend",   "Backend",   "backend",   2),
     ("Analisis de Datos", "Data",      "Data",      "data",      3),
+    ("Flask",             "Flask",     "Flask",     "flask",     4),
 ]
 
 

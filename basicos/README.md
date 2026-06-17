@@ -48,4 +48,13 @@ python build/build_integrador.py
   **actualiza** la carta en su sitio, nunca la duplica.
 - **deck_id determinista** (`1500_AA_C`): sin colisión con el repo ECOE.
 
-Total actual: **53 tarjetas** (19 Eje Clínico + 34 Integrador).
+Total actual: **85 tarjetas** (27 Eje Clínico + 58 Integrador).
+
+## Áreas
+
+- **Frontend**, **Backend**, **Análisis de datos (Python)** — conceptos base.
+- **Flask** — derivada del tutorial *"Python Website Full Tutorial - Flask,
+  Authentication, Databases & More"* (Tech With Tim, `youtu.be/dam0GPOAvVI`):
+  rutas, app factory, blueprints, Jinja/herencia, formularios + `request`,
+  flash, SQLAlchemy (ORM, relaciones, `create_all`), hashing de contraseñas y
+  Flask-Login (`login_user`, `@login_required`, `current_user`, `user_loader`).

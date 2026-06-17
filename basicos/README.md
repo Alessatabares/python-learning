@@ -48,7 +48,7 @@ python build/build_integrador.py
   **actualiza** la carta en su sitio, nunca la duplica.
 - **deck_id determinista** (`1500_AA_C`): sin colisión con el repo ECOE.
 
-Total actual: **174 tarjetas** (58 Eje Clínico + 116 Integrador).
+Total actual: **204 tarjetas** (68 Eje Clínico + 136 Integrador).
 
 ## Áreas
 
@@ -70,3 +70,10 @@ Total actual: **174 tarjetas** (58 Eje Clínico + 116 Integrador).
   indexar (`df["col"]` vs `iloc` vs `loc`), filtrar (`&`/`|`, `.str`, `isin`, `~`),
   actualizar/limpiar (`drop`/`dropna`/`fillna`, `inplace`), analizar
   (`value_counts`, `groupby`, `sort_values`) y guardar (`to_csv`).
+- **FastAPI** — del proyecto real de fotos/videos (Tech With Tim,
+  `youtu.be/SR5NYCdzKkc`): teoría web (URL, request/response, métodos, status
+  codes), `@app.get`/`uvicorn`/`/docs`, entrada (path/query/body Pydantic,
+  `File`/`Form`), validación (type hints, response model, `HTTPException`),
+  ORM async (SQLAlchemy, `Depends`, `add`/`commit`/`refresh`, `select`),
+  media con ImageKit + `.env`, y auth JWT con `fastapi-users` (login, `SECRET`,
+  `current_active_user`, relaciones `ForeignKey`, proteger/autorizar rutas).

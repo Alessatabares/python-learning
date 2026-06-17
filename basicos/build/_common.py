@@ -23,6 +23,7 @@ AREAS = [
     ("Analisis de Datos", "Data",      "Data",      "data",      3),
     ("Flask",             "Flask",     "Flask",     "flask",     4),
     ("Python",            "Python",    "Python",    "python",    5),
+    ("Pandas",            "Pandas",    "Pandas",    "pandas",    6),
 ]
 
 

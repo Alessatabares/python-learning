@@ -48,7 +48,7 @@ python build/build_integrador.py
   **actualiza** la carta en su sitio, nunca la duplica.
 - **deck_id determinista** (`1500_AA_C`): sin colisión con el repo ECOE.
 
-Total actual: **150 tarjetas** (49 Eje Clínico + 101 Integrador).
+Total actual: **174 tarjetas** (58 Eje Clínico + 116 Integrador).
 
 ## Áreas
 
@@ -65,3 +65,8 @@ Total actual: **150 tarjetas** (49 Eje Clínico + 101 Integrador).
   static/classmethod, privado) → intermedio (map/filter/lambda, `collections`)
   → experto (compilación/bytecode, decoradores, generadores `yield`, context
   managers `with`, metaclases).
+- **Pandas** — del tutorial de pandas (Tech With Tim, `youtu.be/EXIgjIBu4EU`):
+  `DataFrame` vs `Series`, `read_csv`, explorar (`head`/`tail`/`info`/`describe`),
+  indexar (`df["col"]` vs `iloc` vs `loc`), filtrar (`&`/`|`, `.str`, `isin`, `~`),
+  actualizar/limpiar (`drop`/`dropna`/`fillna`, `inplace`), analizar
+  (`value_counts`, `groupby`, `sort_values`) y guardar (`to_csv`).

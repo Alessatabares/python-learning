@@ -48,7 +48,7 @@ python build/build_integrador.py
   **actualiza** la carta en su sitio, nunca la duplica.
 - **deck_id determinista** (`1500_AA_C`): sin colisión con el repo ECOE.
 
-Total actual: **85 tarjetas** (27 Eje Clínico + 58 Integrador).
+Total actual: **89 tarjetas** (27 Eje Clínico + 62 Integrador).
 
 ## Áreas
 

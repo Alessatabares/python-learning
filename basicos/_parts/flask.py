@@ -239,4 +239,28 @@ ESTACIONES = [
      "LoginManager",
      "el LoginManager conecta Flask-Login: a donde redirige y como carga al usuario"),
   ]),
+  # El video es de 2021 (Flask-SQLAlchemy 2.x / SQLAlchemy 1.x). Estas tarjetas
+  # marcan que cambio en Flask-SQLAlchemy 3.x + SQLAlchemy 2.0 (lo actual).
+  ("VIEJO (video 2021) vs MODERNO (Flask-SQLAlchemy 3.x)", [
+    ("En el video se crea con db.create_all(app=app)",
+     "En 3.x create_all() YA NO acepta el argumento app",
+     "Ahora hay que envolverlo: with app.app_context(): db.create_all()",
+     "Crear tablas hoy",
+     "lo moderno: 'with app.app_context(): db.create_all()', sin app="),
+    ("En el video se consulta con Model.query.get(id) y Model.query.filter_by(...)",
+     "En SQLAlchemy 2.0 el atributo Model.query queda como estilo legacy",
+     "Lo nuevo: db.session.get(Model, id) y db.session.execute(db.select(Model))",
+     "Consultar hoy (SQLAlchemy 2.0)",
+     "lo moderno: db.session.get(User, id) en vez de User.query.get(id)"),
+    ("El video pasa generate_password_hash(pw, method='sha256')",
+     "El Werkzeug moderno ya usa por defecto un algoritmo fuerte (pbkdf2/scrypt)",
+     "Hoy basta con generate_password_hash(pw), sin fijar method",
+     "Hashing hoy (Werkzeug)",
+     "hoy generate_password_hash(pw) ya elige un algoritmo seguro por defecto"),
+    ("El video define los modelos con db.Column(db.Integer, ...)",
+     "SQLAlchemy 2.0 introduce tipado: Mapped[int] + mapped_column(...)",
+     "El estilo db.Column del video sigue funcionando (no es obligatorio migrar)",
+     "Declarar columnas hoy",
+     "lo moderno usa Mapped[int] = mapped_column(...), pero db.Column aun vale"),
+  ]),
 ]

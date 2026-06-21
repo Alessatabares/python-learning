@@ -48,7 +48,7 @@ python build/build_integrador.py
   **actualiza** la carta en su sitio, nunca la duplica.
 - **deck_id determinista** (`1500_AA_C`): sin colisión con el repo ECOE.
 
-Total actual: **204 tarjetas** (68 Eje Clínico + 136 Integrador).
+Total actual: **231 tarjetas** (84 Eje Clínico + 147 Integrador).
 
 ## Áreas
 
@@ -77,3 +77,8 @@ Total actual: **204 tarjetas** (68 Eje Clínico + 136 Integrador).
   ORM async (SQLAlchemy, `Depends`, `add`/`commit`/`refresh`, `select`),
   media con ImageKit + `.env`, y auth JWT con `fastapi-users` (login, `SECRET`,
   `current_active_user`, relaciones `ForeignKey`, proteger/autorizar rutas).
+- **Diagramas** — cómo convertir tus **árboles de decisión médicos** (estilo ECOE)
+  en páginas web interactivas. Herramientas que dibujan (**Mermaid** texto→diagrama,
+  `graph TD`, nodos/aristas/formas; **Markmap** outline→mindmap colapsable), acceso
+  e interacción (click en nodo, colapsar/expandir ramas, `addEventListener`) y
+  publicación con **GitHub Pages**. Deck propio: **no se mezcla con Frontend**.

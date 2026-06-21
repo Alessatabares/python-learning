@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sala de Máquinas · Triage de Deployment</title>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#161d2e; --panel2:#1d2740; --line:#2a3550;
+    --ink:#e7ecf5; --mut:#93a0bd; --blue:#3b82f6; --teal:#0ea5a4;
+    --green:#22c55e; --amber:#f59e0b; --red:#ef4444; --violet:#8b5cf6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    background:linear-gradient(180deg,#0c111c,#0f1420);color:var(--ink);line-height:1.5}
+  header{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  header h1{font-size:18px;margin:0;letter-spacing:.3px}
+  header .sub{color:var(--mut);font-size:13px}
+  .prog{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--mut)}
+  .bar{width:160px;height:8px;background:var(--panel2);border-radius:99px;overflow:hidden}
+  .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--green));transition:width .4s}
+
+  /* lifecycle / estaciones clicables */
+  .pipe{display:flex;gap:6px;padding:14px 24px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line);background:#0d1320}
+  .stage{font-size:11px;padding:7px 11px;border-radius:8px;background:var(--panel);border:1px solid var(--line);
+    color:var(--mut);white-space:nowrap;transition:all .2s;cursor:pointer}
+  .stage:hover{border-color:var(--blue);color:var(--ink)}
+  .stage.pick{background:var(--amber);color:#231a02;border-color:var(--amber);box-shadow:0 0 0 3px rgba(245,158,11,.18)}
+  .stage.ok{background:var(--green);color:#06210f;border-color:var(--green)}
+  .stage.err{background:var(--red);color:#fff;border-color:var(--red)}
+  .arrow{color:var(--mut);font-size:11px}
+  .ring-lbl{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;margin-right:4px}
+
+  .wrap{display:flex;min-height:calc(100vh - 150px)}
+  nav{width:250px;border-right:1px solid var(--line);padding:14px;flex-shrink:0}
+  nav button{display:block;width:100%;text-align:left;margin:0 0 6px;padding:10px 12px;border-radius:10px;
+    background:transparent;border:1px solid transparent;color:var(--ink);cursor:pointer;font-size:13px;transition:.15s}
+  nav button:hover{background:var(--panel)}
+  nav button.active{background:var(--panel2);border-color:var(--line)}
+  nav button .done{color:var(--green);float:right}
+  main{flex:1;padding:24px;max-width:920px}
+  h2{margin:0 0 4px;font-size:22px}
+  .tag{display:inline-block;font-size:11px;color:var(--teal);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+  .lead{color:var(--mut);margin:0 0 18px}
+
+  .panels{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 16px}
+  .panel-box{flex:1;min-width:300px;background:#0c1322;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .panel-box h4{margin:0;padding:9px 14px;font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;
+    background:var(--panel2);border-bottom:1px solid var(--line)}
+  pre{margin:0;padding:14px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;
+    white-space:pre-wrap;word-break:break-word;overflow-x:auto}
+  .term .cmd{color:#bfdbfe}
+  .term .out{color:var(--mut)}
+  .term .ok{color:#86efac}
+  .term .err{color:#fca5a5;font-weight:600}
+
+  .step{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:0 0 14px}
+  .step h3{margin:0 0 4px;font-size:14px}
+  .step p.hint{color:var(--mut);font-size:13px;margin:0 0 10px}
+  .opts{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+  .opts button{text-align:left;background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+    padding:11px 14px;border-radius:9px;cursor:pointer;font-size:14px;transition:.15s}
+  .opts button:hover{border-color:var(--blue)}
+  .opts button.sel{border-color:var(--amber);background:rgba(245,158,11,.12)}
+  button.act{background:var(--blue);border:none;color:#fff;padding:11px 20px;border-radius:9px;cursor:pointer;
+    font-size:14px;font-weight:600;margin-top:6px}
+  button.act:hover{filter:brightness(1.1)}
+  button.act:disabled{opacity:.5;cursor:not-allowed}
+  button.ghost{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:7px 13px;border-radius:8px;cursor:pointer;font-size:12px}
+  button.ghost:hover{background:var(--line)}
+  .attempts{font-size:12px;color:var(--mut);margin-left:12px}
+
+  .fb{margin-top:14px;padding:13px 15px;border-radius:10px;font-size:14px;display:none}
+  .fb.show{display:block}
+  .fb.good{background:rgba(34,197,94,.12);border:1px solid var(--green);color:#bbf7d0}
+  .fb.bad{background:rgba(239,68,68,.12);border:1px solid var(--red);color:#fecaca}
+  .fb.info{background:rgba(59,130,246,.12);border:1px solid var(--blue);color:#bfdbfe}
+  .fb .why{margin-top:8px;color:var(--ink);font-size:13px}
+  .fb .frase{margin-top:10px;font-style:italic;color:var(--amber)}
+  .fb .concepto{margin-top:8px;font-size:12.5px;color:var(--mut)}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:12.5px}
+
+  .ancla-wrap{padding:16px 24px;border-top:1px solid var(--line)}
+  .ancla-wrap h3{font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.8px;margin:0 0 8px}
+  .pill{display:inline-block;font-size:12px;padding:3px 9px;border-radius:99px;margin:2px;
+    background:rgba(245,158,11,.1);border:1px solid var(--amber);color:#fde68a}
+  .footnote{font-size:12px;color:var(--mut)}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🚢 Sala de Máquinas · Triage de Deployment</h1>
+    <div class="sub">El deploy no llega a producción. Localiza en qué etapa del ciclo Docker se rompió y por qué.</div>
+  </div>
+  <div class="prog">
+    <button class="ghost" id="reset" title="Borrar progreso">reiniciar</button>
+    <span id="progtxt">0 / 0</span>
+    <div class="bar"><i id="progbar"></i></div>
+  </div>
+</header>
+
+<div class="pipe" id="pipe"></div>
+
+<div class="wrap">
+  <nav id="nav"></nav>
+  <main id="main"></main>
+</div>
+
+<div class="ancla-wrap">
+  <h3>🪝 Frases ancla desbloqueadas</h3>
+  <div id="anclas"><span class="footnote">Aún ninguna. Lleva deploys a producción para coleccionarlas.</span></div>
+</div>
+
+<script>
+/* ===================== infraestructura ===================== */
+// Etapas del ciclo de vida de un deploy con Docker, de tu máquina al servidor.
+const STATIONS = ["Build","Image","Registry","Run","Network","Env","Volumes","Boot","Logs"];
+const pipeEl = document.getElementById("pipe");
+
+function renderPipe(){
+  pipeEl.innerHTML = '<span class="ring-lbl">build ⟶ ship ⟶ run en prod</span>';
+  STATIONS.forEach((s,i)=>{
+    if(i) pipeEl.insertAdjacentHTML("beforeend",'<span class="arrow">→</span>');
+    pipeEl.insertAdjacentHTML("beforeend",`<span class="stage" data-s="${s}">${s}</span>`);
+  });
+  pipeEl.querySelectorAll(".stage").forEach(el=>{
+    el.addEventListener("click",()=>pickGate(el.dataset.s));
+  });
+}
+function paintPipe(){
+  pipeEl.querySelectorAll(".stage").forEach(el=>{
+    el.classList.remove("pick","ok","err");
+    if(el.dataset.s===guessGate) el.classList.add("pick");
+  });
+}
+
+const STORE_KEY="deployTriageProgress";
+let done = new Set(JSON.parse(localStorage.getItem(STORE_KEY)||"[]"));
+let anclas = JSON.parse(localStorage.getItem(STORE_KEY+"_anclas")||"{}");
+function save(){
+  localStorage.setItem(STORE_KEY, JSON.stringify([...done]));
+  localStorage.setItem(STORE_KEY+"_anclas", JSON.stringify(anclas));
+}
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+/* ===================== escenarios ===================== */
+const SCN = [];
+function scn(o){ SCN.push(o); }
+
+scn({
+  id:"d1", emoji:"🧱", title:"Agregué la dependencia y aún no la encuentra", tag:"Build · capas · caché",
+  terminal:[
+    {k:"cmd", x:"$ docker build -t clinica ."},
+    {k:"out", x:"=> CACHED [2/4] RUN pip install -r requirements.txt"},
+    {k:"cmd", x:"$ docker run clinica"},
+    {k:"err", x:"ModuleNotFoundError: No module named 'httpx'   (¡pero está en requirements.txt!)"},
+  ],
+  codeTitle:"Dockerfile",
+  code:`FROM python:3.12-slim
+RUN pip install -r requirements.txt   # ⚠ corre ANTES de copiar el archivo
+COPY . .
+CMD ["uvicorn","main:app","--host","0.0.0.0","--port","8000"]`,
+  dead:"Build",
+  dx:[
+    {ok:true,  x:"Orden de capas mal: pip install corre antes del COPY, así que usa una capa cacheada sin tu dependencia nueva. Patrón correcto: COPY requirements.txt → RUN pip install → COPY . .",
+     why:"Docker construye por capas y cachea cada una (mira el => CACHED). Como pip install está antes de traer el código/requirements, reusó la capa vieja y nunca instaló httpx."},
+    {ok:false, x:"Falta agregar httpx a requirements.txt.",
+     why:"El propio síntoma aclara que httpx ya está en requirements.txt. El problema es que esa capa no se reinstaló por el orden y la caché."},
+    {ok:false, x:"uvicorn escucha en 127.0.0.1.",
+     why:"El host ya es 0.0.0.0, y además el error es de import al arrancar, no de red."},
+  ],
+  frase:"COPY requirements primero, pip install después: la caché trabaja a tu favor.",
+  concepto:"Eje Build: capas + caché. Orden = COPY requirements → install → COPY código."
+});
+
+scn({
+  id:"d2", emoji:"🧩", title:"Construí en mi Mac, el servidor no la ejecuta", tag:"Image · arquitectura · plataforma",
+  terminal:[
+    {k:"out", x:"# imagen construida en Mac (arm64), corriendo en servidor Linux (amd64)"},
+    {k:"cmd", x:"$ docker run clinica"},
+    {k:"err", x:"exec /usr/local/bin/uvicorn: exec format error"},
+  ],
+  codeTitle:"cómo se construyó",
+  code:`# en tu Mac M1 (arm64):
+$ docker build -t clinica .        # ⚠ sin --platform
+# luego se subió y se corrió en un servidor amd64`,
+  dead:"Image",
+  dx:[
+    {ok:true,  x:"La imagen se construyó para arm64 (tu Mac) y el servidor es amd64: los binarios no son compatibles. Reconstruye con --platform linux/amd64 (o buildx).",
+     why:"'exec format error' = el sistema intenta correr binarios de otra arquitectura. La imagen lleva binarios arm64; el servidor amd64 no los entiende."},
+    {ok:false, x:"Falta el CMD en el Dockerfile.",
+     why:"El CMD sí corre (por eso intenta ejecutar uvicorn). El problema es la arquitectura del binario, no que falte el comando."},
+    {ok:false, x:"uvicorn no está instalado.",
+     why:"Sí está (lo encontró en /usr/local/bin); no puede ejecutarlo por incompatibilidad de plataforma."},
+  ],
+  frase:"exec format error = imagen de otra arquitectura. Mira el --platform.",
+  concepto:"Eje Image: arquitectura (arm64 vs amd64). Construye donde se ejecuta o fija --platform."
+});
+
+scn({
+  id:"d3", emoji:"🚫", title:"No me deja subir la imagen", tag:"Registry · login · tags",
+  terminal:[
+    {k:"cmd", x:"$ docker push miusuario/clinica:1.0"},
+    {k:"err", x:"denied: requested access to the resource is denied"},
+  ],
+  codeTitle:"comandos",
+  code:`$ docker build -t clinica:1.0 .       # imagen local OK
+$ docker push miusuario/clinica:1.0   # ⚠
+# ¿hiciste docker login?  ¿el tag apunta a un repo TUYO?`,
+  dead:"Registry",
+  dx:[
+    {ok:true,  x:"'denied' en push = no estás autenticado o el tag no apunta a un repo tuyo. Haz docker login y etiqueta como usuario/repo:tag antes de hacer push.",
+     why:"El registry rechaza por permisos: o falta login, o miusuario/clinica no es un repo donde puedas escribir. El build local funcionó; el push es lo que exige credenciales."},
+    {ok:false, x:"La imagen no se construyó.",
+     why:"El build fue exitoso (imagen local OK). 'denied' es un rechazo del registry, no un fallo de build."},
+    {ok:false, x:"El puerto del registry está cerrado.",
+     why:"El error es de permisos (denied), no de red. Si fuera red verías timeout/connection refused."},
+  ],
+  frase:"denied al hacer push = login o tag equivocado, no es la imagen.",
+  concepto:"Eje Registry: docker login + tag usuario/repo:version. push escribe en TU repo."
+});
+
+scn({
+  id:"d4", emoji:"🕵️", title:"Desplegué el fix pero sigue el bug viejo (engañoso)", tag:"⚠ engañoso · parece Build, es Registry",
+  terminal:[
+    {k:"cmd", x:"# local: build + push de la versión nueva, todo OK"},
+    {k:"cmd", x:"$ docker compose up -d        # en el servidor"},
+    {k:"out", x:"# ... pero la app sigue con el bug de hace 2 semanas"},
+    {k:"cmd", x:"$ docker images"},
+    {k:"err", x:"clinica  latest  e3f1a9  Created 2 weeks ago   ⚠ no se actualizó"},
+  ],
+  codeTitle:"qué pasó",
+  code:`# local:  docker build -t clinica:latest .  &&  docker push clinica:latest
+# servidor:  docker compose up -d   (sin pull)
+# resultado: el servidor reusa su :latest local de hace 2 semanas`,
+  dead:"Registry",
+  dx:[
+    {ok:true,  x:"El servidor sigue usando su imagen :latest vieja en caché local: nunca hizo pull de la nueva. Usa tags inmutables (clinica:1.4) o fuerza pull (compose pull / --pull always).",
+     why:"La pista está en docker images: el ID y la fecha son viejos. 'latest' no se re-descarga solo; sin pull explícito o un tag nuevo, el servidor corre lo que ya tenía."},
+    {ok:false, x:"La caché de build no se invalidó.",
+     why:"El build local sí produjo la imagen nueva; el problema es que el servidor no la jaló. Es Registry/tag, no Build."},
+    {ok:false, x:"Falta reiniciar uvicorn.",
+     why:"Reiniciar el mismo contenedor viejo no trae el código nuevo: necesitas la imagen nueva en el servidor."},
+  ],
+  frase:":latest no se actualiza solo. Tag inmutable o pull explícito.",
+  concepto:"Eje Registry: tags. 'latest' engaña; en prod usa versiones (1.4) y pull explícito."
+});
+
+scn({
+  id:"d5", emoji:"💨", title:"El contenedor arranca y se muere al instante", tag:"Run · proceso en primer plano",
+  terminal:[
+    {k:"cmd", x:"$ docker run -d clinica"},
+    {k:"cmd", x:"$ docker ps"},
+    {k:"out", x:"(vacío)"},
+    {k:"cmd", x:"$ docker ps -a"},
+    {k:"err", x:"abcd  clinica  Exited (0) 2 seconds ago"},
+  ],
+  codeTitle:"Dockerfile",
+  code:`CMD ["python", "seed.py"]     # ⚠ corre, termina y el contenedor muere
+# no arranca un proceso de larga duración que se quede vivo`,
+  dead:"Run",
+  dx:[
+    {ok:true,  x:"El CMD ejecuta un script que termina (exit 0): un contenedor vive mientras su proceso principal siga corriendo. Debe arrancar el servidor en primer plano (uvicorn ...), no un script que acaba.",
+     why:"Exited (0) = el proceso terminó bien y por eso el contenedor murió. Un contenedor no es una VM: vive atado a su PID 1. Necesita un proceso de larga duración (el server) como CMD."},
+    {ok:false, x:"Falta publicar el puerto con -p.",
+     why:"Aunque faltara, el contenedor ni siquiera sigue vivo. El problema es anterior: su proceso terminó."},
+    {ok:false, x:"El healthcheck falló.",
+     why:"Salió con código 0 (éxito), no por un healthcheck. Simplemente el proceso acabó."},
+  ],
+  frase:"El contenedor vive mientras viva su proceso principal. Exited(0) = terminó solo.",
+  concepto:"Eje Run: CMD = proceso en primer plano (uvicorn), no un script que termina."
+});
+
+scn({
+  id:"d6", emoji:"🔀", title:"Respuesta vacía en el puerto publicado", tag:"Network · mapeo de puertos",
+  terminal:[
+    {k:"cmd", x:"$ docker run -p 8080:5000 clinica   # la app escucha en 8000"},
+    {k:"cmd", x:"$ curl localhost:8080"},
+    {k:"err", x:"curl: (52) Empty reply from server"},
+  ],
+  codeTitle:"Dockerfile / run",
+  code:`# dentro del contenedor uvicorn corre en el puerto 8000
+CMD ["uvicorn","main:app","--host","0.0.0.0","--port","8000"]
+# pero:  docker run -p 8080:5000   ⚠  (host 8080 -> contenedor 5000)`,
+  dead:"Network",
+  dx:[
+    {ok:true,  x:"El mapeo -p 8080:5000 manda el tráfico al puerto 5000 del contenedor, pero la app escucha en el 8000. El lado derecho debe ser el puerto interno real: -p 8080:8000.",
+     why:"-p es HOST:CONTENEDOR. Publicaste hacia el 5000 interno, donde no hay nadie; por eso 'empty reply'. El puerto del contenedor tiene que coincidir con el --port de uvicorn."},
+    {ok:false, x:"uvicorn escucha en 127.0.0.1.",
+     why:"El host ya es 0.0.0.0. El problema es el número de puerto interno equivocado en -p."},
+    {ok:false, x:"Falta el endpoint.",
+     why:"Ni siquiera se llegó a la app: el tráfico fue a un puerto interno vacío."},
+  ],
+  frase:"-p es HOST:CONTENEDOR. El lado derecho = el puerto donde escucha la app.",
+  concepto:"Eje Network: mapeo de puertos. El puerto del contenedor debe ser el --port real."
+});
+
+scn({
+  id:"d7", emoji:"🚧", title:"Adentro responde, desde afuera no", tag:"Network · EXPOSE vs publicar",
+  terminal:[
+    {k:"cmd", x:"$ docker run -d clinica         # ⚠ sin -p"},
+    {k:"cmd", x:"$ curl localhost:8000"},
+    {k:"err", x:"curl: (7) Connection refused"},
+    {k:"cmd", x:"$ docker exec clinica curl -s localhost:8000/health"},
+    {k:"ok",  x:'{"status":"ok"}   ← adentro SÍ responde'},
+  ],
+  codeTitle:"Dockerfile",
+  code:`EXPOSE 8000       # ⚠ solo documenta, NO publica
+CMD ["uvicorn","main:app","--host","0.0.0.0","--port","8000"]`,
+  dead:"Network",
+  dx:[
+    {ok:true,  x:"EXPOSE solo documenta el puerto; no lo publica al host. Falta docker run -p 8000:8000 (o ports: en compose) para abrirlo al exterior.",
+     why:"La prueba está en que docker exec ... localhost SÍ responde adentro: la app vive y escucha. Lo que falta es el puente al host. EXPOSE ≠ publicar."},
+    {ok:false, x:"uvicorn escucha en 127.0.0.1.",
+     why:"Responde a localhost dentro del contenedor con 0.0.0.0. El puente al host es lo que falta, no el host de uvicorn."},
+    {ok:false, x:"La imagen está mal construida.",
+     why:"Corre y responde internamente; es puramente un tema de publicación de puerto."},
+  ],
+  frase:"EXPOSE documenta; -p publica. Sin -p, nadie de afuera entra.",
+  concepto:"Eje Network: EXPOSE (doc) vs -p/ports (publica de verdad)."
+});
+
+scn({
+  id:"d8", emoji:"🔑", title:"DATABASE_URL llega vacía en el contenedor", tag:"Env · inyección en runtime",
+  terminal:[
+    {k:"cmd", x:"$ docker run -d clinica         # ⚠ sin --env-file .env"},
+    {k:"cmd", x:"$ docker logs clinica"},
+    {k:"err", x:"sqlalchemy ... Could not parse URL from None   (DATABASE_URL=None)"},
+  ],
+  codeTitle:"settings / run",
+  code:`DATABASE_URL = os.getenv("DATABASE_URL")   # llega None
+# el .env existe en tu carpeta, pero:
+# docker run ...   ⚠ sin --env-file .env  ni  -e DATABASE_URL=...`,
+  dead:"Env",
+  dx:[
+    {ok:true,  x:"El .env no se inyectó al contenedor en runtime: hay que pasar --env-file .env (o -e VAR=...) en docker run, o env_file en compose. El archivo en tu carpeta no entra solo.",
+     why:"El contenedor es un entorno aislado: tu .env del host no existe adentro a menos que lo pases. Por eso getenv devuelve None. Las variables se inyectan al arrancar."},
+    {ok:false, x:"Falta instalar python-dotenv.",
+     why:"En contenedor las variables se pasan por --env-file/-e; no dependes de leer el archivo, sino de inyectarlas al run."},
+    {ok:false, x:"El puerto está mal publicado.",
+     why:"El error es de configuración (DATABASE_URL None), no de red."},
+  ],
+  frase:"El .env del host no entra solo: --env-file / -e lo inyecta al contenedor.",
+  concepto:"Eje Env: las variables se inyectan en runtime (--env-file/-e/env_file), no viven en la imagen."
+});
+
+scn({
+  id:"d9", emoji:"🧨", title:"El secreto quedó dentro de la imagen", tag:"Env · ENV horneado vs runtime",
+  terminal:[
+    {k:"cmd", x:"$ docker history clinica:latest"},
+    {k:"err", x:"... ENV DATABASE_URL=postgres://user:pass@prod-db ...   ⚠ visible"},
+    {k:"out", x:"# y además dev y prod usan la MISMA base"},
+  ],
+  codeTitle:"Dockerfile",
+  code:`ENV DATABASE_URL=postgres://user:pass@prod-db/clinica   # ⚠ horneado en build`,
+  dead:"Env",
+  dx:[
+    {ok:true,  x:"Pusiste el secreto con ENV en el Dockerfile: queda horneado en la imagen (visible en docker history) e igual para todos los entornos. Pásalo en runtime (-e/--env-file), no en el Dockerfile.",
+     why:"ENV en build hornea el valor en las capas de la imagen: cualquiera con la imagen lo ve, y no puedes cambiarlo por entorno sin reconstruir. Config y secretos van en runtime."},
+    {ok:false, x:"Falta un .gitignore para el .env.",
+     why:"El problema no es el repo, es que el secreto quedó dentro de la imagen por usar ENV en build."},
+    {ok:false, x:"La base de datos rechaza la conexión.",
+     why:"Conecta bien; el problema es de seguridad/configuración: el secreto horneado y compartido entre entornos."},
+  ],
+  frase:"Secretos y config: en runtime, nunca horneados con ENV en la imagen.",
+  concepto:"Eje Env: ENV (build, horneado) vs -e/--env-file (runtime, por entorno). Secretos fuera de la imagen."
+});
+
+scn({
+  id:"d10", emoji:"🗄️", title:"Los datos desaparecen tras compose down (engañoso)", tag:"⚠ engañoso · parece ORM, es Volumes",
+  terminal:[
+    {k:"out", x:"# creo pacientes, todo bien (y la app SÍ hace db.commit())"},
+    {k:"cmd", x:"$ docker compose down && docker compose up -d"},
+    {k:"cmd", x:"$ curl /pacientes"},
+    {k:"err", x:"[]   ⚠ vacío otra vez"},
+  ],
+  codeTitle:"docker-compose.yml",
+  code:`services:
+  db:
+    image: postgres:16
+    # ⚠ sin  volumes:  -> los datos viven dentro del contenedor
+# (la app sí hace db.commit() correctamente)`,
+  dead:"Volumes",
+  dx:[
+    {ok:true,  x:"Postgres guarda sus datos dentro del contenedor y no hay volumen nombrado: al hacer compose down se borra el contenedor y con él los datos. Define un volume para /var/lib/postgresql/data.",
+     why:"Ojo a la pista: la app SÍ hace commit (descarta el bug del otro juego). El dato se confirmó en la BD... pero la BD vive en un contenedor efímero. Sin volumen persistente, 'down' lo destruye."},
+    {ok:false, x:"Faltó db.commit() en la app.",
+     why:"El comentario aclara que el commit está bien. El dato sí se guardó; lo que se borró fue el contenedor de la BD entero."},
+    {ok:false, x:"La connection string apunta a otra base.",
+     why:"Apunta a la misma db; el problema es que esa db perdió su almacenamiento al recrear el contenedor."},
+  ],
+  frase:"El contenedor es efímero. Sin volumen, compose down se lleva los datos.",
+  concepto:"Eje Volumes: filesystem del contenedor = temporal. Datos de BD → named volume. (Distinto de 'faltó commit': ahí el dato ni se guardaba.)"
+});
+
+scn({
+  id:"d11", emoji:"⏱️", title:"La API no conecta a la base al arrancar (engañoso)", tag:"⚠ engañoso · parece Network, es Boot",
+  terminal:[
+    {k:"cmd", x:"$ docker compose up"},
+    {k:"err", x:'api  | could not connect to server: Connection refused  (host "db" 5432)'},
+    {k:"ok",  x:"db   | database system is ready to accept connections   ← llegó DESPUÉS"},
+  ],
+  codeTitle:"docker-compose.yml",
+  code:`services:
+  api:
+    depends_on: [db]      # ⚠ espera a que ARRANQUE, no a que esté LISTO
+  db:
+    image: postgres:16`,
+  dead:"Boot",
+  dx:[
+    {ok:true,  x:"Carrera de arranque: depends_on espera a que el contenedor db inicie, no a que Postgres esté LISTO. La API conectó antes de tiempo. Solución: healthcheck + condition: service_healthy, o reintentos al conectar.",
+     why:"La pista está en el orden de los logs: la API intentó conectar y solo DESPUÉS db dijo 'ready'. No es la red (el host 'db' resuelve): es tiempo. depends_on no espera readiness."},
+    {ok:false, x:"El puerto 5432 no está publicado con -p.",
+     why:"Dentro de la red de compose los servicios se ven por nombre sin -p, y el db luego sí quedó listo. Es timing, no puerto."},
+    {ok:false, x:"La connection string está mal.",
+     why:"El host 'db' es correcto (el db respondió 'ready'). El problema es que la API conectó antes de que estuviera listo."},
+  ],
+  frase:"depends_on espera que arranque, no que esté listo. Usa healthcheck o reintentos.",
+  concepto:"Eje Boot: orden de arranque ≠ readiness. healthcheck/condition o retry en la app."
+});
+
+scn({
+  id:"d12", emoji:"🏗️", title:"La tabla no existe en el entorno nuevo", tag:"Boot · migraciones",
+  terminal:[
+    {k:"cmd", x:"$ docker compose up -d        # imagen nueva, base limpia"},
+    {k:"cmd", x:"$ curl /pacientes"},
+    {k:"err", x:"500 Internal Server Error"},
+    {k:"cmd", x:"$ docker logs api"},
+    {k:"err", x:'psycopg ... relation "pacientes" does not exist   ⚠'},
+  ],
+  codeTitle:"qué falta en el deploy",
+  code:`# la base existe y conecta, pero nadie corrió:
+#   alembic upgrade head     (o create_all)
+# el esquema no se crea solo al levantar el contenedor`,
+  dead:"Boot",
+  dx:[
+    {ok:true,  x:"La base existe pero las tablas no: faltó correr las migraciones (alembic upgrade / create_all) al desplegar. El esquema no se crea solo con levantar el contenedor.",
+     why:"'relation does not exist' = la conexión a la BD funciona, pero la tabla nunca se creó. En un entorno nuevo hay que aplicar el esquema (migraciones) como paso de arranque/deploy."},
+    {ok:false, x:"Faltó db.commit().",
+     why:"No es un insert: es una consulta a una tabla que no existe. El esquema no está aplicado."},
+    {ok:false, x:"La connection string apunta a otra base.",
+     why:"Conecta bien a la base correcta; lo que faltan son las tablas (migraciones)."},
+  ],
+  frase:"Base nueva ≠ tablas. Corre las migraciones en el deploy.",
+  concepto:"Eje Boot: aplicar esquema/migraciones (alembic/create_all) como paso de despliegue."
+});
+
+scn({
+  id:"d13", emoji:"♻️", title:"El contenedor reinicia en bucle", tag:"Logs · OOM · crash loop",
+  terminal:[
+    {k:"cmd", x:"$ docker ps"},
+    {k:"err", x:"clinica  Restarting (137) 5 seconds ago   ⚠ bucle"},
+    {k:"cmd", x:"$ docker logs api"},
+    {k:"err", x:"... Killed"},
+    {k:"cmd", x:"$ docker stats"},
+    {k:"err", x:"MEM USAGE / LIMIT   512MiB / 512MiB   ⚠ al tope"},
+  ],
+  codeTitle:"deploy",
+  code:`# límite:  mem_limit: 512m
+# la app carga un modelo/CSV gigante en RAM al arrancar`,
+  dead:"Logs",
+  dx:[
+    {ok:true,  x:"Exit 137 + 'Killed' + memoria al tope = el kernel mató el proceso por OOM (out of memory). La restart policy lo revive y vuelve a morir. Sube el límite o reduce lo que cargas en RAM.",
+     why:"137 = 128 + 9 (SIGKILL). Con la memoria pegada al límite y 'Killed' en los logs, es OOM: el proceso pidió más RAM que el tope y el kernel lo eliminó; la política de reinicio crea el bucle."},
+    {ok:false, x:"El healthcheck está mal configurado.",
+     why:"No es el healthcheck: al proceso lo mata el kernel por memoria (137/Killed), no un check fallido."},
+    {ok:false, x:"Falta el CMD.",
+     why:"El proceso sí arranca (consume 512MiB antes de morir). El problema es el tope de memoria, no el comando."},
+  ],
+  frase:"Exit 137 + Killed = OOM. Lee docker stats y sube el límite o baja el uso.",
+  concepto:"Eje Logs/Health: leer logs + docker stats. 137 = SIGKILL (OOM); el crash loop lo crea la restart policy."
+});
+
+/* ===================== estado de la partida ===================== */
+let current = SCN[0].id;
+let guessGate = null;     // estación clicada
+let guessDx = null;       // índice de diagnóstico elegido
+let attempts = {};        // por escenario
+
+function curScn(){ return SCN.find(s=>s.id===current); }
+
+function pickGate(s){
+  if(done.has(current)) return;
+  guessGate = (guessGate===s) ? null : s;
+  paintPipe();
+  syncBtn();
+}
+function pickDx(i){
+  if(done.has(current)) return;
+  guessDx = (guessDx===i) ? null : i;
+  renderMain();
+}
+function syncBtn(){
+  const b=document.getElementById("estabilizar");
+  if(b) b.disabled = done.has(current) || guessGate===null || guessDx===null;
+}
+
+function estabilizar(){
+  const sc = curScn();
+  attempts[current] = (attempts[current]||0)+1;
+  const gateOk = guessGate===sc.dead;
+  const dxOk = guessDx!==null && sc.dx[guessDx].ok;
+  const fb = document.getElementById("fb");
+
+  if(gateOk && dxOk){
+    done.add(current); anclas[current]=sc.frase; save();
+    reanimar(sc);
+    fb.className="fb show good";
+    fb.innerHTML = `🟢 <b>En producción</b> — en ${attempts[current]} intento(s).`
+      + `<div class="why">${esc(sc.dx[guessDx].why)}</div>`
+      + `<div class="frase">🪝 «${esc(sc.frase)}»</div>`
+      + `<div class="concepto">📎 ${esc(sc.concepto)}</div>`;
+    renderProgress(); renderNav(); renderAnclas(); syncBtn();
+  } else if(!gateOk){
+    pipeEl.querySelectorAll(".stage").forEach(el=>{
+      if(el.dataset.s===guessGate) el.classList.add("err");
+    });
+    fb.className="fb show bad";
+    fb.innerHTML = `❌ Ahí no se rompió el deploy. Relee el <b>síntoma</b>: ¿qué comando lo destapa y qué dice exactamente el error?`;
+  } else {
+    fb.className="fb show info";
+    fb.innerHTML = `🟡 Acertaste la etapa (<b>${esc(sc.dead)}</b>), pero ese no es el diagnóstico. Descarta y vuelve a intentar.`;
+  }
+}
+
+function reanimar(sc){
+  const els = [...pipeEl.querySelectorAll(".stage")];
+  els.forEach(e=>e.classList.remove("pick","err"));
+  let i=0;
+  const t=setInterval(()=>{
+    if(i>=els.length){ clearInterval(t); return; }
+    els[i].classList.add("ok"); i++;
+  },130);
+}
+
+/* ===================== render ===================== */
+function renderProgress(){
+  document.getElementById("progtxt").textContent = `${done.size} / ${SCN.length}`;
+  document.getElementById("progbar").style.width = (done.size/SCN.length*100)+"%";
+}
+function renderAnclas(){
+  const c=document.getElementById("anclas");
+  const items=Object.values(anclas);
+  c.innerHTML = items.length ? items.map(f=>`<span class="pill">🪝 ${esc(f)}</span>`).join("")
+    : '<span class="footnote">Aún ninguna. Lleva deploys a producción para coleccionarlas.</span>';
+}
+function renderNav(){
+  const nav=document.getElementById("nav");
+  nav.innerHTML = SCN.map(s=>
+    `<button class="${s.id===current?'active':''}" onclick="goto('${s.id}')">`
+    + `${s.emoji} ${esc(s.title)}`
+    + `${done.has(s.id)?'<span class="done">✓</span>':''}</button>`
+  ).join("");
+}
+function termHTML(lines){
+  return lines.map(l=>`<span class="${l.k}">${esc(l.x)}</span>`).join("\n");
+}
+function renderMain(){
+  const sc=curScn();
+  const solved=done.has(sc.id);
+  const m=document.getElementById("main");
+  m.innerHTML = `
+    <span class="tag">${esc(sc.tag)}</span>
+    <h2>${sc.emoji} ${esc(sc.title)}</h2>
+    <p class="lead">Lee el síntoma y la config. Marca en el ciclo <b>dónde se rompió el deploy</b> y elige el <b>diagnóstico</b>.</p>
+    <div class="panels">
+      <div class="panel-box"><h4>🖥️ Terminal · síntoma</h4><pre class="term">${termHTML(sc.terminal)}</pre></div>
+      <div class="panel-box"><h4>📄 ${esc(sc.codeTitle)}</h4><pre>${esc(sc.code)}</pre></div>
+    </div>
+
+    <div class="step">
+      <h3>2 · Diagnóstico</h3>
+      <p class="hint">Paso 1: haz clic en la etapa del ciclo (arriba) donde se rompió el deploy.</p>
+      <div class="opts">
+        ${sc.dx.map((d,i)=>`<button class="${guessDx===i?'sel':''}" ${solved?'disabled':''} onclick="pickDx(${i})">${esc(d.x)}</button>`).join("")}
+      </div>
+      <div style="margin-top:12px;display:flex;align-items:center">
+        <button class="act" id="estabilizar" onclick="estabilizar()">Poner en producción ▶</button>
+        <span class="attempts">${solved?'✓ resuelto':'intentos: '+(attempts[sc.id]||0)}</span>
+      </div>
+      <div class="fb" id="fb"></div>
+    </div>`;
+  paintPipe();
+  syncBtn();
+  if(solved){
+    pipeEl.querySelectorAll(".stage").forEach(e=>e.classList.add("ok"));
+    const fb=document.getElementById("fb");
+    const correct=sc.dx.find(d=>d.ok);
+    fb.className="fb show good";
+    fb.innerHTML = `🟢 <b>Resuelto.</b> Se rompió en <b>${esc(sc.dead)}</b>.`
+      + `<div class="why">${esc(correct.why)}</div>`
+      + `<div class="frase">🪝 «${esc(sc.frase)}»</div>`
+      + `<div class="concepto">📎 ${esc(sc.concepto)}</div>`;
+  }
+}
+function goto(id){
+  current=id; guessGate=null; guessDx=null;
+  renderNav(); renderMain();
+}
+document.getElementById("reset").addEventListener("click",()=>{
+  if(!confirm("¿Borrar todo el progreso?")) return;
+  done=new Set(); anclas={}; save();
+  attempts={}; guessGate=null; guessDx=null;
+  renderProgress(); renderNav(); renderAnclas(); renderMain();
+});
+
+/* ===================== arranque ===================== */
+renderPipe();
+renderProgress();
+renderAnclas();
+renderNav();
+renderMain();
+</script>
+</body>
+</html>

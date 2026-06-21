@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>De función dormida a API en producción</title>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#161d2e; --panel2:#1d2740; --line:#2a3550;
+    --ink:#e7ecf5; --mut:#93a0bd; --blue:#3b82f6; --teal:#0ea5a4;
+    --green:#22c55e; --amber:#f59e0b; --red:#ef4444; --violet:#8b5cf6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    background:linear-gradient(180deg,#0c111c,#0f1420);color:var(--ink);line-height:1.5}
+  header{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  header h1{font-size:18px;margin:0;letter-spacing:.3px}
+  header .sub{color:var(--mut);font-size:13px}
+  .prog{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--mut)}
+  .bar{width:160px;height:8px;background:var(--panel2);border-radius:99px;overflow:hidden}
+  .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--green));transition:width .4s}
+
+  .wrap{display:flex;min-height:calc(100vh - 70px)}
+  nav{width:240px;border-right:1px solid var(--line);padding:14px;flex-shrink:0;overflow-y:auto}
+  nav .acto{font-size:11px;color:var(--teal);text-transform:uppercase;letter-spacing:.8px;margin:14px 4px 6px}
+  nav .acto:first-child{margin-top:0}
+  nav button{display:block;width:100%;text-align:left;margin:0 0 5px;padding:9px 12px;border-radius:10px;
+    background:transparent;border:1px solid transparent;color:var(--ink);cursor:pointer;font-size:13px;transition:.15s}
+  nav button:hover{background:var(--panel)}
+  nav button.active{background:var(--panel2);border-color:var(--line)}
+  nav button.locked{color:var(--mut);cursor:not-allowed;opacity:.5}
+  nav button .done{color:var(--green);float:right}
+
+  main{flex:1;padding:24px;max-width:760px}
+  h2{margin:0 0 4px;font-size:22px}
+  .tag{display:inline-block;font-size:11px;color:var(--teal);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+  .lead{color:var(--mut);margin:0 0 18px}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin:0 0 14px}
+  .sit{background:var(--panel2);border-left:3px solid var(--amber);padding:12px 14px;border-radius:8px;margin:0 0 16px}
+  .reto{font-weight:600;margin:0 0 6px}
+  code,.mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+  pre{background:#0c1322;border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow-x:auto;
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;margin:10px 0}
+  .opts{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+  .opts button{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:11px 14px;
+    border-radius:10px;cursor:pointer;font-size:14px;text-align:left;transition:.15s;font-family:inherit}
+  .opts button:hover{border-color:var(--blue)}
+  .opts button:disabled{cursor:default;opacity:.65}
+  .opts button.pick-ok{border-color:var(--green);background:rgba(34,197,94,.12)}
+  .opts button.pick-bad{border-color:var(--red);background:rgba(239,68,68,.12)}
+
+  .fb{margin-top:14px;padding:12px 14px;border-radius:10px;font-size:14px;display:none}
+  .fb.show{display:block}
+  .fb.good{background:rgba(34,197,94,.12);border:1px solid var(--green);color:#bbf7d0}
+  .fb.bad{background:rgba(239,68,68,.12);border:1px solid var(--red);color:#fecaca}
+  .frase{margin-top:12px;font-style:italic;color:var(--amber);border-top:1px dashed var(--line);padding-top:10px}
+  button.next{background:var(--blue);border:none;color:#fff;padding:10px 20px;border-radius:9px;cursor:pointer;
+    font-size:14px;font-weight:600;margin-top:14px}
+  button.next:hover{filter:brightness(1.1)}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--mut);padding:7px 12px;
+    border-radius:8px;cursor:pointer;font-size:12px}
+  button.ghost:hover{color:var(--ink)}
+
+  /* torre */
+  aside{width:280px;border-left:1px solid var(--line);padding:18px 16px;flex-shrink:0}
+  aside h3{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.7px;margin:0 0 4px}
+  aside .hint{font-size:11px;color:var(--mut);margin:0 0 12px}
+  .tower{display:flex;flex-direction:column;gap:6px}
+  .blk{border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:12px;background:var(--panel);
+    color:var(--mut);transition:.35s;position:relative}
+  .blk .ico{margin-right:6px}
+  .blk.built{color:var(--ink);border-color:var(--teal);background:linear-gradient(90deg,rgba(14,165,164,.14),var(--panel))}
+  .blk.just{box-shadow:0 0 0 3px rgba(34,197,94,.25);border-color:var(--green)}
+  .blk.flow{box-shadow:0 0 0 3px rgba(59,130,246,.4);border-color:var(--blue);background:rgba(59,130,246,.14)}
+  .towedge{text-align:center;font-size:11px;color:var(--mut);margin:6px 0}
+
+  .anclas{padding:16px 24px;border-top:1px solid var(--line)}
+  .anclas h3{font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.8px;margin:0 0 8px}
+  .pill{display:inline-block;font-size:12px;padding:5px 10px;border-radius:99px;margin:3px;
+    background:rgba(245,158,11,.1);border:1px solid var(--amber);color:#fde68a}
+  .footnote{font-size:12px;color:var(--mut)}
+  .win{background:linear-gradient(90deg,rgba(34,197,94,.18),transparent);border:1px solid var(--green);
+    border-radius:12px;padding:16px;margin-top:14px;color:#bbf7d0}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🚀 De función dormida a API en producción</h1>
+    <div class="sub">Construís el backend de una clínica capa por capa. De tu laptop a internet.</div>
+  </div>
+  <div class="prog">
+    <span id="progtxt">0 / 15</span>
+    <div class="bar"><i id="progbar"></i></div>
+    <button class="ghost" id="reset">Reiniciar</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav id="nav"></nav>
+  <main id="main"></main>
+  <aside>
+    <h3>🏗️ Tu torre</h3>
+    <p class="hint">La construís de adentro hacia afuera. El request la recorre de afuera hacia adentro.</p>
+    <div class="towedge">▼ entra el request</div>
+    <div class="tower" id="tower"></div>
+    <div class="towedge">▲ datos persistentes</div>
+  </aside>
+</div>
+
+<div class="anclas">
+  <h3>🪝 Frases ancla desbloqueadas</h3>
+  <div id="anclas"><span class="footnote">Aún ninguna. Completá retos para coleccionarlas.</span></div>
+</div>
+
+<script>
+/* ===== torre: bloques en orden request (afuera→adentro) ===== */
+const BLOCKS = [
+  {ico:"🌐", t:"Internet · URL · HTTP"},
+  {ico:"🐳", t:"Deploy · PaaS · Docker · env · logs"},
+  {ico:"🛡️", t:"Uvicorn · ASGI (servidor vivo)"},
+  {ico:"🚪", t:"FastAPI · endpoints"},
+  {ico:"🛂", t:"Middleware · auth / authz"},
+  {ico:"📋", t:"Pydantic · validación"},
+  {ico:"🐍", t:"Lógica Python"},
+  {ico:"🔗", t:"ORM"},
+  {ico:"🗄️", t:"SQL · Base de datos · PK/FK/JOIN"},
+];
+
+/* ===== retos ===== */
+const S = [
+{ id:"fn", acto:"Acto 1 · Despertar (local)", icono:"💤", titulo:"La función dormida", blk:6,
+  sit:`En <code>main.py</code> tenés esto, guardado y quieto:
+  <pre>def hello():
+    return {"message": "Hola"}</pre>
+  Alguien abre <code>http://tu-clinica.com/hola</code>… y no pasa nada.`,
+  reto:"¿Por qué esa función no responde por internet, todavía?",
+  opciones:[
+    {t:"Está dormida: vive en un archivo, pero nadie la sirve dentro de una app que escuche por red.", ok:true},
+    {t:"Le falta un <code>print()</code> para mostrar el mensaje.", ok:false, fb:"No: el problema no es mostrar, es que nadie la expone por la red."},
+    {t:"Tiene un error de sintaxis.", ok:false, fb:"La función está bien escrita. Lo que falta es la infraestructura alrededor."},
+  ],
+  okfb:"Exacto. Para responder necesita: función → dentro de una app → corriendo en un servidor → escuchando por red → accesible por URL.",
+  frase:"Una función en un archivo está dormida; una función dentro de un servidor web puede responder requests." },
+
+{ id:"endpoint", acto:"Acto 1 · Despertar (local)", icono:"🚪", titulo:"Convertirla en endpoint", blk:3,
+  sit:`Querés que la URL <code>GET /patients/{id}</code> lea un paciente por su id.
+  FastAPI te deja declarar la ruta, el método y la función que se ejecuta.`,
+  reto:"¿Qué le agregás a tu función para volverla un endpoint que lee el paciente?",
+  opciones:[
+    {t:`<pre>@app.get("/patients/{id}")
+def get_patient(id: int):
+    return {"id": id}</pre>`, ok:true},
+    {t:`<pre>@app.post("/patients/{id}")
+def get_patient(id: int):
+    return {"id": id}</pre>`, ok:false, fb:"POST declara «crear». Para leer es GET. El método declara la intención."},
+    {t:`<pre>def get_patient(id):
+    print("/patients/" + id)</pre>`, ok:false, fb:"Eso sigue siendo una función suelta sin ruta ni método: nadie la expone."},
+  ],
+  okfb:"Eso es un endpoint: método HTTP + ruta + función. La API es el menú entero; este es un platillo.",
+  frase:"API es todo el menú; endpoint es un platillo específico: método + ruta + función." },
+
+{ id:"uvicorn", acto:"Acto 1 · Despertar (local)", icono:"🛡️", titulo:"Prender el servidor", blk:2,
+  sit:`Ya declaraste el endpoint en FastAPI, pero FastAPI solo <em>define</em> la app.
+  Hace falta un proceso que la ponga a escuchar por red y no termine como un script normal.`,
+  reto:"¿Qué corrés en la terminal para dejar la app viva escuchando?",
+  opciones:[
+    {t:`<code>uvicorn main:app --reload</code>`, ok:true},
+    {t:`<code>python main.py</code> y se cierra solo al terminar.`, ok:false, fb:"Un script corre y termina. Un servidor se queda vivo escuchando. Necesitás Uvicorn."},
+    {t:`<code>pip install fastapi</code>`, ok:false, fb:"Eso instala, no levanta el servidor. Falta ponerlo a escuchar."},
+  ],
+  okfb:"Uvicorn mantiene la app viva escuchando. ASGI es el contrato que deja que Uvicorn y FastAPI se entiendan: cliente → HTTP → Uvicorn → ASGI → FastAPI → función.",
+  frase:"FastAPI sabe qué hacer; Uvicorn escucha; ASGI permite que se entiendan." },
+
+{ id:"url", acto:"Acto 1 · Despertar (local)", icono:"🌐", titulo:"El primer request", blk:0,
+  sit:`Tu servidor está vivo en tu laptop. Tu compañera quiere leer el paciente 5.
+  La dirección es <code>http://127.0.0.1:8000/patients/5</code>.`,
+  reto:"En esa URL, <code>8000</code> es…",
+  opciones:[
+    {t:"El <strong>puerto</strong>: la ventanilla dentro de la máquina por donde entra el request.", ok:true},
+    {t:"El host: la máquina a la que llegás.", ok:false, fb:"El host es <code>127.0.0.1</code>. El puerto es 8000."},
+    {t:"La ruta del recurso.", ok:false, fb:"La ruta es <code>/patients/5</code>. El 8000 es el puerto."},
+  ],
+  okfb:"http=protocolo · 127.0.0.1=host · 8000=puerto · /patients/5=ruta. El request entra y devuelve 200 con el paciente.",
+  frase:"IP es la dirección del edificio; puerto es la ventanilla; ruta es el departamento interno." },
+
+{ id:"metodo", acto:"Acto 2 · Endurecer (datos)", icono:"✍️", titulo:"Declarar la intención", blk:0,
+  sit:`Ahora la clínica quiere <strong>dar de alta</strong> un paciente nuevo desde el formulario.`,
+  reto:"¿Qué método HTTP usás para crear un paciente?",
+  opciones:[
+    {t:"<code>POST /patients</code> — crear.", ok:true},
+    {t:"<code>GET /patients</code> — porque siempre uso GET.", ok:false, fb:"GET es leer. Crear es POST. El método declara la intención, no es decorativo."},
+    {t:"<code>DELETE /patients</code> — para meter datos nuevos.", ok:false, fb:"DELETE borra. Para crear, POST."},
+  ],
+  okfb:"GET=leer · POST=crear · PUT=reemplazar · PATCH=actualizar parcial · DELETE=borrar.",
+  frase:"El método declara la intención: leer, crear, actualizar o borrar." },
+
+{ id:"pydantic", acto:"Acto 2 · Endurecer (datos)", icono:"📋", titulo:"El guardia del body", blk:5,
+  sit:`Definís el esquema esperado:
+  <pre>class PatientCreate(BaseModel):
+    name: str
+    age: int</pre>
+  Llega un POST con el body <code>{ "name": "Ana", "age": "treinta" }</code>.`,
+  reto:"¿Qué status responde tu API?",
+  opciones:[
+    {t:"<code>422 Unprocessable Entity</code> — leí el JSON, pero <code>age</code> no cumple el esquema (no es int).", ok:true},
+    {t:"<code>400 Bad Request</code> — porque el JSON está roto.", ok:false, fb:"400 es «ni pude leer tu JSON». Acá el JSON es válido; lo que falla es el esquema: eso es 422."},
+    {t:"<code>200 OK</code> — Pydantic convierte «treinta» a número.", ok:false, fb:"No adivina. «treinta» no es un int: lo rechaza."},
+  ],
+  okfb:"400 = ni pude leer tu JSON · 422 = lo leí pero no cumple el esquema. Pydantic deserializa (JSON→objeto) y valida antes de tocar tu lógica.",
+  frase:"Pydantic es el guardia de entrada del body: 400 no pude leerlo, 422 lo leí pero no cumple." },
+
+{ id:"persistencia", acto:"Acto 2 · Endurecer (datos)", icono:"🔗", titulo:"Datos que sobreviven", blk:7,
+  sit:`Cargaste 10 pacientes y funcionaba. Reiniciás el servidor… y desaparecieron todos.
+  Estaban en variables, en RAM.`,
+  reto:"¿Qué hacés para que sobrevivan al reinicio?",
+  opciones:[
+    {t:`Guardarlos en una base de datos vía el ORM: <code>session.add(p); session.commit()</code>.`, ok:true},
+    {t:"Subir la RAM de la computadora.", ok:false, fb:"La RAM es temporal por naturaleza: al reiniciar se vacía. Necesitás memoria durable: una base."},
+    {t:"Agregar más <code>print()</code> para no perderlos.", ok:false, fb:"Imprimir no persiste nada. Hace falta una base de datos."},
+  ],
+  okfb:"El ORM traduce objeto Python ↔ fila SQL. <code>add</code> lo prepara, <code>commit</code> lo escribe. Sin commit, el reinicio se lo lleva. Por debajo: INSERT INTO patients...",
+  frase:"RAM es temporal; la base de datos es memoria durable. El ORM deja que Python hable con la base en idioma objeto." },
+
+{ id:"relaciones", acto:"Acto 2 · Endurecer (datos)", icono:"🗄️", titulo:"Uno-a-muchos", blk:8,
+  sit:`Un paciente tiene muchas citas. No querés repetir el nombre «Ana» en cada cita
+  (eso es lo que evita la normalización).`,
+  reto:"¿Cómo conectás cada cita con su paciente?",
+  opciones:[
+    {t:"Una <strong>FK</strong> en la cita: <code>appointments.patient_id → patients.id</code>.", ok:true},
+    {t:"Copiar el nombre del paciente dentro de cada cita.", ok:false, fb:"Eso repite datos (mal). Normalizar es guardar a Ana una vez y que las citas la apunten con una llave."},
+    {t:"Poner la PK de la cita dentro del paciente.", ok:false, fb:"Al revés: el lado «muchos» (la cita) lleva la FK que apunta al «uno» (el paciente)."},
+  ],
+  okfb:"PK identifica una fila; FK apunta a la PK de otra tabla. Un JOIN las combina: <code>... FROM appointments JOIN patients ON appointments.patient_id = patients.id</code>.",
+  frase:"La PK dice quién soy; la FK dice a quién pertenezco." },
+
+{ id:"hash", acto:"Acto 3 · Proteger (identidad)", icono:"🛂", titulo:"La bóveda de contraseñas", blk:4,
+  sit:`Ahora hay usuarios con contraseña. Tenés que guardar la de Ana en la base.`,
+  reto:"¿Cómo la guardás?",
+  opciones:[
+    {t:"<strong>Hasheada</strong>: <code>password → hash irreversible</code>. En login comparo hashes, nunca el texto.", ok:true},
+    {t:"Tal cual, en texto plano, así puedo recuperarla.", ok:false, fb:"Nunca en texto: si filtran la base, regalás todas las contraseñas."},
+    {t:"Encriptada, para des-encriptarla cuando la necesite.", ok:false, fb:"Encriptar es reversible: alguien con la llave la lee. Hashear es one-way, no se deshace. Por eso se hashea."},
+  ],
+  okfb:"El hash es one-way: nadie reconstruye la contraseña, ni vos. En el login hasheás lo que entra y comparás contra el hash guardado.",
+  frase:"Encriptar es reversible; hashear no. Por eso la contraseña se hashea." },
+
+{ id:"jwtauth", acto:"Acto 3 · Proteger (identidad)", icono:"🎫", titulo:"401 vs 403", blk:4,
+  sit:`Tras el login, el servidor entrega un JWT (un pase firmado). El cliente lo manda en cada
+  request protegida: <code>Authorization: Bearer &lt;token&gt;</code>. El middleware lo revisa
+  <em>antes</em> de llegar al endpoint.`,
+  reto:"Ana, ya logueada, intenta borrar la cita de OTRO paciente. ¿Qué responde la API?",
+  opciones:[
+    {t:"<code>403 Forbidden</code> — sé quién sos (token válido), pero no podés tocar ese recurso ajeno.", ok:true},
+    {t:"<code>401 Unauthorized</code> — porque su token no sirve.", ok:false, fb:"401 es «no sé quién sos» (sin token o inválido). Acá Ana SÍ está identificada; lo que falla es el permiso: 403."},
+    {t:"<code>404 Not Found</code> — la cita no existe.", ok:false, fb:"La cita existe, es de otro. El problema es de autorización: 403."},
+  ],
+  okfb:"Autenticación (¿quién sos? → 401 si falla) y autorización (¿qué podés hacer? → 403 si falla) son distintas. El middleware filtra ambas antes del endpoint.",
+  frase:"Middleware es el filtro antes del endpoint: 401 no sé quién sos, 403 sé quién sos pero no podés." },
+
+{ id:"deploy", acto:"Acto 4 · Publicar 🌍", icono:"🚀", titulo:"De localhost al mundo", blk:1,
+  sit:`Todo anda en <code>http://127.0.0.1:8000</code>… pero solo en tu laptop. El mundo no la ve,
+  y si apagás la compu, se apaga la clínica.`,
+  reto:"¿Cómo la publicás sin montar un servidor desde cero?",
+  opciones:[
+    {t:"Deployment en un PaaS (Render/Railway): conectás GitHub, definís build/start commands y obtenés una URL pública.", ok:true},
+    {t:"Le paso mi IP <code>127.0.0.1</code> a la gente para que entre.", ok:false, fb:"127.0.0.1 es «esta misma máquina»: para cada quien apunta a SU compu, no a la tuya. Necesitás una URL pública."},
+    {t:"Dejo la laptop prendida para siempre.", ok:false, fb:"Frágil e inseguro. Un PaaS corre tu app en la nube con URL pública y logs."},
+  ],
+  okfb:"Deployment = pasar de local a producción: de 127.0.0.1:8000 a https://tu-clinica.com, corriendo en la nube.",
+  frase:"Deployment es publicar la app: de 127.0.0.1 a una URL pública." },
+
+{ id:"envvars", acto:"Acto 4 · Publicar 🌍", icono:"🔑", titulo:"No filtres secretos", blk:1,
+  sit:`En el código tenés <code>JWT_SECRET = "dev-secret"</code> escrito a mano. Y estás por subir
+  todo a GitHub público.`,
+  reto:"¿Qué hacés con ese secreto?",
+  opciones:[
+    {t:`Sacarlo del código a variables de entorno: <code>os.getenv("JWT_SECRET")</code>, valor en <code>.env</code> local y <code>.env</code> en <code>.gitignore</code>.`, ok:true},
+    {t:"Dejarlo en el código; total es solo un string.", ok:false, fb:"Si lo subís, cualquiera firma tokens como vos. Los secretos viven en el entorno, no en el repo."},
+    {t:"Subirlo igual pero en un comentario para «esconderlo».", ok:false, fb:"Un comentario en GitHub es público igual. Tiene que salir del código."},
+  ],
+  okfb:"El código usa nombres (os.getenv(\"JWT_SECRET\")); el entorno guarda los valores. En el PaaS cargás esas variables aparte. .env nunca se sube.",
+  frase:"El código usa nombres; el entorno guarda los valores secretos." },
+
+{ id:"docker", acto:"Acto 4 · Publicar 🌍", icono:"🐳", titulo:"«En mi compu sí funciona»", blk:1,
+  sit:`Funciona en tu laptop, pero en el servidor truena: otra versión de Python, faltan librerías,
+  distinta configuración.`,
+  reto:"¿Qué evita ese «en mi compu sí funciona»?",
+  opciones:[
+    {t:"Docker: empaqueta app + versión de Python + librerías + comando de arranque en un contenedor que corre igual en todos lados.", ok:true},
+    {t:"Mandar un instructivo para que cada quien instale a mano.", ok:false, fb:"Cada instalación manual diverge. Docker congela el entorno entero en una imagen reproducible."},
+    {t:"Subir la RAM del servidor.", ok:false, fb:"No es memoria: es el entorno (versiones, deps). Eso lo fija Docker."},
+  ],
+  okfb:"Docker empaqueta el entorno completo: la misma imagen corre idéntica en tu laptop, en el PaaS y en la nube.",
+  frase:"Docker evita el «en mi compu sí funciona»." },
+
+{ id:"logs", acto:"Acto 4 · Publicar 🌍", icono:"📜", titulo:"La caja negra", blk:1,
+  sit:`Ya en producción, usuarios reportan que no pueden entrar. Vos no estás viendo tu terminal local.
+  En los logs aparece: <pre>POST /login 401
+POST /login 401
+ERROR: database connection failed</pre>`,
+  reto:"¿Qué te dicen esos logs?",
+  opciones:[
+    {t:"Hay logins fallando (401) y, peor, la app no se conecta a la base: por eso nadie entra.", ok:true},
+    {t:"Que todo va bien, son mensajes normales.", ok:false, fb:"401 = login rechazado y ERROR de conexión a la base no son normales: son la pista del problema."},
+    {t:"Nada útil; para diagnosticar tendría que estar en su compu.", ok:false, fb:"Justo para eso existen los logs: son tu visión cuando ya no ves la terminal local."},
+  ],
+  okfb:"Los logs son la caja negra de producción: cada request, error y arranque queda registrado. Son tu rastro cuando no estás mirando en vivo.",
+  frase:"Los logs son los rastros de vida del servidor." },
+
+{ id:"pelicula", acto:"🎬 Final", icono:"🎬", titulo:"La película completa", blk:-1, final:true,
+  sit:`La torre está completa: la construiste de adentro hacia afuera, función primero, deploy al final.
+  Ahora un usuario real, desde internet, pide <code>GET /patients/5</code> con su token.
+  Mirá cómo el request recorre <strong>de afuera hacia adentro</strong> todo lo que armaste.`,
+  reto:"Corré el request y ve la película.",
+  frase:"Una API en producción es una función Python convertida en endpoint, servida por un proceso vivo, llamada por HTTP, protegida por auth, validada con esquemas, conectada a una base persistente, observada con logs y desplegada en un entorno reproducible." },
+];
+
+/* ===== estado ===== */
+const KEY = "juego-deploy-prog";
+let done = new Set(JSON.parse(localStorage.getItem(KEY) || "[]"));
+let cur = firstUnsolved();
+
+function firstUnsolved(){
+  for(let i=0;i<S.length;i++) if(!done.has(S[i].id)) return i;
+  return S.length-1;
+}
+function unlocked(i){ return i===0 || done.has(S[i-1].id); }
+function save(){ localStorage.setItem(KEY, JSON.stringify([...done])); }
+
+/* ===== render torre ===== */
+const towerEl = document.getElementById("tower");
+function builtBlocks(){
+  const set = new Set();
+  S.forEach(s=>{ if(done.has(s.id) && s.blk>=0) set.add(s.blk); });
+  return set;
+}
+function renderTower(justBlk){
+  const built = builtBlocks();
+  towerEl.innerHTML = "";
+  BLOCKS.forEach((b,i)=>{
+    const d = document.createElement("div");
+    d.className = "blk" + (built.has(i)?" built":"") + (i===justBlk?" just":"");
+    d.id = "blk"+i;
+    d.innerHTML = `<span class="ico">${b.ico}</span>${b.t}`;
+    towerEl.appendChild(d);
+  });
+}
+
+/* ===== render nav ===== */
+const navEl = document.getElementById("nav");
+function renderNav(){
+  navEl.innerHTML = "";
+  let lastActo = "";
+  S.forEach((s,i)=>{
+    if(s.acto!==lastActo){
+      const h = document.createElement("div");
+      h.className = "acto"; h.textContent = s.acto;
+      navEl.appendChild(h); lastActo = s.acto;
+    }
+    const b = document.createElement("button");
+    const open = unlocked(i);
+    b.className = (i===cur?"active ":"") + (open?"":"locked");
+    b.innerHTML = `${s.icono} ${s.titulo}` + (done.has(s.id)?`<span class="done">✓</span>`:(open?"":`<span class="done">🔒</span>`));
+    if(open) b.onclick = ()=>{ cur=i; render(); };
+    navEl.appendChild(b);
+  });
+}
+
+/* ===== render progreso + anclas ===== */
+function renderProg(){
+  document.getElementById("progtxt").textContent = `${done.size} / ${S.length}`;
+  document.getElementById("progbar").style.width = (done.size/S.length*100)+"%";
+}
+function renderAnclas(){
+  const el = document.getElementById("anclas");
+  const got = S.filter(s=>done.has(s.id));
+  if(!got.length){ el.innerHTML = `<span class="footnote">Aún ninguna. Completá retos para coleccionarlas.</span>`; return; }
+  el.innerHTML = got.map(s=>`<span class="pill">${s.frase}</span>`).join("");
+}
+
+/* ===== render main ===== */
+const mainEl = document.getElementById("main");
+function render(){
+  renderNav(); renderProg(); renderAnclas(); renderTower();
+  const s = S[cur];
+  let html = `<div class="tag">${s.acto}</div><h2>${s.icono} ${s.titulo}</h2>`;
+  html += `<div class="card"><div class="sit">${s.sit}</div>`;
+  html += `<p class="reto">${s.reto}</p>`;
+
+  if(s.final){
+    html += `<button class="next" id="play">▶ Correr el request</button>`;
+    html += `<div class="fb" id="fb"></div></div>`;
+    mainEl.innerHTML = html;
+    document.getElementById("play").onclick = playMovie;
+    return;
+  }
+
+  html += `<div class="opts" id="opts">`;
+  s.opciones.forEach((o,idx)=> html += `<button data-i="${idx}">${o.t}</button>`);
+  html += `</div><div class="fb" id="fb"></div></div>`;
+  mainEl.innerHTML = html;
+
+  const fb = document.getElementById("fb");
+  const opts = document.getElementById("opts");
+  const alreadyDone = done.has(s.id);
+
+  opts.querySelectorAll("button").forEach(btn=>{
+    btn.onclick = ()=>{
+      const o = s.opciones[+btn.dataset.i];
+      if(o.ok){
+        btn.classList.add("pick-ok");
+        opts.querySelectorAll("button").forEach(b=>b.disabled=true);
+        const wasNew = !done.has(s.id);
+        done.add(s.id); save();
+        renderTower(s.blk);
+        const justEl = document.getElementById("blk"+s.blk);
+        if(justEl){ justEl.classList.add("just"); setTimeout(()=>justEl.classList.remove("just"),1400); }
+        fb.className = "fb good show";
+        fb.innerHTML = `✅ ${s.okfb}<div class="frase">🪝 ${s.frase}</div>`;
+        const nx = nextIndex();
+        if(nx!==null) fb.innerHTML += `<button class="next" id="go">Siguiente →</button>`;
+        else fb.innerHTML += `<div class="frase">¡Listo! Tocá <strong>🎬 La película completa</strong> en el menú.</div>`;
+        const go = document.getElementById("go");
+        if(go) go.onclick = ()=>{ cur=nx; render(); };
+        renderNav(); renderProg(); renderAnclas();
+      } else {
+        btn.classList.add("pick-bad"); btn.disabled = true;
+        fb.className = "fb bad show";
+        fb.innerHTML = `❌ ${o.fb}`;
+      }
+    };
+  });
+  if(alreadyDone){
+    fb.className = "fb good show";
+    fb.innerHTML = `✅ Ya lo resolviste. ${s.okfb}<div class="frase">🪝 ${s.frase}</div>`;
+  }
+}
+function nextIndex(){ return cur < S.length-1 ? cur+1 : null; }
+
+/* ===== película final ===== */
+function playMovie(){
+  const fb = document.getElementById("fb");
+  const s = S[cur];
+  const steps = [
+    {b:0, txt:"🌐 El request entra por internet a tu URL pública: GET /patients/5"},
+    {b:1, txt:"🐳 Llega al contenedor en el PaaS (env vars cargadas, logs registrando)"},
+    {b:2, txt:"🛡️ Uvicorn lo recibe y vía ASGI se lo pasa a FastAPI"},
+    {b:3, txt:"🚪 FastAPI elige el endpoint GET /patients/{id}"},
+    {b:4, txt:"🛂 Middleware valida el JWT: 401 si no sabe quién, 403 si no puede. Ana pasa."},
+    {b:5, txt:"📋 Pydantic valida los datos de entrada"},
+    {b:6, txt:"🐍 Corre tu lógica Python con objetos vivos"},
+    {b:7, txt:"🔗 El ORM traduce a SQL"},
+    {b:8, txt:"🗄️ La base devuelve la fila del paciente 5 (PK = 5)"},
+  ];
+  document.getElementById("play").disabled = true;
+  fb.className = "fb info show"; fb.style.background="rgba(59,130,246,.1)";
+  fb.style.border="1px solid var(--blue)"; fb.style.color="#bfdbfe";
+  let log = "";
+  let i = 0;
+  function step(){
+    BLOCKS.forEach((_,k)=>{ const e=document.getElementById("blk"+k); if(e) e.classList.remove("flow"); });
+    if(i<steps.length){
+      const e = document.getElementById("blk"+steps[i].b);
+      if(e) e.classList.add("flow");
+      log += `<div>${steps[i].txt}</div>`;
+      fb.innerHTML = log;
+      i++; setTimeout(step, 900);
+    } else {
+      log += `<div style="margin-top:8px;color:#bbf7d0"><strong>⬅️ Response 200 OK</strong> sube de vuelta con el JSON del paciente. Logs lo registran.</div>`;
+      fb.className = "fb good show";
+      fb.innerHTML = log +
+        `<div class="frase">🪝 ${s.frase}</div>` +
+        `<div class="win">🏆 Construiste una API de cero a producción. La armaste de adentro hacia afuera; el request la recorrió de afuera hacia adentro. Esa inversión <em>es</em> el stack.</div>`;
+      done.add(s.id); save();
+      renderNav(); renderProg(); renderAnclas();
+    }
+  }
+  step();
+}
+
+/* ===== reset ===== */
+document.getElementById("reset").onclick = ()=>{
+  if(confirm("¿Borrar tu progreso y empezar de cero?")){
+    done = new Set(); save(); cur = 0; render();
+  }
+};
+
+render();
+</script>
+</body>
+</html>

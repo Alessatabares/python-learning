@@ -33,6 +33,10 @@ basicos/
 
 Árbol de decks en Anki: `Basicos Dev::<Área>::Eje Clinico` y `::Integrador`.
 
+Nota sobre el conteo: en **Eje Clínico** cada tarjeta es un **grupo-problema completo**
+(al frente la lista de situaciones, al reverso los conceptos que nacen), así que hay
+1 tarjeta por grupo, no por situación. En **Integrador** hay 1 tarjeta por concepto.
+
 ## Regenerar
 
 ```bash
@@ -48,7 +52,8 @@ python build/build_integrador.py
   **actualiza** la carta en su sitio, nunca la duplica.
 - **deck_id determinista** (`1500_AA_C`): sin colisión con el repo ECOE.
 
-Total actual: **231 tarjetas** (84 Eje Clínico + 147 Integrador).
+Total actual: **219 tarjetas** (72 Eje Clínico + 147 Integrador). El área **Diagramas**
+aporta 15 (4 Eje Clínico + 11 Integrador).
 
 ## Áreas
 

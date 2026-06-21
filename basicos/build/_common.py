@@ -25,6 +25,7 @@ AREAS = [
     ("Python",            "Python",    "Python",    "python",    5),
     ("Pandas",            "Pandas",    "Pandas",    "pandas",    6),
     ("FastAPI",           "FastAPI",   "FastAPI",   "fastapi",   7),
+    ("Diagramas",         "Diagramas", "Diagramas", "diagramas", 8),
 ]
 
 

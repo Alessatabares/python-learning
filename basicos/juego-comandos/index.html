@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manos al Teclado · Teclea los comandos de tus dos triages</title>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#161d2e; --panel2:#1d2740; --line:#2a3550;
+    --ink:#e7ecf5; --mut:#93a0bd; --blue:#3b82f6; --teal:#0ea5a4;
+    --green:#22c55e; --amber:#f59e0b; --red:#ef4444; --violet:#8b5cf6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    background:linear-gradient(180deg,#0c111c,#0f1420);color:var(--ink);line-height:1.5}
+  header{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  header h1{font-size:18px;margin:0;letter-spacing:.3px}
+  header .sub{color:var(--mut);font-size:13px}
+  .prog{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--mut)}
+  .bar{width:160px;height:8px;background:var(--panel2);border-radius:99px;overflow:hidden}
+  .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--green));transition:width .4s}
+
+  /* leyenda de capas */
+  .pipe{display:flex;gap:6px;padding:14px 24px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line);background:#0d1320}
+  .stage{font-size:11px;padding:7px 11px;border-radius:8px;background:var(--panel);border:1px solid var(--line);color:var(--mut);white-space:nowrap}
+  .arrow{color:var(--mut);font-size:11px}
+  .ring-lbl{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;margin-right:4px}
+
+  .wrap{display:flex;min-height:calc(100vh - 150px)}
+  nav{width:270px;border-right:1px solid var(--line);padding:14px;flex-shrink:0}
+  nav .grp{font-size:10px;color:var(--teal);text-transform:uppercase;letter-spacing:.8px;margin:16px 4px 7px}
+  nav .grp:first-child{margin-top:0}
+  nav button{display:block;width:100%;text-align:left;margin:0 0 6px;padding:9px 12px;border-radius:10px;
+    background:transparent;border:1px solid transparent;color:var(--ink);cursor:pointer;font-size:13px;transition:.15s}
+  nav button:hover{background:var(--panel)}
+  nav button.active{background:var(--panel2);border-color:var(--line)}
+  nav button .cnt{float:right;font-size:11px;color:var(--mut)}
+  nav button .cnt.full{color:var(--green)}
+  main{flex:1;padding:24px;max-width:920px}
+  h2{margin:0 0 4px;font-size:22px}
+  .tag{display:inline-block;font-size:11px;color:var(--teal);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+  .lead{color:var(--mut);margin:0 0 20px}
+  .sintoma{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.4);border-radius:10px;padding:10px 14px;margin:0 0 22px;font-size:13.5px;color:#fecaca}
+
+  .capcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:0 0 16px}
+  .capcard.capdone{border-color:rgba(34,197,94,.5)}
+  .capbadge{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.4px;padding:3px 10px;border-radius:99px;
+    background:rgba(139,92,246,.14);border:1px solid var(--violet);color:#ddd6fe;margin-bottom:12px}
+
+  .panel-box{background:#0c1322;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:0 0 14px}
+  .panel-box h4{margin:0;padding:9px 14px;font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;
+    background:var(--panel2);border-bottom:1px solid var(--line)}
+  pre{margin:0;padding:14px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;
+    white-space:pre-wrap;word-break:break-word;overflow-x:auto}
+
+  .quiero{background:rgba(59,130,246,.10);border:1px solid var(--blue);border-radius:10px;padding:11px 14px;margin:0 0 12px;font-size:14px}
+  .quiero b{color:#bfdbfe}
+  .steplbl{font-size:13px;color:var(--mut);margin:8px 0 3px}
+  .pista{font-size:11px;color:var(--mut);margin-top:2px}
+
+  .inp-wrap{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+  .inp-line{display:flex;align-items:center;gap:8px}
+  input.cmd-in{flex:1;background:#0a1020;border:1px solid var(--line);color:#bfdbfe;
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13.5px;padding:10px 12px;border-radius:9px;outline:none}
+  input.cmd-in:focus{border-color:var(--blue)}
+  input.cmd-in:disabled{opacity:.85}
+  .mark{font-size:15px;width:18px;text-align:center}
+  .mark.ok{color:var(--green)} .mark.bad{color:var(--red)}
+  .prompt-sym{color:var(--green);font-family:ui-monospace,monospace;font-size:13.5px}
+
+  .btns{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+  button.act{background:var(--blue);border:none;color:#fff;padding:9px 18px;border-radius:9px;cursor:pointer;font-size:13.5px;font-weight:600}
+  button.act:hover{filter:brightness(1.1)}
+  button.ghost{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:7px 12px;border-radius:8px;cursor:pointer;font-size:12px}
+  button.ghost:hover{background:var(--line)}
+  .attempts{font-size:12px;color:var(--mut);margin-left:2px}
+
+  .fb{margin-top:13px;padding:12px 14px;border-radius:10px;font-size:13.5px;display:none}
+  .fb.show{display:block}
+  .fb.good{background:rgba(34,197,94,.12);border:1px solid var(--green);color:#bbf7d0}
+  .fb.bad{background:rgba(239,68,68,.12);border:1px solid var(--red);color:#fecaca}
+  .fb.info{background:rgba(59,130,246,.12);border:1px solid var(--blue);color:#bfdbfe}
+  .fb .why{margin-top:7px;color:var(--ink);font-size:13px}
+  .fb .frase{margin-top:9px;font-style:italic;color:var(--amber)}
+  .fb .concepto{margin-top:7px;font-size:12.5px;color:var(--mut)}
+  .fb .sol{margin-top:8px;font-family:ui-monospace,monospace;font-size:13px;color:#bfdbfe;background:#0a1020;padding:8px 11px;border-radius:8px;white-space:pre-wrap}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:12.5px}
+
+  .ancla-wrap{padding:16px 24px;border-top:1px solid var(--line)}
+  .ancla-wrap h3{font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.8px;margin:0 0 8px}
+  .pill{display:inline-block;font-size:12px;padding:3px 9px;border-radius:99px;margin:2px;background:rgba(245,158,11,.1);border:1px solid var(--amber);color:#fde68a}
+  .footnote{font-size:12px;color:var(--mut)}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>⌨️ Manos al Teclado · Teclea los comandos de tus dos triages</h1>
+    <div class="sub">Cada escenario de <i>Código Azul</i> y <i>Sala de Máquinas</i>, ahora para escribir de memoria. Diagnosticar → operar.</div>
+  </div>
+  <div class="prog">
+    <button class="ghost" id="reset" title="Borrar progreso">reiniciar</button>
+    <span id="progtxt">0 / 0</span>
+    <div class="bar"><i id="progbar"></i></div>
+  </div>
+</header>
+
+<div class="pipe">
+  <span class="ring-lbl">las 4 capas</span>
+  <span class="stage">1 · Vocabulario (la pieza)</span><span class="arrow">→</span>
+  <span class="stage">2 · El comando (la oración)</span><span class="arrow">→</span>
+  <span class="stage">3 · La secuencia (la acción)</span><span class="arrow">→</span>
+  <span class="stage">4 · El arreglo (el bug)</span>
+</div>
+
+<div class="wrap">
+  <nav id="nav"></nav>
+  <main id="main"></main>
+</div>
+
+<div class="ancla-wrap">
+  <h3>🪝 Frases ancla desbloqueadas</h3>
+  <div id="anclas"><span class="footnote">Aún ninguna. Teclea bien para coleccionarlas.</span></div>
+</div>
+
+<script>
+/* ============================================================
+   Organizado por ESCENARIO (de tus 2 sitios). Cada escenario
+   trae sus capas; en TODAS tecleas tú.
+     kind:"token" -> capa 1 (una pieza)        [normTerm]
+     kind:"term"  -> capa 2 (un comando)       [normTerm]
+     kind:"seq"   -> capa 3 (varios comandos)  [normTerm]
+     kind:"fix"   -> capa 4 (línea corregida)  [mode: code|term]
+   ============================================================ */
+const CAPA_LBL = {1:"Vocabulario · la pieza", 2:"El comando · la oración", 3:"La secuencia · la acción", 4:"El arreglo · el bug"};
+const SITES = [
+  {key:"pipeline", lbl:"🚨 Código Azul · Pipeline de la API"},
+  {key:"deploy",   lbl:"🚢 Sala de Máquinas · Deployment"},
+];
+
+const SC=[];
+function sc(o){ SC.push(o); }
+
+/* ===================== SITIO 1 · PIPELINE ===================== */
+
+sc({id:"s1", site:"pipeline", emoji:"🔌", title:"Llamo a la puerta y nadie abre",
+  sintoma:"El contenedor corre y el puerto está publicado, pero curl da connection refused.",
+  caps:[
+   {capa:1, kind:"token", quiero:"Quiero que uvicorn acepte conexiones de <b>fuera</b> del contenedor (no solo de sí mismo). Escribe la bandera con su valor.",
+     lbl:"bandera + valor", accept:["--host 0.0.0.0"], sol:"--host 0.0.0.0",
+     why:"127.0.0.1 = loopback (solo a mí mismo); 0.0.0.0 = todas las interfaces, que es lo que un contenedor necesita.",
+     frase:"0.0.0.0 = ábrele a todo el mundo; 127.0.0.1 = solo a mí mismo.",
+     concepto:"Eje Deploy: --host 0.0.0.0 vs publicar -p. Connection refused = nadie escuchó."},
+   {capa:2, kind:"term", quiero:"Arranca <b>uvicorn</b> sirviendo <code>main:app</code>, visible desde fuera, en el puerto <b>8000</b>.",
+     accept:["uvicorn main:app --host 0.0.0.0 --port 8000","uvicorn main:app --port 8000 --host 0.0.0.0"],
+     sol:"uvicorn main:app --host 0.0.0.0 --port 8000",
+     why:"main:app = archivo main.py, variable app. --host dónde escucha; --port en qué puerto.",
+     frase:"main:app = 'en el archivo main, la app'. host + port = dónde y para quién escucha.",
+     concepto:"Eje Deploy: este suele ser el CMD del Dockerfile."},
+   {capa:3, kind:"seq", quiero:"Enciende y comprueba: corre el contenedor, confirma que vive y tócale la puerta.",
+     steps:[
+       {p:"1) Corre la imagen clinica publicando el puerto 8000", accept:["docker run -p 8000:8000 clinica","docker run -d -p 8000:8000 clinica","docker run --publish 8000:8000 clinica"], sol:"docker run -p 8000:8000 clinica"},
+       {p:"2) Confirma que el contenedor está arriba", accept:["docker ps"], sol:"docker ps"},
+       {p:"3) Prueba /health en localhost:8000", accept:["curl http://localhost:8000/health","curl localhost:8000/health"], sol:"curl http://localhost:8000/health"},
+     ],
+     why:"run enciende, ps verifica que vive, curl confirma que además responde. Nunca asumas que arrancó.",
+     frase:"run → ps → curl: enciende, verifica, toca la puerta.",
+     concepto:"Eje Deploy: ps dice 'está viva'; curl dice 'además responde'."},
+   {capa:4, kind:"fix", file:"Dockerfile", mode:"code",
+     quiero:"El contenedor arranca pero curl da <b>connection refused</b> y el puerto sí está publicado. Reescribe la línea <code>CMD</code> arreglada.",
+     broken:`CMD ["uvicorn","main:app","--host","127.0.0.1","--port","8000"]   # ⚠`,
+     errorModel:"uvicorn escucha en 127.0.0.1 (loopback): solo acepta conexiones de DENTRO del contenedor. Debe ser 0.0.0.0.",
+     accept:[`CMD ["uvicorn","main:app","--host","0.0.0.0","--port","8000"]`], sol:`CMD ["uvicorn","main:app","--host","0.0.0.0","--port","8000"]`,
+     why:"El puerto estaba publicado, pero adentro uvicorn solo se hablaba a sí mismo. Con 0.0.0.0 el tráfico del túnel -p ya lo encuentra.",
+     frase:"Connection refused con el puerto bien publicado → casi siempre falta --host 0.0.0.0.",
+     concepto:"Eje Deploy: -p abre el túnel por fuera; --host 0.0.0.0 abre el oído por dentro."},
+  ]});
+
+sc({id:"s2", site:"pipeline", emoji:"👻", title:"El paciente fantasma",
+  sintoma:"El POST devuelve 201, pero tras reiniciar el contenedor el paciente ya no está.",
+  caps:[
+   {capa:1, kind:"token", quiero:"En <b>curl</b>, quiero mandar <b>datos en el cuerpo</b> (el JSON que viaja al servidor). ¿Qué bandera?",
+     lbl:"bandera", accept:["-d","--data"], sol:"-d",
+     why:"-d (data) lleva el body: lo que el cliente ENVÍA para crear o modificar algo.",
+     frase:"-d = data = el cuerpo (body) que mando al servidor.",
+     concepto:"Eje Request: el body viaja con -d. Endpoint que espera datos y -d vacío → 422."},
+   {capa:2, kind:"term", quiero:"Crea el paciente <b>Ana</b>: POST a <code>/pacientes</code> con el JSON <code>{\"nombre\":\"Ana\"}</code> en el body.",
+     accept:[`curl -X POST /pacientes -d '{"nombre":"Ana"}'`,`curl -d '{"nombre":"Ana"}' -X POST /pacientes`,`curl -X POST /pacientes -d {"nombre":"Ana"}`],
+     sol:`curl -X POST /pacientes -d '{"nombre":"Ana"}'`,
+     why:"Tres piezas: curl + -X POST (método) + /pacientes (recurso) + -d (body).",
+     frase:"Un comando = herramienta + método + recurso + datos.",
+     concepto:"Eje Request: así nace un recurso. Respuesta esperada: 201 Created."},
+   {capa:3, kind:"seq", quiero:"Reproduce el fantasma: crea el paciente, reinicia el contenedor y vuelve a pedirlo.",
+     steps:[
+       {p:"1) Crea el paciente Ana (POST con body)", accept:[`curl -X POST /pacientes -d '{"nombre":"Ana"}'`,`curl -X POST /pacientes -d {"nombre":"Ana"}`], sol:`curl -X POST /pacientes -d '{"nombre":"Ana"}'`},
+       {p:"2) Reinicia el contenedor clinica", accept:["docker restart clinica"], sol:"docker restart clinica"},
+       {p:"3) Pide el paciente nº 4", accept:["curl /pacientes/4"], sol:"curl /pacientes/4"},
+     ],
+     why:"El 201 venía de un objeto en memoria; al reiniciar, la RAM se vacía y aparece el 404.",
+     frase:"Si el dato sobrevive a la request pero NO al restart, sospecha del commit.",
+     concepto:"Eje ORM: add → commit → refresh."},
+   {capa:4, kind:"fix", file:"main.py", mode:"code",
+     quiero:"El paciente se pierde al reiniciar. Escribe la <b>línea que falta</b> (la que confirma el guardado a disco).",
+     broken:`    nuevo = Paciente(**p.dict())\n    db.add(nuevo)\n    ____________        # ⚠ falta confirmar a disco\n    db.refresh(nuevo)`,
+     errorModel:"Falta db.commit(): add() deja el objeto en la sesión (RAM); sin commit() la transacción nunca se escribe a la base.",
+     accept:["db.commit()"], sol:"db.commit()",
+     why:"add() lo pone en la bandeja de la sesión; commit() confirma a disco. Sin commit, el restart lo borra.",
+     frase:"add() lo pone en la bandeja; commit() lo guarda en el disco.",
+     concepto:"Eje ORM: add → commit → refresh."},
+  ]});
+
+sc({id:"s3", site:"pipeline", emoji:"🚪", title:"La puerta correcta, el método equivocado",
+  sintoma:"curl a /login devuelve 405 Method Not Allowed (allow: GET).",
+  caps:[
+   {capa:1, kind:"token", quiero:"Quiero <b>forzar el método HTTP</b> (POST, PUT, DELETE...) en curl. ¿Qué bandera?",
+     lbl:"bandera", accept:["-X","--request"], sol:"-X",
+     why:"-X mayúscula fija el verbo (-X POST). Ojo: -x minúscula es un proxy, otra cosa.",
+     frase:"-X mayúscula = método HTTP. -x minúscula = proxy. No las confundas.",
+     concepto:"Eje Request: ruta + método. Verbo equivocado → 405."},
+   {capa:2, kind:"term", quiero:"Llama a <code>/login</code> con el método <b>POST</b>.",
+     accept:["curl -X POST /login"], sol:"curl -X POST /login",
+     why:"El 405 indica que la ruta existe pero no acepta ese verbo (allow: GET lo delata).",
+     frase:"405 = la puerta existe, pero no con ese método.",
+     concepto:"Eje Request: 404 = no existe la ruta; 405 = existe, verbo equivocado."},
+   {capa:4, kind:"fix", file:"main.py", mode:"code",
+     quiero:"El login se llama con POST y da 405 (allow: GET). Reescribe la línea del <b>decorador</b> arreglada.",
+     broken:`@app.get("/login")          # ⚠\nasync def login(...):\n    ...`,
+     errorModel:"El endpoint está declarado como GET pero el login se llama con POST. El decorador debe ser @app.post.",
+     accept:[`@app.post("/login")`], sol:`@app.post("/login")`,
+     why:"405 (no 404) = la ruta existe, solo no con ese verbo. Cambiar el decorador a .post alinea ruta y método.",
+     frase:"405 = la puerta existe, pero no con ese método. Mira el decorador.",
+     concepto:"Eje Request: la ruta la fija el string; el método, el .get/.post."},
+  ]});
+
+sc({id:"s4", site:"pipeline", emoji:"🕵️", title:"Todos los tokens fallan",
+  sintoma:"Un token recién emitido da 401 'Invalid token signature'. En logs: JWT_SECRET = None.",
+  caps:[
+   {capa:1, kind:"token", quiero:"Quiero agregar la <b>cabecera</b> con el token (<code>Authorization: Bearer ...</code>) a la petición. ¿Qué bandera?",
+     lbl:"bandera", accept:["-H","--header"], sol:"-H",
+     why:"-H manda metadatos sobre la petición: formato (Content-Type) o credenciales (Authorization).",
+     frase:"-H = header = la etiqueta del sobre (formato y credenciales), no el contenido.",
+     concepto:"Eje Request: -H 'Authorization: Bearer <token>' pasa el token al endpoint protegido."},
+   {capa:2, kind:"term", quiero:"Revisa el <b>SECRET</b> en los logs del contenedor: lee los logs de <code>clinica</code> y filtra las líneas con <code>SECRET</code>.",
+     accept:["docker logs clinica | grep SECRET"], sol:"docker logs clinica | grep SECRET",
+     why:"docker logs muestra la salida del contenedor; grep filtra. Confirma que el SECRET llegó como None.",
+     frase:"Si TODOS los tokens fallan, sospecha del SECRET, no del token.",
+     concepto:"Eje Infra↔Auth: un .env no cargado disfraza un bug de Deploy como un 401."},
+   {capa:4, kind:"fix", file:"Dockerfile", mode:"code",
+     quiero:"El <code>.env</code> nunca entró al contenedor → SECRET=None. Escribe la línea del Dockerfile que <b>copia el .env</b>.",
+     broken:`COPY main.py auth.py models.py .\n# ⚠ falta cargar el .env`,
+     errorModel:"El .env del host no entra solo. Sin él, SECRET=None y toda firma/verificación de token falla.",
+     accept:["COPY .env ."], sol:"COPY .env .",
+     why:"Falla un token RECIÉN emitido, no uno viejo: el problema no es expiración, es el SECRET roto en el entorno.",
+     frase:"Si TODOS los tokens fallan, sospecha del SECRET, no del token.",
+     concepto:"Eje Infra↔Auth: sigue la cadena, no te quedes en el 401."},
+  ]});
+
+sc({id:"s5", site:"pipeline", emoji:"🔓", title:"El médico A ve al paciente del médico B",
+  sintoma:"El médico A (id=1), autenticado, pide /pacientes/9 (que es del médico B) y lo recibe.",
+  caps:[
+   {capa:1, kind:"token", quiero:"Quiero pedir <b>el paciente número 9</b>. Escribe la <b>ruta</b> de ese recurso concreto.",
+     lbl:"ruta", accept:["/pacientes/9"], sol:"/pacientes/9",
+     why:"/pacientes = la colección; /pacientes/9 = un elemento. El número es el id.",
+     frase:"/pacientes = todos; /pacientes/9 = ese uno.",
+     concepto:"Eje Request: colección vs elemento."},
+   {capa:2, kind:"term", quiero:"Pide el paciente 9 pasando el token del médico A en la cabecera (usa <code>&lt;A&gt;</code> como token).",
+     accept:["curl /pacientes/9 -H 'Authorization: Bearer <A>'","curl /pacientes/9 -H Authorization: Bearer <A>"],
+     sol:"curl /pacientes/9 -H 'Authorization: Bearer <A>'",
+     why:"El token es válido (auth pasó). El problema es que el endpoint no verifica de quién es el paciente.",
+     frase:"Auth = quién eres; Authz = qué tienes permitido.",
+     concepto:"Eje Authz: 401 = no sé quién eres; 403 = sé quién eres y NO puedes."},
+   {capa:4, kind:"fix", file:"main.py", mode:"code",
+     quiero:"Falta el chequeo de <b>pertenencia</b>. Escribe la <b>condición</b> que detecta que el paciente NO es de este médico (para luego lanzar 403).",
+     broken:`    paciente = db.get(Paciente, pid)\n    ____________________________      # ⚠ falta: si no es suyo, 403\n    return paciente`,
+     errorModel:"Hay autenticación (Depends(current_user)) pero falta autorización: nunca compara paciente.medico_id con user.id.",
+     accept:["if paciente.medico_id != user.id:"], sol:"if paciente.medico_id != user.id:",
+     why:"Auth (¿quién eres?) pasó. Falta authz (¿esto es tuyo?). Sin esa comparación, cualquiera ve a cualquiera.",
+     frase:"Auth = quién eres; Authz = qué tienes permitido. Pasar una no es pasar la otra.",
+     concepto:"Eje Authz: falta el chequeo de pertenencia antes de devolver el recurso."},
+  ]});
+
+sc({id:"s6", site:"pipeline", emoji:"🧪", title:"Edad: 'treinta'",
+  sintoma:"POST con edad:'treinta' devuelve 422 (value is not a valid integer).",
+  caps:[
+   {capa:1, kind:"token", quiero:"En el modelo Pydantic, escribe el <b>type hint</b> que obliga a que <code>edad</code> sea un entero.",
+     lbl:"campo: tipo", accept:["edad: int"], sol:"edad: int",
+     why:"El type hint es el portero: si el tipo no calza, Pydantic rechaza en la puerta (422).",
+     frase:"Pydantic es el triage en la puerta: si el tipo no calza, ni entra.",
+     concepto:"Eje Validación: type hints + BaseModel = portero."},
+   {capa:2, kind:"term", quiero:"Manda el POST que <b>dispara</b> el 422: paciente con <code>nombre</code> Ana y <code>edad</code> el texto \"treinta\".",
+     accept:[`curl -X POST /pacientes -d '{"nombre":"Ana","edad":"treinta"}'`,`curl -X POST /pacientes -d {"nombre":"Ana","edad":"treinta"}`],
+     sol:`curl -X POST /pacientes -d '{"nombre":"Ana","edad":"treinta"}'`,
+     why:'"treinta" no es int: Pydantic lo rechaza antes de tocar la lógica o la BD.',
+     frase:"422 con loc/msg = un campo del body no calza el modelo.",
+     concepto:"Eje Validación: el request muere en la puerta, no llega al ORM."},
+   {capa:4, kind:"fix", file:"el curl (la petición)", mode:"term",
+     quiero:"El código está bien; el <b>dato</b> es el error. Reescribe el curl mandando la edad como <b>número</b> (30), no como texto.",
+     broken:`curl -X POST /pacientes -d '{"nombre":"Ana","edad":"treinta"}'   # ⚠ "treinta" es texto`,
+     errorModel:"'treinta' no es un entero. La edad debe enviarse como número: 30 (sin comillas).",
+     accept:[`curl -X POST /pacientes -d '{"nombre":"Ana","edad":30}'`,`curl -X POST /pacientes -d {"nombre":"Ana","edad":30}`],
+     sol:`curl -X POST /pacientes -d '{"nombre":"Ana","edad":30}'`,
+     why:"A veces el bug no está en el código sino en lo que mandas. 30 sin comillas calza el int del modelo.",
+     frase:"422 no siempre es el código: a veces mandaste mal el dato.",
+     concepto:"Eje Validación: número vs string en el JSON del body."},
+  ]});
+
+sc({id:"s7", site:"pipeline", emoji:"📮", title:"Mandé JSON donde pedían formulario",
+  sintoma:"POST a /login con JSON da 422 'field required', aunque mandaste username y password.",
+  caps:[
+   {capa:1, kind:"token", quiero:"En curl, quiero mandar <b>form-data</b> (no JSON), p. ej. <code>username=ana</code>. ¿Qué bandera?",
+     lbl:"bandera", accept:["-F","--form"], sol:"-F",
+     why:"-F manda application/x-www-form-urlencoded / multipart, que es lo que espera Form(...). -d crudo manda otra cosa.",
+     frase:"422 no siempre es Pydantic: a veces mandaste el formato equivocado por la puerta.",
+     concepto:"Eje Request↔Validación: Form(...) vs body JSON."},
+   {capa:4, kind:"fix", file:"el curl (la petición)", mode:"term",
+     quiero:"El endpoint usa <code>Form(...)</code> pero mandaste JSON. <b>Sin tocar el código</b>, reescribe el curl mandando <code>username=ana</code> y <code>password=x</code> como formulario.",
+     broken:`curl -X POST /login -H 'Content-Type: application/json' -d '{"username":"ana","password":"x"}'   # ⚠ JSON`,
+     errorModel:"El endpoint espera form-data (Form(...)), pero mandaste JSON, así que los campos llegan vacíos → 'field required'.",
+     accept:["curl -X POST /login -F username=ana -F password=x","curl -X POST /login -F password=x -F username=ana"],
+     sol:"curl -X POST /login -F username=ana -F password=x",
+     why:"Mismo 422, pero la causa es el formato del cuerpo, no el modelo. -F llena los campos Form.",
+     frase:"422 no siempre es Pydantic: a veces mandaste el formato equivocado.",
+     concepto:"Eje Request↔Validación: el formato del body importa tanto como su contenido."},
+  ]});
+
+sc({id:"s8", site:"pipeline", emoji:"🧱", title:"Ese email ya existe",
+  sintoma:"POST con un email ya registrado da 500: UNIQUE constraint failed: medicos.email.",
+  caps:[
+   {capa:1, kind:"token", quiero:"En el modelo SQLAlchemy, escribe lo que se le pone a la <b>columna</b> para que NO admita duplicados.",
+     lbl:"clave=valor", accept:["unique=True"], sol:"unique=True",
+     why:"unique=True hace que la BD —la última muralla— rechace un segundo valor igual.",
+     frase:"unique=True: la BD es la última muralla; si chocas, IntegrityError.",
+     concepto:"Eje SQL: Pydantic valida forma; la BD valida reglas de integridad."},
+   {capa:2, kind:"term", quiero:"Manda el POST que <b>choca</b> la constraint: registra un médico con el email <code>ana@x.com</code> (ya existente).",
+     accept:[`curl -X POST /medicos -d '{"email":"ana@x.com"}'`,`curl -X POST /medicos -d {"email":"ana@x.com"}`],
+     sol:`curl -X POST /medicos -d '{"email":"ana@x.com"}'`,
+     why:"El email es un str válido (pasa Pydantic). Revienta en SQL al hacer commit por la regla unique.",
+     frase:"unique=True: si chocas, IntegrityError (500).",
+     concepto:"Eje SQL: 500 IntegrityError = chocaste una constraint."},
+   {capa:4, kind:"fix", file:"models.py", mode:"code",
+     quiero:"Escribe la <b>columna email</b> que hace que la base rechace duplicados (la regla que falta en la tabla).",
+     broken:`class Medico(Base):\n    email = Column(String)        # ⚠ admite duplicados`,
+     errorModel:"Sin unique=True, la tabla acepta emails repetidos. La integridad debe vivir en la BD, no solo en la app.",
+     accept:["email = Column(String, unique=True)"], sol:"email = Column(String, unique=True)",
+     why:"La constraint en la columna es lo que convierte el duplicado en un error detectable en la última muralla.",
+     frase:"unique=True: la BD es la última muralla.",
+     concepto:"Eje SQL: constraints (unique, FK) = reglas de integridad en la base."},
+  ]});
+
+sc({id:"s9", site:"pipeline", emoji:"🩸", title:"La respuesta filtra el hash",
+  sintoma:"GET /medicos/3 devuelve 200... con el campo password_hash dentro.",
+  caps:[
+   {capa:1, kind:"token", quiero:"Escribe el <b>parámetro del decorador</b> que filtra qué campos salen en la respuesta.",
+     lbl:"parámetro", accept:["response_model"], sol:"response_model",
+     why:"response_model es el filtro de salida: decide qué campos ven el mundo.",
+     frase:"Lo que no filtres en Response, se va al mundo. Incluido el hash.",
+     concepto:"Eje Response: response_model = filtro de salida."},
+   {capa:2, kind:"term", quiero:"Pide el médico nº 3 (el GET que destapa la fuga).",
+     accept:["curl /medicos/3"], sol:"curl /medicos/3",
+     why:"Status 200 y dato 'correcto'... pero salió de más. La fuga no rompe nada, solo expone.",
+     frase:"Un 200 'correcto' puede seguir filtrando datos sensibles.",
+     concepto:"Eje Response: lo que sale debe filtrarse explícitamente."},
+   {capa:4, kind:"fix", file:"main.py", mode:"code",
+     quiero:"Sin <code>response_model</code>, FastAPI serializa TODO el objeto. Reescribe el <b>decorador</b> añadiendo <code>response_model=MedicoOut</code>.",
+     broken:`@app.get("/medicos/{mid}")          # ⚠ sin response_model\nasync def ver(mid: int, db = Depends(get_db)):\n    return db.get(Medico, mid)`,
+     errorModel:"Sin response_model que filtre, se serializa el objeto ORM entero, incluido password_hash.",
+     accept:[`@app.get("/medicos/{mid}", response_model=MedicoOut)`], sol:`@app.get("/medicos/{mid}", response_model=MedicoOut)`,
+     why:"El response_model define qué campos viajan; un MedicoOut sin el hash cierra la fuga.",
+     frase:"Lo que no filtres en Response, se va al mundo.",
+     concepto:"Eje Response: el modelo de salida es el portero de los datos sensibles."},
+  ]});
+
+/* ===================== SITIO 2 · SALA DE MÁQUINAS ===================== */
+
+sc({id:"d1", site:"deploy", emoji:"🧱", title:"Agregué la dependencia y aún no la encuentra",
+  sintoma:"build muestra CACHED en pip install; al correr: ModuleNotFoundError, aunque está en requirements.txt.",
+  caps:[
+   {capa:1, kind:"token", quiero:"Escribe el comando del <b>Dockerfile</b> que copia archivos del proyecto a la imagen.",
+     lbl:"instrucción Dockerfile", accept:["COPY"], sol:"COPY",
+     why:"COPY trae archivos del host a la imagen. Su posición decide qué capa se cachea y cuándo.",
+     frase:"COPY requirements primero, pip install después: la caché trabaja a tu favor.",
+     concepto:"Eje Build: capas + caché."},
+   {capa:2, kind:"term", quiero:"Construye la imagen de <b>esta carpeta</b> y ponle de nombre <b>clinica</b>.",
+     accept:["docker build -t clinica ."], sol:"docker build -t clinica .",
+     why:"-t nombra la imagen; el . final dice 'usa el Dockerfile de aquí'.",
+     frase:"docker build -t <nombre> . → el punto es 'aquí está el Dockerfile'.",
+     concepto:"Eje Build: build hornea la imagen."},
+   {capa:3, kind:"seq", quiero:"Escribe las 3 líneas del Dockerfile <b>en el orden correcto</b> para que la caché no te oculte una dependencia nueva.",
+     steps:[
+       {p:"1) Copia primero SOLO requirements.txt", accept:["COPY requirements.txt .","COPY requirements.txt ./"], sol:"COPY requirements.txt ."},
+       {p:"2) Instala las dependencias", accept:["RUN pip install -r requirements.txt","RUN pip3 install -r requirements.txt"], sol:"RUN pip install -r requirements.txt"},
+       {p:"3) Ahora copia el resto del código", accept:["COPY . ."], sol:"COPY . ."},
+     ],
+     why:"Si pip install va ANTES del COPY, Docker reusa una capa cacheada sin tu dependencia nueva.",
+     frase:"COPY requirements primero, pip install después.",
+     concepto:"Eje Build: orden = COPY requirements → install → COPY código."},
+   {capa:4, kind:"fix", file:"el build (terminal)", mode:"term",
+     quiero:"Necesitas que esta vez <b>no use la caché</b>. Reescribe el build forzando reconstrucción completa.",
+     broken:`docker build -t clinica .          # ⚠ reusa la capa cacheada vieja`,
+     errorModel:"Docker reusó la capa de pip install cacheada, sin tu dependencia nueva. Hay que invalidar la caché.",
+     accept:["docker build --no-cache -t clinica .","docker build -t clinica . --no-cache"],
+     sol:"docker build --no-cache -t clinica .",
+     why:"--no-cache reconstruye todas las capas; útil cuando la caché te está engañando.",
+     frase:"=> CACHED te puede engañar; --no-cache la invalida.",
+     concepto:"Eje Build: la caché acelera, pero a veces hay que romperla a propósito."},
+  ]});
+
+sc({id:"d2", site:"deploy", emoji:"🧩", title:"Construí en mi Mac, el servidor no la ejecuta",
+  sintoma:"Imagen hecha en Mac (arm64), corriendo en servidor Linux (amd64): exec format error.",
+  caps:[
+   {capa:1, kind:"token", quiero:"Quiero fijar la <b>arquitectura</b> de destino al construir (la del servidor: amd64). Escribe la bandera con su valor.",
+     lbl:"bandera + valor", accept:["--platform linux/amd64"], sol:"--platform linux/amd64",
+     why:"exec format error = binarios de otra arquitectura. --platform fija para cuál se construye.",
+     frase:"exec format error = imagen de otra arquitectura. Mira el --platform.",
+     concepto:"Eje Image: arquitectura (arm64 vs amd64)."},
+   {capa:2, kind:"term", quiero:"Construye <b>clinica</b> para la arquitectura del servidor (<b>amd64</b>).",
+     accept:["docker build --platform linux/amd64 -t clinica .","docker build -t clinica --platform linux/amd64 ."],
+     sol:"docker build --platform linux/amd64 -t clinica .",
+     why:"Construyes explícitamente para amd64 aunque tu Mac sea arm64.",
+     frase:"Construye donde se ejecuta, o fija --platform.",
+     concepto:"Eje Image: la imagen lleva binarios de una arquitectura concreta."},
+   {capa:4, kind:"fix", file:"el build (terminal)", mode:"term",
+     quiero:"Este build se hizo en tu Mac sin plataforma. Reescríbelo fijando <b>linux/amd64</b>.",
+     broken:`docker build -t clinica .          # ⚠ sin --platform, sale arm64`,
+     errorModel:"Sin --platform, build usa la arquitectura de tu Mac (arm64); el servidor amd64 no entiende esos binarios.",
+     accept:["docker build --platform linux/amd64 -t clinica .","docker build -t clinica --platform linux/amd64 ."],
+     sol:"docker build --platform linux/amd64 -t clinica .",
+     why:"Fijando la plataforma de destino, los binarios coinciden con el servidor.",
+     frase:"exec format error → fija el --platform.",
+     concepto:"Eje Image: construye para la arquitectura donde correrá."},
+  ]});
+
+sc({id:"d3", site:"deploy", emoji:"🚫", title:"No me deja subir la imagen",
+  sintoma:"docker push da: denied: requested access to the resource is denied.",
+  caps:[
+   {capa:1, kind:"token", quiero:"Escribe el comando para <b>autenticarte</b> en el registry antes de subir.",
+     lbl:"comando", accept:["docker login"], sol:"docker login",
+     why:"'denied' en push = no autenticado o el tag no es tuyo. login resuelve lo primero.",
+     frase:"denied al hacer push = login o tag equivocado, no es la imagen.",
+     concepto:"Eje Registry: docker login + tag usuario/repo:version."},
+   {capa:2, kind:"term", quiero:"Sube la imagen <code>miusuario/clinica:1.0</code> al registry.",
+     accept:["docker push miusuario/clinica:1.0"], sol:"docker push miusuario/clinica:1.0",
+     why:"push escribe en TU repo; por eso exige login y un tag que apunte a ti.",
+     frase:"push escribe en tu repo: necesita login y tag correcto.",
+     concepto:"Eje Registry: push sube; el build local ya funcionó."},
+   {capa:3, kind:"seq", quiero:"Sube la imagen desde cero: autentícate, etiqueta como tu repo y haz push.",
+     steps:[
+       {p:"1) Autentícate en el registry", accept:["docker login"], sol:"docker login"},
+       {p:"2) Etiqueta clinica como miusuario/clinica:1.0", accept:["docker tag clinica miusuario/clinica:1.0"], sol:"docker tag clinica miusuario/clinica:1.0"},
+       {p:"3) Súbela", accept:["docker push miusuario/clinica:1.0"], sol:"docker push miusuario/clinica:1.0"},
+     ],
+     why:"Sin login no tienes permiso; sin el tag usuario/repo el push no sabe a qué repo tuyo va.",
+     frase:"login → tag usuario/repo:version → push.",
+     concepto:"Eje Registry: autenticación + nombre correcto del repo."},
+  ]});
+
+sc({id:"d4", site:"deploy", emoji:"🕵️", title:"Desplegué el fix pero sigue el bug viejo",
+  sintoma:"Build+push OK, pero el servidor corre una imagen :latest de hace 2 semanas.",
+  caps:[
+   {capa:1, kind:"token", quiero:"Escribe el comando que <b>fuerza al servidor a descargar</b> las imágenes nuevas (con compose).",
+     lbl:"comando", accept:["docker compose pull","docker-compose pull"], sol:"docker compose pull",
+     why:":latest no se re-descarga solo; pull trae la imagen nueva al servidor.",
+     frase:":latest no se actualiza solo. Tag inmutable o pull explícito.",
+     concepto:"Eje Registry: tags. 'latest' engaña."},
+   {capa:2, kind:"term", quiero:"Levanta los servicios con compose en <b>segundo plano</b>.",
+     accept:["docker compose up -d","docker-compose up -d"], sol:"docker compose up -d",
+     why:"up -d arranca, pero si no hizo pull reusa la imagen local vieja.",
+     frase:"up -d sin pull = imagen vieja en caché local.",
+     concepto:"Eje Registry: levantar ≠ actualizar."},
+   {capa:3, kind:"seq", quiero:"Despliega la versión nueva de verdad: primero descarga, luego recrea.",
+     steps:[
+       {p:"1) Descarga las imágenes nuevas", accept:["docker compose pull","docker-compose pull"], sol:"docker compose pull"},
+       {p:"2) Recrea los contenedores en segundo plano", accept:["docker compose up -d","docker compose up -d --force-recreate","docker-compose up -d"], sol:"docker compose up -d"},
+     ],
+     why:"pull trae la imagen nueva; up la aplica. Sin pull, up reusa la de hace 2 semanas.",
+     frase:"pull primero, up después: si no, corres lo viejo.",
+     concepto:"Eje Registry: en prod, versiones inmutables (1.4) y pull explícito."},
+  ]});
+
+sc({id:"d5", site:"deploy", emoji:"💨", title:"El contenedor arranca y se muere al instante",
+  sintoma:"docker run -d, pero docker ps sale vacío; ps -a muestra Exited (0).",
+  caps:[
+   {capa:1, kind:"token", quiero:"Quiero ver <b>todos</b> los contenedores, incluidos los que ya murieron. Escribe el comando.",
+     lbl:"comando", accept:["docker ps -a","docker ps --all"], sol:"docker ps -a",
+     why:"docker ps solo muestra los vivos; -a incluye los que salieron (Exited).",
+     frase:"docker ps -a = también los muertos. Ahí ves el Exited.",
+     concepto:"Eje Run: un contenedor que terminó no aparece en ps normal."},
+   {capa:2, kind:"term", quiero:"Corre la imagen <b>clinica</b> en <b>segundo plano</b> (detached).",
+     accept:["docker run -d clinica","docker run --detach clinica"], sol:"docker run -d clinica",
+     why:"-d la corre en background. Pero si el proceso principal termina, el contenedor muere igual.",
+     frase:"-d corre en segundo plano; no impide que el proceso termine.",
+     concepto:"Eje Run: el contenedor vive atado a su proceso principal."},
+   {capa:3, kind:"seq", quiero:"Diagnostica por qué 'no está': córrelo, mira los vivos (vacío) y luego todos.",
+     steps:[
+       {p:"1) Corre clinica en segundo plano", accept:["docker run -d clinica"], sol:"docker run -d clinica"},
+       {p:"2) Mira los contenedores que corren", accept:["docker ps"], sol:"docker ps"},
+       {p:"3) Mira TODOS, incluidos los que murieron", accept:["docker ps -a","docker ps --all"], sol:"docker ps -a"},
+     ],
+     why:"ps vacío + ps -a con Exited(0) = el proceso terminó solo y el contenedor murió.",
+     frase:"Exited(0) = terminó solo. Míralo con ps -a.",
+     concepto:"Eje Run: el contenedor vive mientras viva su PID 1."},
+   {capa:4, kind:"fix", file:"Dockerfile", mode:"code",
+     quiero:"El CMD corre un script que termina, así que el contenedor muere. Reescribe el <code>CMD</code> para que arranque el <b>servidor</b> (proceso de larga duración).",
+     broken:`CMD ["python", "seed.py"]     # ⚠ corre, termina y el contenedor muere`,
+     errorModel:"Un contenedor vive mientras su proceso principal siga corriendo. seed.py termina (exit 0) y se lleva al contenedor.",
+     accept:[`CMD ["uvicorn","main:app","--host","0.0.0.0","--port","8000"]`], sol:`CMD ["uvicorn","main:app","--host","0.0.0.0","--port","8000"]`,
+     why:"uvicorn es un proceso de larga duración: se queda escuchando, así el contenedor sigue vivo.",
+     frase:"El contenedor vive mientras viva su proceso principal.",
+     concepto:"Eje Run: CMD = proceso en primer plano, no un script que acaba."},
+  ]});
+
+sc({id:"d6", site:"deploy", emoji:"🔀", title:"Respuesta vacía en el puerto publicado",
+  sintoma:"docker run -p 8080:5000 (la app escucha en 8000); curl da Empty reply from server.",
+  caps:[
+   {capa:1, kind:"token", quiero:"La app escucha en el <b>8000</b> y quiero publicarla en el <b>8080</b> de mi máquina. Escribe la bandera <code>-p</code> con el mapeo correcto (host:contenedor).",
+     lbl:"-p host:contenedor", accept:["-p 8080:8000"], sol:"-p 8080:8000",
+     why:"-p es HOST:CONTENEDOR. El lado derecho debe ser el puerto real donde escucha la app.",
+     frase:"-p es HOST:CONTENEDOR. El lado derecho = donde escucha la app.",
+     concepto:"Eje Network: mapeo de puertos."},
+   {capa:2, kind:"term", quiero:"Corre <b>clinica</b> publicando el 8000 interno en el 8080 de tu host.",
+     accept:["docker run -p 8080:8000 clinica","docker run -d -p 8080:8000 clinica"], sol:"docker run -p 8080:8000 clinica",
+     why:"Ahora el tráfico de localhost:8080 llega al 8000 del contenedor, donde sí hay alguien.",
+     frase:"El derecho del -p tiene que coincidir con el --port de uvicorn.",
+     concepto:"Eje Network: el puerto del contenedor debe ser el real."},
+   {capa:4, kind:"fix", file:"el run (terminal)", mode:"term",
+     quiero:"Este run apunta al puerto interno equivocado (5000). Reescríbelo apuntando al <b>8000</b>.",
+     broken:`docker run -p 8080:5000 clinica   # ⚠ adentro no hay nadie en 5000`,
+     errorModel:"-p 8080:5000 manda el tráfico al 5000 del contenedor, pero la app escucha en el 8000. Por eso 'empty reply'.",
+     accept:["docker run -p 8080:8000 clinica","docker run -d -p 8080:8000 clinica"], sol:"docker run -p 8080:8000 clinica",
+     why:"Empty reply = el puerto interno estaba vacío. Apuntando al 8000 real, responde.",
+     frase:"-p es HOST:CONTENEDOR.",
+     concepto:"Eje Network: el lado derecho = el --port de la app."},
+  ]});
+
+sc({id:"d7", site:"deploy", emoji:"🚧", title:"Adentro responde, desde afuera no",
+  sintoma:"docker run -d (sin -p); curl localhost da refused, pero docker exec adentro responde.",
+  caps:[
+   {capa:1, kind:"token", quiero:"Para abrir el puerto 8000 del contenedor hacia tu máquina, escribe la bandera <code>-p</code> con su valor.",
+     lbl:"-p host:contenedor", accept:["-p 8000:8000"], sol:"-p 8000:8000",
+     why:"EXPOSE solo documenta; -p es lo que de verdad publica el puerto al host.",
+     frase:"EXPOSE documenta; -p publica. Sin -p, nadie de afuera entra.",
+     concepto:"Eje Network: EXPOSE (doc) vs -p (publica)."},
+   {capa:2, kind:"term", quiero:"Corre <b>clinica</b> publicando el puerto 8000 (para poder entrar desde fuera).",
+     accept:["docker run -p 8000:8000 clinica","docker run -d -p 8000:8000 clinica"], sol:"docker run -p 8000:8000 clinica",
+     why:"La app ya responde adentro; lo que falta es el puente al host.",
+     frase:"Adentro responde, afuera no → falta publicar el puerto.",
+     concepto:"Eje Network: el puente al host lo hace -p."},
+   {capa:4, kind:"fix", file:"el run (terminal)", mode:"term",
+     quiero:"Este run no publica nada. Reescríbelo publicando el 8000 (manteniéndolo en segundo plano).",
+     broken:`docker run -d clinica          # ⚠ sin -p, no hay puente al host`,
+     errorModel:"EXPOSE en el Dockerfile solo documenta; falta -p (o ports: en compose) para abrir el puerto al exterior.",
+     accept:["docker run -d -p 8000:8000 clinica","docker run -p 8000:8000 -d clinica","docker run -p 8000:8000 clinica"], sol:"docker run -d -p 8000:8000 clinica",
+     why:"docker exec ... localhost sí respondía adentro: la app vive. Solo faltaba el puente -p.",
+     frase:"EXPOSE documenta; -p publica.",
+     concepto:"Eje Network: publicar de verdad = -p / ports."},
+  ]});
+
+sc({id:"d8", site:"deploy", emoji:"🔑", title:"DATABASE_URL llega vacía en el contenedor",
+  sintoma:"docker run sin --env-file; logs: Could not parse URL from None (DATABASE_URL=None).",
+  caps:[
+   {capa:1, kind:"token", quiero:"Quiero <b>inyectar las variables</b> del archivo <code>.env</code> al contenedor en runtime. Escribe la bandera con su valor.",
+     lbl:"bandera + valor", accept:["--env-file .env"], sol:"--env-file .env",
+     why:"El contenedor es aislado: tu .env del host no entra solo. --env-file lo inyecta al arrancar.",
+     frase:"El .env del host no entra solo: --env-file lo inyecta al contenedor.",
+     concepto:"Eje Env: variables en runtime, no en la imagen."},
+   {capa:2, kind:"term", quiero:"Corre <b>clinica</b> inyectándole las variables del <code>.env</code>.",
+     accept:["docker run --env-file .env clinica","docker run -d --env-file .env clinica","docker run --env-file .env -d clinica"], sol:"docker run --env-file .env clinica",
+     why:"Así DATABASE_URL ya no llega None: se inyecta desde el archivo al arrancar.",
+     frase:"Las variables se pasan al run, no viven en la carpeta.",
+     concepto:"Eje Env: inyección en runtime."},
+   {capa:4, kind:"fix", file:"el run (terminal)", mode:"term",
+     quiero:"Este run no inyecta el entorno. Reescríbelo pasando el <code>.env</code> (en segundo plano).",
+     broken:`docker run -d clinica          # ⚠ sin --env-file .env`,
+     errorModel:"Sin --env-file (o -e), las variables no existen dentro del contenedor; getenv devuelve None.",
+     accept:["docker run -d --env-file .env clinica","docker run --env-file .env -d clinica"], sol:"docker run -d --env-file .env clinica",
+     why:"El archivo en tu carpeta no entra solo; hay que inyectarlo al run.",
+     frase:"--env-file inyecta el .env al contenedor.",
+     concepto:"Eje Env: el contenedor es un entorno aislado."},
+  ]});
+
+sc({id:"d9", site:"deploy", emoji:"🧨", title:"El secreto quedó dentro de la imagen",
+  sintoma:"docker history muestra ENV DATABASE_URL=postgres://user:pass@prod-db visible y horneado.",
+  caps:[
+   {capa:1, kind:"token", quiero:"Quiero pasar <b>una</b> variable al contenedor en runtime (no hornearla en la imagen). ¿Qué bandera de <code>docker run</code>?",
+     lbl:"bandera", accept:["-e","--env"], sol:"-e",
+     why:"-e VAR=valor inyecta una variable al arrancar; queda fuera de la imagen.",
+     frase:"Secretos y config: en runtime, nunca horneados con ENV en la imagen.",
+     concepto:"Eje Env: ENV (build, horneado) vs -e/--env-file (runtime)."},
+   {capa:2, kind:"term", quiero:"Inspecciona las <b>capas</b> de la imagen para ver el secreto horneado: muestra el historial de <code>clinica:latest</code>.",
+     accept:["docker history clinica:latest","docker history clinica"], sol:"docker history clinica:latest",
+     why:"docker history revela cada capa: ahí aparece el ENV con el secreto, visible para cualquiera.",
+     frase:"docker history destapa lo que horneaste en la imagen.",
+     concepto:"Eje Env: lo que pones con ENV queda en las capas."},
+   {capa:4, kind:"fix", file:"Dockerfile + run", mode:"term",
+     quiero:"En vez de hornear el secreto con <code>ENV</code> en el Dockerfile, pásalo en <b>runtime</b>. Reescribe el run inyectando el <code>.env</code>.",
+     broken:`ENV DATABASE_URL=postgres://user:pass@prod-db/clinica   # ⚠ horneado en la imagen`,
+     errorModel:"ENV en build hornea el valor en las capas (visible, igual para todos los entornos). Config y secretos van en runtime.",
+     accept:["docker run --env-file .env clinica","docker run -d --env-file .env clinica"], sol:"docker run --env-file .env clinica",
+     why:"Quitas el ENV del Dockerfile y pasas el secreto al arrancar: ni queda en la imagen ni es igual para todos.",
+     frase:"Secretos en runtime, nunca con ENV en la imagen.",
+     concepto:"Eje Env: secretos fuera de la imagen."},
+  ]});
+
+sc({id:"d10", site:"deploy", emoji:"🗄️", title:"Los datos desaparecen tras compose down",
+  sintoma:"La app SÍ hace commit, pero tras compose down && up los pacientes vuelven a estar vacíos.",
+  caps:[
+   {capa:1, kind:"token", quiero:"En <code>docker-compose.yml</code>, escribe la <b>clave</b> que se usa para declarar volúmenes persistentes.",
+     lbl:"clave yaml", accept:["volumes:","volumes"], sol:"volumes:",
+     why:"Sin un volumen, los datos del contenedor son efímeros: down los borra.",
+     frase:"El contenedor es efímero. Sin volumen, compose down se lleva los datos.",
+     concepto:"Eje Volumes: filesystem del contenedor = temporal."},
+   {capa:2, kind:"term", quiero:"Apaga y elimina los servicios de compose (el comando que <b>destapa</b> la pérdida de datos).",
+     accept:["docker compose down","docker-compose down"], sol:"docker compose down",
+     why:"down borra los contenedores; si la BD no tiene volumen, su almacenamiento se va con ellos.",
+     frase:"compose down borra el contenedor; sin volumen, también los datos.",
+     concepto:"Eje Volumes: down = destruir contenedores."},
+   {capa:4, kind:"fix", file:"docker-compose.yml", mode:"code",
+     quiero:"La BD no persiste. Escribe la línea de <b>volumen</b> que monta el almacenamiento de Postgres (<code>pgdata</code> → <code>/var/lib/postgresql/data</code>).",
+     broken:`services:\n  db:\n    image: postgres:16\n    # ⚠ sin volumes: -> datos dentro del contenedor efímero`,
+     errorModel:"Postgres guarda sus datos dentro del contenedor; sin volumen nombrado, down los destruye. (Ojo: la app SÍ hace commit, no es ese bug.)",
+     accept:["- pgdata:/var/lib/postgresql/data"], sol:"- pgdata:/var/lib/postgresql/data",
+     why:"El dato se guardó (commit OK), pero vivía en un contenedor efímero. El volumen lo saca del contenedor.",
+     frase:"Datos de BD → named volume. (Distinto de 'faltó commit'.)",
+     concepto:"Eje Volumes: monta /var/lib/postgresql/data en un volumen."},
+  ]});
+
+sc({id:"d11", site:"deploy", emoji:"⏱️", title:"La API no conecta a la base al arrancar",
+  sintoma:"compose up: la API conecta y falla 'Connection refused', y DESPUÉS el db dice 'ready'.",
+  caps:[
+   {capa:1, kind:"token", quiero:"En compose, escribe la <b>condición</b> que hace esperar a que un servicio esté <b>sano</b> (no solo arrancado).",
+     lbl:"clave: valor", accept:["condition: service_healthy"], sol:"condition: service_healthy",
+     why:"depends_on por defecto espera el arranque, no la readiness. service_healthy sí espera el healthcheck.",
+     frase:"depends_on espera que arranque, no que esté listo.",
+     concepto:"Eje Boot: orden de arranque ≠ readiness."},
+   {capa:2, kind:"term", quiero:"Levanta los servicios con compose (el comando que <b>destapa</b> la carrera de arranque).",
+     accept:["docker compose up","docker-compose up"], sol:"docker compose up",
+     why:"Al levantar, la API intenta conectar antes de que Postgres esté listo: carrera de arranque.",
+     frase:"La API conectó antes de tiempo: es timing, no red.",
+     concepto:"Eje Boot: el host 'db' resuelve; el problema es cuándo."},
+   {capa:3, kind:"seq", quiero:"Escribe las 3 líneas que reemplazan <code>depends_on: [db]</code> para esperar a que la base esté <b>sana</b>.",
+     steps:[
+       {p:"1) Abre depends_on en forma larga", accept:["depends_on:"], sol:"depends_on:"},
+       {p:"2) Nombra el servicio db", accept:["db:"], sol:"db:"},
+       {p:"3) Espera a que esté sano", accept:["condition: service_healthy"], sol:"condition: service_healthy"},
+     ],
+     why:"La forma larga de depends_on permite la condición service_healthy, que sí espera el healthcheck.",
+     frase:"Usa healthcheck + condition: service_healthy, o reintentos.",
+     concepto:"Eje Boot: readiness, no solo arranque."},
+  ]});
+
+sc({id:"d12", site:"deploy", emoji:"🏗️", title:"La tabla no existe en el entorno nuevo",
+  sintoma:"Base limpia: curl da 500; logs: relation 'pacientes' does not exist.",
+  caps:[
+   {capa:1, kind:"token", quiero:"Escribe el comando que <b>aplica las migraciones</b> (crea/actualiza el esquema) hasta la última versión, con Alembic.",
+     lbl:"comando", accept:["alembic upgrade head"], sol:"alembic upgrade head",
+     why:"El esquema no se crea solo al levantar el contenedor; hay que aplicar las migraciones.",
+     frase:"Base nueva ≠ tablas. Corre las migraciones en el deploy.",
+     concepto:"Eje Boot: aplicar esquema/migraciones como paso de despliegue."},
+   {capa:2, kind:"term", quiero:"Lee los <b>logs</b> del servicio <code>api</code> para ver el error real.",
+     accept:["docker logs api"], sol:"docker logs api",
+     why:"'relation does not exist' = conecta a la BD, pero la tabla nunca se creó.",
+     frase:"Lee los logs: el 500 esconde el motivo exacto.",
+     concepto:"Eje Boot: el log distingue 'no conecta' de 'tabla no existe'."},
+   {capa:4, kind:"fix", file:"el deploy (terminal)", mode:"term",
+     quiero:"Faltó el paso que crea las tablas en el entorno nuevo. Escribe el comando de <b>migración</b> que faltó.",
+     broken:`docker compose up -d          # ⚠ nadie corrió las migraciones`,
+     errorModel:"La base existe y conecta, pero las tablas no: faltó aplicar las migraciones (alembic upgrade) al desplegar.",
+     accept:["alembic upgrade head"], sol:"alembic upgrade head",
+     why:"En un entorno nuevo, aplicar el esquema es un paso de arranque/deploy, no algo automático.",
+     frase:"Base nueva ≠ tablas.",
+     concepto:"Eje Boot: migraciones como parte del despliegue."},
+  ]});
+
+sc({id:"d13", site:"deploy", emoji:"♻️", title:"El contenedor reinicia en bucle",
+  sintoma:"docker ps: Restarting (137); logs: Killed; stats: 512MiB/512MiB al tope.",
+  caps:[
+   {capa:1, kind:"token", quiero:"Escribe el comando que muestra en vivo el <b>uso de CPU/memoria</b> de los contenedores.",
+     lbl:"comando", accept:["docker stats"], sol:"docker stats",
+     why:"docker stats revela la memoria pegada al límite, la pista del OOM.",
+     frase:"Exit 137 + Killed = OOM. Lee docker stats.",
+     concepto:"Eje Logs/Health: 137 = SIGKILL (out of memory)."},
+   {capa:2, kind:"term", quiero:"Lee los <b>logs</b> del servicio <code>api</code> (donde aparece el 'Killed').",
+     accept:["docker logs api"], sol:"docker logs api",
+     why:"'Killed' en el log + 137 = el kernel mató el proceso por falta de memoria.",
+     frase:"137 = 128 + 9 (SIGKILL).",
+     concepto:"Eje Logs: el log nombra la causa de la muerte."},
+   {capa:3, kind:"seq", quiero:"Diagnostica el crash loop: estado, logs y memoria.",
+     steps:[
+       {p:"1) Mira el estado (verás Restarting)", accept:["docker ps"], sol:"docker ps"},
+       {p:"2) Lee los logs del api (verás Killed)", accept:["docker logs api"], sol:"docker logs api"},
+       {p:"3) Mira el uso de memoria en vivo", accept:["docker stats"], sol:"docker stats"},
+     ],
+     why:"Restarting + Killed + memoria al tope = OOM; la restart policy crea el bucle.",
+     frase:"El crash loop lo crea la restart policy sobre un OOM.",
+     concepto:"Eje Logs/Health: leer logs + docker stats."},
+   {capa:4, kind:"fix", file:"docker-compose.yml", mode:"code",
+     quiero:"La app pide más RAM que el tope (512m) y el kernel la mata. Reescribe el límite de memoria <b>subiéndolo a 1g</b>.",
+     broken:`mem_limit: 512m     # ⚠ la app llega al tope y la matan (OOM)`,
+     errorModel:"Memoria al límite + Killed + exit 137 = OOM. Hay que subir el límite o reducir lo que se carga en RAM.",
+     accept:["mem_limit: 1g","mem_limit: 1024m"], sol:"mem_limit: 1g",
+     why:"Con más margen de memoria el proceso ya no se pasa del tope y deja de morir en bucle.",
+     frase:"Exit 137 + Killed = OOM: sube el límite o baja el uso.",
+     concepto:"Eje Logs/Health: ajustar mem_limit (o cargar menos en RAM)."},
+  ]});
+
+/* ===================== ids + estado ===================== */
+SC.forEach(s=>s.caps.forEach(c=> c.id = s.id+"-"+c.capa ));
+const ALL_CAPS = SC.flatMap(s=>s.caps);
+
+const STORE="comandosV2Progress";
+let done = new Set(JSON.parse(localStorage.getItem(STORE)||"[]"));
+let anclas = JSON.parse(localStorage.getItem(STORE+"_anclas")||"{}");
+let attempts = {};
+function save(){
+  localStorage.setItem(STORE, JSON.stringify([...done]));
+  localStorage.setItem(STORE+"_anclas", JSON.stringify(anclas));
+}
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+let current = SC[0].id;
+function curScn(){ return SC.find(s=>s.id===current); }
+function capById(id){ return ALL_CAPS.find(c=>c.id===id); }
+
+/* ===================== normalización ===================== */
+function normTerm(s){
+  return String(s).replace(/^[\s$#>]+/,"")
+    .replace(/[“”]/g,'"').replace(/[‘’]/g,"'").replace(/'/g,'"')
+    .replace(/\s+/g," ").trim();
+}
+function normCode(s){
+  return String(s).replace(/[“”]/g,'"').replace(/[‘’]/g,"'").replace(/'/g,'"')
+    .replace(/\s+/g,"").trim();
+}
+function capMode(cap){ return cap.kind==="fix" ? (cap.mode||"term") : "term"; }
+function matchOne(val, accept, mode){
+  const f = mode==="code"?normCode:normTerm;
+  const got=f(val);
+  return accept.some(a=>f(a)===got);
+}
+
+/* ===================== nav / progreso / leyenda ===================== */
+function scnDoneCount(s){ return s.caps.filter(c=>done.has(c.id)).length; }
+function renderNav(){
+  const nav=document.getElementById("nav");
+  let html="";
+  SITES.forEach(site=>{
+    html+=`<div class="grp">${esc(site.lbl)}</div>`;
+    SC.filter(s=>s.site===site.key).forEach(s=>{
+      const dc=scnDoneCount(s), tot=s.caps.length, full=dc===tot;
+      html+=`<button class="${s.id===current?'active':''}" onclick="goto('${s.id}')">`
+        +`${s.emoji} ${esc(s.title)}`
+        +`<span class="cnt ${full?'full':''}">${dc}/${tot}</span></button>`;
+    });
+  });
+  nav.innerHTML=html;
+}
+function renderProgress(){
+  document.getElementById("progtxt").textContent=`${done.size} / ${ALL_CAPS.length}`;
+  document.getElementById("progbar").style.width=(done.size/ALL_CAPS.length*100)+"%";
+}
+function renderAnclas(){
+  const c=document.getElementById("anclas");
+  const items=[...new Set(Object.values(anclas))];
+  c.innerHTML=items.length?items.map(f=>`<span class="pill">🪝 ${esc(f)}</span>`).join("")
+    :'<span class="footnote">Aún ninguna. Teclea bien para coleccionarlas.</span>';
+}
+
+/* ===================== render de tarjetas (capas) ===================== */
+function capCard(cap){
+  const id=cap.id, solved=done.has(id);
+  let h=`<div class="capbadge">Capa ${cap.capa} · ${CAPA_LBL[cap.capa]}</div>`;
+  if(cap.kind==="fix"){
+    h+=`<div class="panel-box"><h4>📄 ${esc(cap.file)} · está roto</h4><pre>${esc(cap.broken)}</pre></div>`;
+  }
+  h+=`<div class="quiero">🎯 ${cap.quiero}</div>`;
+  if(cap.kind==="seq"){
+    h+=`<div class="inp-wrap">`;
+    cap.steps.forEach((st,i)=>{
+      h+=`<div class="steplbl">${esc(st.p)}</div>`
+        +`<div class="inp-line"><span class="prompt-sym">$</span>`
+        +`<input class="cmd-in" id="in_${id}_${i}" ${solved?'disabled':''} autocomplete="off" spellcheck="false" placeholder="escribe el comando...">`
+        +`<span class="mark" id="mk_${id}_${i}"></span></div>`;
+    });
+    h+=`</div>`;
+  } else {
+    const sym=cap.kind==="fix"?"":`<span class="prompt-sym">$</span>`;
+    const ph=cap.kind==="token"?"escribe la pieza...":(cap.kind==="fix"?"escribe la línea corregida...":"escribe el comando...");
+    h+=`<div class="inp-wrap"><div class="inp-line">${sym}`
+      +`<input class="cmd-in" id="in_${id}_0" ${solved?'disabled':''} autocomplete="off" spellcheck="false" placeholder="${ph}">`
+      +`<span class="mark" id="mk_${id}_0"></span></div></div>`;
+    if(cap.kind==="token") h+=`<div class="pista">Pista: ${esc(cap.lbl)}</div>`;
+  }
+  h+=`<div class="btns"><button class="act" onclick="checkItem('${id}')">Comprobar ▶</button>`;
+  if(cap.kind==="fix") h+=`<button class="ghost" onclick="verMal('${id}')">¿qué estaba mal?</button>`;
+  h+=`<button class="ghost" onclick="verSol('${id}')">ver solución</button>`
+    +`<span class="attempts" id="at_${id}">${solved?'✓ dominado':'intentos: '+(attempts[id]||0)}</span></div>`
+    +`<div class="fb" id="fb_${id}"></div>`;
+  return `<div class="capcard ${solved?'capdone':''}" id="card_${id}">${h}</div>`;
+}
+
+function renderMain(){
+  const s=curScn();
+  const m=document.getElementById("main");
+  const siteLbl=SITES.find(x=>x.key===s.site).lbl;
+  m.innerHTML=`
+    <span class="tag">${esc(siteLbl)}</span>
+    <h2>${s.emoji} ${esc(s.title)}</h2>
+    <p class="lead">Las 4 capas de este escenario, de la pieza al arreglo. Teclea cada una de memoria.</p>
+    <div class="sintoma">🩺 Síntoma original: ${esc(s.sintoma)}</div>
+    ${s.caps.map(capCard).join("")}`;
+  // foco + enter en la primera no resuelta
+  s.caps.forEach(cap=>{
+    if(done.has(cap.id)){ fillSolved(cap); return; }
+    const first=document.getElementById("in_"+cap.id+"_0");
+    if(first && cap.kind!=="seq") first.addEventListener("keydown",e=>{ if(e.key==="Enter") checkItem(cap.id); });
+    if(cap.kind==="seq"){
+      cap.steps.forEach((st,i)=>{ const el=document.getElementById("in_"+cap.id+"_"+i); if(el) el.addEventListener("keydown",e=>{ if(e.key==="Enter") checkItem(cap.id); }); });
+    }
+  });
+}
+
+function feedbackHTML(cap){
+  return `✅ <b>¡Correcto!</b> — en ${attempts[cap.id]||1} intento(s).`
+    +`<div class="why">${esc(cap.why)}</div>`
+    +`<div class="frase">🪝 «${esc(cap.frase)}»</div>`
+    +`<div class="concepto">📎 ${esc(cap.concepto)}</div>`;
+}
+function solText(cap){ return cap.kind==="seq" ? cap.steps.map(s=>s.sol).join("\n") : cap.sol; }
+
+function fillSolved(cap){
+  const fb=document.getElementById("fb_"+cap.id);
+  if(fb){ fb.className="fb show good"; fb.innerHTML=feedbackHTML(cap)+`<div class="sol">${esc(solText(cap))}</div>`; }
+  if(cap.kind==="seq"){
+    cap.steps.forEach((st,i)=>{ const el=document.getElementById("in_"+cap.id+"_"+i); if(el){el.value=st.sol; el.disabled=true;} const mk=document.getElementById("mk_"+cap.id+"_"+i); if(mk){mk.textContent="✓"; mk.className="mark ok";} });
+  } else {
+    const el=document.getElementById("in_"+cap.id+"_0"); if(el){el.value=cap.sol; el.disabled=true;}
+    const mk=document.getElementById("mk_"+cap.id+"_0"); if(mk){mk.textContent="✓"; mk.className="mark ok";}
+  }
+}
+
+/* ===================== acciones ===================== */
+function checkItem(id){
+  const cap=capById(id);
+  if(done.has(id)) return;
+  attempts[id]=(attempts[id]||0)+1;
+  const fb=document.getElementById("fb_"+id);
+  const mode=capMode(cap);
+
+  if(cap.kind==="seq"){
+    let all=true;
+    cap.steps.forEach((st,i)=>{
+      const val=document.getElementById("in_"+id+"_"+i).value;
+      const ok=matchOne(val, st.accept, "term");
+      const mk=document.getElementById("mk_"+id+"_"+i);
+      mk.textContent= val.trim()?(ok?"✓":"✗"):""; mk.className="mark "+(ok?"ok":"bad");
+      if(!ok) all=false;
+    });
+    if(all) return winItem(cap);
+    fb.className="fb show bad";
+    fb.innerHTML="❌ Algún paso aún no calza (mira las ✗). Revisa el orden y cada pieza. Comillas y espacios de más te los perdono.";
+    document.getElementById("at_"+id).textContent="intentos: "+attempts[id];
+    return;
+  }
+
+  const val=document.getElementById("in_"+id+"_0").value;
+  const ok=matchOne(val, cap.accept, mode);
+  const mk=document.getElementById("mk_"+id+"_0");
+  mk.textContent=ok?"✓":"✗"; mk.className="mark "+(ok?"ok":"bad");
+  if(ok) return winItem(cap);
+  fb.className="fb show bad";
+  let msg="❌ Aún no. ";
+  if(cap.kind==="token") msg+="Piensa qué pieza hace exactamente eso.";
+  else if(cap.kind==="fix") msg+="La idea ya la tienes; revisa el token exacto. Usa «¿qué estaba mal?» si dudas.";
+  else msg+="Te falta o sobra una pieza.";
+  fb.innerHTML=msg;
+  document.getElementById("at_"+id).textContent="intentos: "+attempts[id];
+}
+
+function winItem(cap){
+  done.add(cap.id); anclas[cap.id]=cap.frase; save();
+  const fb=document.getElementById("fb_"+cap.id);
+  fb.className="fb show good"; fb.innerHTML=feedbackHTML(cap);
+  document.getElementById("card_"+cap.id).classList.add("capdone");
+  document.getElementById("at_"+cap.id).textContent="✓ dominado";
+  document.querySelectorAll("#card_"+cap.id+" .cmd-in").forEach(el=>el.disabled=true);
+  renderProgress(); renderNav(); renderAnclas();
+}
+
+function verSol(id){
+  const cap=capById(id);
+  const fb=document.getElementById("fb_"+id);
+  fb.className="fb show info";
+  fb.innerHTML=`👀 Solución (no cuenta como dominado — ahora tecléala tú):<div class="sol">${esc(solText(cap))}</div>`;
+}
+function verMal(id){
+  const cap=capById(id);
+  const fb=document.getElementById("fb_"+id);
+  fb.className="fb show info";
+  fb.innerHTML=`🔎 Qué estaba mal: ${esc(cap.errorModel)}<div class="why" style="color:var(--mut)">Ahora escribe tú la línea corregida.</div>`;
+}
+
+function goto(id){ current=id; renderNav(); renderMain(); window.scrollTo(0,0); }
+document.getElementById("reset").addEventListener("click",()=>{
+  if(!confirm("¿Borrar todo el progreso?")) return;
+  done=new Set(); anclas={}; attempts={}; save();
+  renderProgress(); renderNav(); renderAnclas(); renderMain();
+});
+
+/* ===================== arranque ===================== */
+renderProgress();
+renderNav();
+renderAnclas();
+renderMain();
+</script>
+</body>
+</html>

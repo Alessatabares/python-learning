@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sala de Simulación · Romper y Predecir</title>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#161d2e; --panel2:#1d2740; --line:#2a3550;
+    --ink:#e7ecf5; --mut:#93a0bd; --blue:#3b82f6; --teal:#0ea5a4;
+    --green:#22c55e; --amber:#f59e0b; --red:#ef4444; --violet:#8b5cf6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    background:linear-gradient(180deg,#0c111c,#0f1420);color:var(--ink);line-height:1.5}
+  header{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  header h1{font-size:18px;margin:0;letter-spacing:.3px}
+  header .sub{color:var(--mut);font-size:13px}
+  .prog{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--mut)}
+  .bar{width:160px;height:8px;background:var(--panel2);border-radius:99px;overflow:hidden}
+  .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--violet),var(--green));transition:width .4s}
+
+  /* pipeline / estaciones clicables */
+  .pipe{display:flex;gap:6px;padding:14px 24px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line);background:#0d1320}
+  .stage{font-size:11px;padding:7px 11px;border-radius:8px;background:var(--panel);border:1px solid var(--line);
+    color:var(--mut);white-space:nowrap;transition:all .2s;cursor:pointer}
+  .stage:hover{border-color:var(--blue);color:var(--ink)}
+  .stage.infra{border-style:dashed}
+  .stage.pick{background:var(--amber);color:#231a02;border-color:var(--amber);box-shadow:0 0 0 3px rgba(245,158,11,.18)}
+  .stage.ok{background:var(--green);color:#06210f;border-color:var(--green)}
+  .stage.err{background:var(--red);color:#fff;border-color:var(--red)}
+  .arrow{color:var(--mut);font-size:11px}
+  .ring-lbl{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;margin-right:4px}
+
+  .wrap{display:flex;min-height:calc(100vh - 150px)}
+  nav{width:240px;border-right:1px solid var(--line);padding:14px;flex-shrink:0}
+  nav button{display:block;width:100%;text-align:left;margin:0 0 6px;padding:10px 12px;border-radius:10px;
+    background:transparent;border:1px solid transparent;color:var(--ink);cursor:pointer;font-size:13px;transition:.15s}
+  nav button:hover{background:var(--panel)}
+  nav button.active{background:var(--panel2);border-color:var(--line)}
+  nav button .done{color:var(--green);float:right}
+  main{flex:1;padding:24px;max-width:920px}
+  h2{margin:0 0 4px;font-size:22px}
+  .tag{display:inline-block;font-size:11px;color:var(--violet);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+  .lead{color:var(--mut);margin:0 0 18px}
+
+  .panels{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 16px}
+  .panel-box{flex:1;min-width:300px;background:#0c1322;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .panel-box h4{margin:0;padding:9px 14px;font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;
+    background:var(--panel2);border-bottom:1px solid var(--line)}
+  pre{margin:0;padding:14px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;
+    white-space:pre-wrap;word-break:break-word;overflow-x:auto}
+  .term .cmd{color:#bfdbfe}
+  .term .out{color:var(--mut)}
+  .term .ok{color:#86efac}
+  .term .err{color:#fca5a5;font-weight:600}
+  .break-note{padding:8px 14px;border-top:1px solid var(--line);font-size:12px;color:var(--amber)}
+
+  .step{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:0 0 14px}
+  .step h3{margin:0 0 4px;font-size:14px}
+  .step p.hint{color:var(--mut);font-size:13px;margin:0 0 10px}
+  .opts{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+  .opts button{text-align:left;background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+    padding:11px 14px;border-radius:9px;cursor:pointer;font-size:14px;transition:.15s}
+  .opts button:hover{border-color:var(--blue)}
+  .opts button.sel{border-color:var(--amber);background:rgba(245,158,11,.12)}
+  button.act{background:var(--violet);border:none;color:#fff;padding:11px 20px;border-radius:9px;cursor:pointer;
+    font-size:14px;font-weight:600;margin-top:6px}
+  button.act:hover{filter:brightness(1.1)}
+  button.act:disabled{opacity:.5;cursor:not-allowed}
+  button.ghost{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:7px 13px;border-radius:8px;cursor:pointer;font-size:12px}
+  button.ghost:hover{background:var(--line)}
+  .attempts{font-size:12px;color:var(--mut);margin-left:12px}
+
+  .fb{margin-top:14px;padding:13px 15px;border-radius:10px;font-size:14px;display:none}
+  .fb.show{display:block}
+  .fb.good{background:rgba(34,197,94,.12);border:1px solid var(--green);color:#bbf7d0}
+  .fb.bad{background:rgba(239,68,68,.12);border:1px solid var(--red);color:#fecaca}
+  .fb.info{background:rgba(59,130,246,.12);border:1px solid var(--blue);color:#bfdbfe}
+  .fb .why{margin-top:8px;color:var(--ink);font-size:13px}
+  .fb .frase{margin-top:10px;font-style:italic;color:var(--amber)}
+  .fb .concepto{margin-top:8px;font-size:12.5px;color:var(--mut)}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:12.5px}
+
+  .ancla-wrap{padding:16px 24px;border-top:1px solid var(--line)}
+  .ancla-wrap h3{font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.8px;margin:0 0 8px}
+  .pill{display:inline-block;font-size:12px;padding:3px 9px;border-radius:99px;margin:2px;
+    background:rgba(139,92,246,.1);border:1px solid var(--violet);color:#ddd6fe}
+  .footnote{font-size:12px;color:var(--mut)}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🔧 Sala de Simulación · Romper y Predecir</h1>
+    <div class="sub">Te doy el código sano y el cambio que lo rompió. Predice dónde muere y qué síntoma sale — <i>antes</i> de ver la terminal. (Sitio hermano de <b>Triage</b>: ahí diagnosticas; aquí predices.)</div>
+  </div>
+  <div class="prog">
+    <button class="ghost" id="reset" title="Borrar progreso">reiniciar</button>
+    <span id="progtxt">0 / 0</span>
+    <div class="bar"><i id="progbar"></i></div>
+  </div>
+</header>
+
+<div class="pipe" id="pipe"></div>
+
+<div class="wrap">
+  <nav id="nav"></nav>
+  <main id="main"></main>
+</div>
+
+<div class="ancla-wrap">
+  <h3>🪝 Frases ancla desbloqueadas</h3>
+  <div id="anclas"><span class="footnote">Aún ninguna. Predice correctamente para coleccionarlas.</span></div>
+</div>
+
+<script>
+/* ===================== infraestructura ===================== */
+// Estaciones donde un request puede "morir". La primera es el anillo INFRA.
+const STATIONS = ["Deploy","Request","Auth","Authz","Validación","ORM","SQL","Response"];
+const INFRA = new Set(["Deploy"]);
+const pipeEl = document.getElementById("pipe");
+
+function renderPipe(){
+  pipeEl.innerHTML = '<span class="ring-lbl">infra ⟶ request</span>';
+  STATIONS.forEach((s,i)=>{
+    if(i) pipeEl.insertAdjacentHTML("beforeend",'<span class="arrow">→</span>');
+    const cls = "stage" + (INFRA.has(s) ? " infra" : "");
+    pipeEl.insertAdjacentHTML("beforeend",
+      `<span class="${cls}" data-s="${s}">${INFRA.has(s)?"🐳 ":""}${s}</span>`);
+  });
+  pipeEl.querySelectorAll(".stage").forEach(el=>{
+    el.addEventListener("click",()=>pickGate(el.dataset.s));
+  });
+}
+function paintPipe(){
+  pipeEl.querySelectorAll(".stage").forEach(el=>{
+    el.classList.remove("pick","ok","err");
+    if(el.dataset.s===guessGate) el.classList.add("pick");
+  });
+}
+function paintDeath(dead){
+  const idx=STATIONS.indexOf(dead);
+  [...pipeEl.querySelectorAll(".stage")].forEach((e,i)=>{
+    e.classList.remove("pick","ok","err");
+    if(i<idx) e.classList.add("ok");
+    else if(i===idx) e.classList.add("err");
+  });
+}
+
+const STORE_KEY="triageInversoProgress";
+let done = new Set(JSON.parse(localStorage.getItem(STORE_KEY)||"[]"));
+let anclas = JSON.parse(localStorage.getItem(STORE_KEY+"_anclas")||"{}");
+function save(){
+  localStorage.setItem(STORE_KEY, JSON.stringify([...done]));
+  localStorage.setItem(STORE_KEY+"_anclas", JSON.stringify(anclas));
+}
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+/* ===================== escenarios (causa → efecto) =====================
+   well     = código SANO
+   code     = código ROTO (el cambio introducido, con la ⚠)
+   breakNote= qué cambió de sano → roto
+   dead     = estación donde MORIRÁ el request (a predecir)
+   symptoms = opciones de síntoma a predecir (una ok)
+   terminal = el efecto real, oculto hasta acertar
+*/
+const SCN = [];
+function scn(o){ SCN.push(o); }
+
+scn({
+  id:"s1", emoji:"🔌", title:"El host del contenedor", tag:"Infra · Docker · puertos",
+  codeTitle:"Dockerfile", dead:"Deploy",
+  well:`CMD ["uvicorn","main:app","--host","0.0.0.0","--port","8000"]`,
+  breakNote:`--host 0.0.0.0  →  --host 127.0.0.1`,
+  code:`FROM python:3.12
+COPY . .
+RUN pip install -r requirements.txt
+CMD ["uvicorn","main:app","--host","127.0.0.1","--port","8000"]   # 🔧`,
+  symptoms:[
+    {ok:true,  x:"curl: (7) Connection refused — nadie respondió",
+     why:"uvicorn solo escucha al loopback del contenedor; tu host nunca conecta. No es 404 ('respondió y no encontró') ni 500 ('corrió y reventó'): aquí no hubo respuesta."},
+    {ok:false, x:"404 Not Found",
+     why:"404 = alguien escuchó y no halló la ruta. Aquí no hubo nadie escuchando en esa interfaz."},
+    {ok:false, x:"500 Internal Server Error",
+     why:"500 = la app corrió y lanzó una excepción. Aquí la app ni recibió la conexión."},
+  ],
+  terminal:[
+    {k:"cmd", x:"$ docker run -p 8000:8000 clinica"},
+    {k:"cmd", x:"$ curl http://localhost:8000/health"},
+    {k:"err", x:"curl: (7) Failed to connect to localhost port 8000: Connection refused"},
+  ],
+  frase:"0.0.0.0 = ábrele a todo el mundo; 127.0.0.1 = solo a mí mismo.",
+  concepto:"Eje Deploy: --host 0.0.0.0 vs publicar puerto -p. Connection refused = nadie escuchó; 404 = alguien escuchó y no encontró."
+});
+
+scn({
+  id:"s2", emoji:"👻", title:"El commit olvidado", tag:"ORM · persistencia · RAM vs disco",
+  codeTitle:"main.py", dead:"ORM",
+  well:`nuevo = Paciente(**p.dict())
+db.add(nuevo)
+db.commit()        # ✅ confirma a disco
+db.refresh(nuevo)
+return nuevo`,
+  breakNote:`se quitó db.commit()`,
+  code:`@app.post("/pacientes")
+async def crear(p: PacienteIn, db = Depends(get_db)):
+    nuevo = Paciente(**p.dict())
+    db.add(nuevo)
+    db.refresh(nuevo)        # 🔧 sin commit antes
+    return nuevo`,
+  symptoms:[
+    {ok:true,  x:"201 al crear; tras docker restart, 404 al pedirlo",
+     why:"El objeto vive en la sesión (RAM) y por eso el 201 sale bien; sin commit nunca se escribe a disco, así que el restart se lo lleva → 404."},
+    {ok:false, x:"500 IntegrityError al crear",
+     why:"Sin commit no se confirma nada a la BD, así que no hay constraint que chocar."},
+    {ok:false, x:"422 al crear",
+     why:"422 sería validación. El body es válido y pasó Pydantic; el problema está en la persistencia."},
+  ],
+  terminal:[
+    {k:"cmd", x:`$ curl -X POST /pacientes -d '{"nombre":"Ana"}'`},
+    {k:"ok",  x:'201 Created  {"id": 4, "nombre": "Ana"}'},
+    {k:"cmd", x:"$ docker restart clinica"},
+    {k:"cmd", x:"$ curl /pacientes/4"},
+    {k:"err", x:"404 Not Found"},
+  ],
+  frase:"add() lo pone en la bandeja; commit() lo guarda en el disco.",
+  concepto:"Eje ORM: add → commit → refresh. Si el dato sobrevive a la request pero NO al restart, sospecha del commit."
+});
+
+scn({
+  id:"s3", emoji:"🚪", title:"El verbo cambiado", tag:"Request · métodos HTTP",
+  codeTitle:"main.py", dead:"Request",
+  well:`@app.post("/login")          # ✅ coincide con el POST
+async def login(...):
+    ...`,
+  breakNote:`@app.post → @app.get`,
+  code:`@app.get("/login")          # 🔧
+async def login(...):
+    ...`,
+  symptoms:[
+    {ok:true,  x:"405 Method Not Allowed (allow: GET)",
+     why:"La ruta /login sigue existiendo (por eso no es 404), pero ahora solo acepta GET y tú llamas con POST: el verbo no calza."},
+    {ok:false, x:"404 Not Found",
+     why:"404 sería si la ruta no existiera. Existe; lo que cambió es el método permitido."},
+    {ok:false, x:"200 OK",
+     why:"El verbo ya no coincide, así que el request muere en routing y nunca entra a la función."},
+  ],
+  terminal:[
+    {k:"cmd", x:"$ curl -X POST /login"},
+    {k:"err", x:"405 Method Not Allowed"},
+    {k:"out", x:"allow: GET"},
+  ],
+  frase:"405 = la puerta existe, pero no con ese método.",
+  concepto:"Eje Request: ruta + método. 404 = no existe la ruta; 405 = existe pero verbo equivocado."
+});
+
+scn({
+  id:"s4", emoji:"🕵️", title:"El .env que no se cargó (engañoso)", tag:"⚠ engañoso · parece Auth, es Infra",
+  codeTitle:"auth.py + Dockerfile", dead:"Deploy",
+  well:`# Dockerfile
+COPY main.py auth.py models.py .env .   # ✅ carga el secreto
+# auth.py:  SECRET = os.getenv("JWT_SECRET")`,
+  breakNote:`el Dockerfile dejó de copiar/cargar el .env → SECRET=None`,
+  code:`# auth.py
+SECRET = os.getenv("JWT_SECRET")     # firma y verifica el token
+
+# Dockerfile  (no copia ni carga el .env)  🔧
+COPY main.py auth.py models.py .
+# (falta:  COPY .env .   /   env_file: .env)`,
+  symptoms:[
+    {ok:true,  x:"200 al hacer login, pero 401 'Invalid token signature' con un token recién emitido",
+     why:"La app levanta (no es red), pero sin SECRET ninguna firma valida. La pista: falla un token FRESCO, no uno viejo → no es expiración, es el secreto roto en el entorno."},
+    {ok:false, x:"Connection refused",
+     why:"La app sí corre y responde 200 al login; el problema no es de red ni de puerto."},
+    {ok:false, x:"403 Forbidden",
+     why:"403 sería authz tras autenticar bien. Aquí el token ni siquiera valida su firma → 401."},
+  ],
+  terminal:[
+    {k:"cmd", x:"$ curl -X POST /login -d ...   # login recién hecho"},
+    {k:"ok",  x:'200 OK  {"token": "eyJhbGciOi..."}'},
+    {k:"cmd", x:"$ curl /pacientes -H 'Authorization: Bearer eyJhbGciOi...'"},
+    {k:"err", x:"401 Unauthorized   {detail: 'Invalid token signature'}"},
+    {k:"cmd", x:"$ docker logs clinica | grep SECRET"},
+    {k:"err", x:"JWT_SECRET = None"},
+  ],
+  frase:"Si TODOS los tokens fallan, sospecha del SECRET, no del token.",
+  concepto:"Eje Infra↔Auth: un .env no cargado en el contenedor disfraza un bug de Deploy como un 401 de Auth. Sigue la cadena."
+});
+
+scn({
+  id:"s5", emoji:"🔓", title:"El chequeo de dueño borrado", tag:"Authz · pertenencia",
+  codeTitle:"main.py", dead:"Authz",
+  well:`paciente = db.get(Paciente, pid)
+if paciente.medico_id != user.id:    # ✅ chequeo de dueño
+    raise HTTPException(403)
+return paciente`,
+  breakNote:`se quitó el chequeo de pertenencia (medico_id != user.id)`,
+  code:`@app.get("/pacientes/{pid}")
+async def ver(pid: int,
+              user = Depends(current_user),   # exige login (auth) OK
+              db = Depends(get_db)):
+    paciente = db.get(Paciente, pid)
+    return paciente                            # 🔧 sin chequeo de dueño`,
+  symptoms:[
+    {ok:true,  x:"200 OK devolviendo el paciente de OTRO médico",
+     why:"Auth pasó (token válido), pero sin el chequeo de pertenencia nada impide que A pida un recurso de B. La fuga es silenciosa: status 'correcto', dato ajeno."},
+    {ok:false, x:"403 Forbidden",
+     why:"403 es justo lo que faltó. Sin el if que lo lance, no se niega nada."},
+    {ok:false, x:"401 Unauthorized",
+     why:"El médico está autenticado; auth (¿quién eres?) no es el problema."},
+  ],
+  terminal:[
+    {k:"out", x:"# médico A (id=1) autenticado correctamente"},
+    {k:"cmd", x:"$ curl /pacientes/9 -H 'Authorization: Bearer <A>'"},
+    {k:"err", x:'200 OK  {"id": 9, "nombre": "Beto", "medico_id": 2}'},
+    {k:"out", x:"# ⚠ el paciente 9 es del médico B (id=2)"},
+  ],
+  frase:"Auth = quién eres; Authz = qué tienes permitido. Pasar una no es pasar la otra.",
+  concepto:"Eje Authz: 401 = no sé quién eres; 403 = sé quién eres y NO puedes. Falta el chequeo de pertenencia."
+});
+
+scn({
+  id:"s6", emoji:"🧪", title:"El tipo que no calza", tag:"Validación · Pydantic · tipos",
+  codeTitle:"models.py", dead:"Validación",
+  well:`class PacienteIn(BaseModel):
+    nombre: str
+    edad: int          # ✅ el cliente debe mandar un entero`,
+  breakNote:`el cliente mandó  "edad": "treinta"  (string) a un campo int`,
+  code:`class PacienteIn(BaseModel):
+    nombre: str
+    edad: int          # 🔧 se mandó "treinta"`,
+  symptoms:[
+    {ok:true,  x:'422 Unprocessable Entity (loc: body.edad)',
+     why:"Pydantic hace el triage en la puerta: 'treinta' no es int, así que corta con 422 y el request nunca llega al ORM ni al SQL."},
+    {ok:false, x:"500 Internal Server Error",
+     why:"Pydantic frena antes de que el código corra; no hay excepción interna que dé 500."},
+    {ok:false, x:"201 Created",
+     why:"El tipo no calza, así que no pasa validación: nada se crea."},
+  ],
+  terminal:[
+    {k:"cmd", x:`$ curl -X POST /pacientes -d '{"nombre":"Ana","edad":"treinta"}'`},
+    {k:"err", x:"422 Unprocessable Entity"},
+    {k:"out", x:'detail: [{loc:["body","edad"], msg:"value is not a valid integer"}]'},
+  ],
+  frase:"Pydantic es el triage en la puerta: si el tipo no calza, ni entra.",
+  concepto:"Eje Validación: type hints + BaseModel = portero. 422 con loc/msg = un campo del body no calza el modelo."
+});
+
+scn({
+  id:"s7", emoji:"📮", title:"JSON donde pedían formulario (engañoso)", tag:"⚠ engañoso · parece Validación, es Request",
+  codeTitle:"main.py", dead:"Request",
+  well:`# cliente:
+curl -X POST /login -F username=ana -F password=x   # ✅ form-data
+# endpoint:  username: str = Form(...)`,
+  breakNote:`se mandó JSON a un endpoint que espera Form(...)`,
+  code:`@app.post("/login")
+async def login(username: str = Form(...),   # 🔧 espera form-data, llegó JSON
+                password: str = Form(...)):
+    ...`,
+  symptoms:[
+    {ok:true,  x:"422 'field required' en username/password",
+     why:"Form(...) lee form-data, no JSON. Con un cuerpo JSON los campos Form quedan vacíos → 'field required'. El bug está en CÓMO se envió, no en el modelo."},
+    {ok:false, x:"200 OK",
+     why:"Los campos Form nunca se llenan desde JSON; el request no completa la entrada."},
+    {ok:false, x:"415 Unsupported Media Type",
+     why:"FastAPI no devuelve 415 aquí; simplemente no llena los Form y responde 422 'field required'."},
+  ],
+  terminal:[
+    {k:"cmd", x:`$ curl -X POST /login -H 'Content-Type: application/json' \\`},
+    {k:"cmd", x:`       -d '{"username":"ana","password":"x"}'`},
+    {k:"err", x:"422 Unprocessable Entity"},
+    {k:"out", x:'detail: [{loc:["body","username"], msg:"field required"}]'},
+  ],
+  frase:"422 no siempre es Pydantic: a veces mandaste el formato equivocado por la puerta.",
+  concepto:"Eje Request↔Validación: Form(...) vs body JSON. El mismo 422 puede nacer en cómo enviaste el request, no en el modelo."
+});
+
+scn({
+  id:"s8", emoji:"🧱", title:"El duplicado sin atrapar", tag:"SQL · constraints · IntegrityError",
+  codeTitle:"models.py + main.py", dead:"SQL",
+  well:`# atrapando el duplicado:
+try:
+    db.add(Medico(**p.dict())); db.commit()
+except IntegrityError:
+    raise HTTPException(409, "email ya registrado")   # ✅`,
+  breakNote:`se insertó un email duplicado sin try/except (columna unique=True)`,
+  code:`# models.py
+class Medico(Base):
+    email = Column(String, unique=True)   # la BD exige unicidad
+
+# main.py
+db.add(Medico(**p.dict()))
+db.commit()                  # 🔧 sin verificar/atrapar duplicado`,
+  symptoms:[
+    {ok:true,  x:"500 Internal Server Error — IntegrityError: UNIQUE constraint",
+     why:"Pydantic valida forma (email es str válido); la regla unique vive en la BD. El código crudo deja escapar el IntegrityError → 500."},
+    {ok:false, x:"409 Conflict",
+     why:"409 es lo CORRECTO… pero solo si atrapas el IntegrityError y lo traduces. Sin el try/except, el error escapa crudo como 500. (Ideal vs realidad.)"},
+    {ok:false, x:"422 Unprocessable Entity",
+     why:"El email es un str válido; Pydantic no lo frena. La unicidad no es un tema de tipos."},
+  ],
+  terminal:[
+    {k:"cmd", x:`$ curl -X POST /medicos -d '{"email":"ana@x.com"}'  # ya registrado`},
+    {k:"err", x:"500 Internal Server Error"},
+    {k:"out", x:"sqlalchemy.exc.IntegrityError:"},
+    {k:"err", x:"UNIQUE constraint failed: medicos.email"},
+  ],
+  frase:"unique=True: la BD es la última muralla; si chocas, IntegrityError.",
+  concepto:"Eje SQL: constraints (unique, FK). Pydantic valida forma; la BD valida reglas de integridad. 500 IntegrityError = chocaste una constraint."
+});
+
+scn({
+  id:"s9", emoji:"🩸", title:"El response_model quitado", tag:"Response · fuga de datos",
+  codeTitle:"main.py", dead:"Response",
+  well:`@app.get("/medicos/{mid}", response_model=MedicoOut)   # ✅ filtro de salida
+async def ver(mid: int, db = Depends(get_db)):
+    return db.get(Medico, mid)`,
+  breakNote:`se quitó response_model=MedicoOut`,
+  code:`@app.get("/medicos/{mid}")          # 🔧 sin response_model
+async def ver(mid: int, db = Depends(get_db)):
+    return db.get(Medico, mid)      # devuelve el objeto ORM entero`,
+  symptoms:[
+    {ok:true,  x:"200 OK, pero el body incluye password_hash",
+     why:"Sin response_model que filtre, FastAPI serializa TODO el objeto ORM, hash incluido. El 200 'correcto' es justo lo peligroso: no rompe, filtra."},
+    {ok:false, x:"200 OK sin password_hash",
+     why:"Sin filtro de salida no hay nada que excluya el hash: sale entero."},
+    {ok:false, x:"500 Internal Server Error",
+     why:"No hay error; el objeto serializa bien. El daño es que expone de más."},
+  ],
+  terminal:[
+    {k:"cmd", x:"$ curl /medicos/3"},
+    {k:"ok",  x:'200 OK'},
+    {k:"err", x:'{"id":3,"email":"ana@x.com","password_hash":"$2b$12$Kx9..."}  ⚠'},
+  ],
+  frase:"Lo que no filtres en Response, se va al mundo. Incluido el hash.",
+  concepto:"Eje Response: response_model = filtro de salida. Un 200 'correcto' puede seguir filtrando datos sensibles."
+});
+
+/* ===================== estado de la partida ===================== */
+let current = SCN[0].id;
+let guessGate = null;     // estación clicada (predicción de dónde muere)
+let guessDx = null;       // índice del síntoma elegido
+let attempts = {};
+
+function curScn(){ return SCN.find(s=>s.id===current); }
+
+function pickGate(s){
+  if(done.has(current)) return;
+  guessGate = (guessGate===s) ? null : s;
+  paintPipe();
+  syncBtn();
+}
+function pickDx(i){
+  if(done.has(current)) return;
+  guessDx = (guessDx===i) ? null : i;
+  renderMain();
+}
+function syncBtn(){
+  const b=document.getElementById("ejecutar");
+  if(b) b.disabled = done.has(current) || guessGate===null || guessDx===null;
+}
+
+function ejecutarSim(){
+  const sc=curScn();
+  attempts[current]=(attempts[current]||0)+1;
+  const gateOk = guessGate===sc.dead;
+  const symOk  = guessDx!==null && sc.symptoms[guessDx].ok;
+  const fb=document.getElementById("fb");
+  if(gateOk && symOk){
+    done.add(current); anclas[current]=sc.frase; save();
+    reveal(sc);
+    renderProgress(); renderNav(); renderAnclas(); syncBtn();
+  } else if(!gateOk){
+    [...pipeEl.querySelectorAll(".stage")].forEach(e=>{ if(e.dataset.s===guessGate) e.classList.add("err"); });
+    fb.className="fb show bad";
+    fb.innerHTML = `❌ No muere ahí. Mira el <b>cambio</b>: ¿qué capa toca esa línea? Esa es la que falla primero.`;
+  } else {
+    fb.className="fb show info";
+    fb.innerHTML = `🟡 Estación correcta (<b>${esc(sc.dead)}</b>), pero ese no es el síntoma. ¿Qué status code produce exactamente ese fallo?`;
+  }
+}
+
+function reveal(sc){
+  paintDeath(sc.dead);
+  const correct=sc.symptoms.find(d=>d.ok);
+  const fb=document.getElementById("fb");
+  fb.className="fb show good";
+  fb.innerHTML = `✅ <b>Predicción correcta.</b> Muere en <b>${esc(sc.dead)}</b>.`
+    + `<div class="why">${esc(correct.why)}</div>`
+    + `<div class="frase">🪝 «${esc(sc.frase)}»</div>`
+    + `<div class="concepto">📎 ${esc(sc.concepto)}</div>`;
+  const rev=document.getElementById("revbox");
+  if(rev) rev.innerHTML =
+    `<div class="panel-box" style="margin-top:14px"><h4>🖥️ Terminal · lo que realmente pasó</h4>`
+    + `<pre class="term">${termHTML(sc.terminal)}</pre></div>`;
+}
+
+/* ===================== render ===================== */
+function renderProgress(){
+  document.getElementById("progtxt").textContent = `${done.size} / ${SCN.length} predichos`;
+  document.getElementById("progbar").style.width = (done.size/SCN.length*100)+"%";
+}
+function renderAnclas(){
+  const c=document.getElementById("anclas");
+  const items=Object.values(anclas);
+  c.innerHTML = items.length ? items.map(f=>`<span class="pill">🪝 ${esc(f)}</span>`).join("")
+    : '<span class="footnote">Aún ninguna. Predice correctamente para coleccionarlas.</span>';
+}
+function renderNav(){
+  const nav=document.getElementById("nav");
+  nav.innerHTML = SCN.map(s=>
+    `<button class="${s.id===current?'active':''}" onclick="goto('${s.id}')">`
+    + `${s.emoji} ${esc(s.title)}`
+    + `${done.has(s.id)?'<span class="done">✓</span>':''}</button>`
+  ).join("");
+}
+function termHTML(lines){
+  return lines.map(l=>`<span class="${l.k}">${esc(l.x)}</span>`).join("\n");
+}
+function renderMain(){
+  const sc=curScn();
+  const solved=done.has(sc.id);
+  const m=document.getElementById("main");
+  m.innerHTML = `
+    <span class="tag">${esc(sc.tag)}</span>
+    <h2>🔧 ${esc(sc.title)}</h2>
+    <p class="lead">Te doy el código <b>sano</b> y el <b>cambio</b> que lo rompió.
+      Predice <b>dónde muere</b> (pipeline arriba) y <b>qué síntoma</b> sale — <i>sin mirar la terminal</i>.</p>
+    <div class="panels">
+      <div class="panel-box"><h4>✅ ${esc(sc.codeTitle)} · sano</h4><pre>${esc(sc.well)}</pre></div>
+      <div class="panel-box"><h4>🔧 ${esc(sc.codeTitle)} · roto</h4><pre>${esc(sc.code)}</pre>
+        <div class="break-note">cambio: ${esc(sc.breakNote)}</div></div>
+    </div>
+
+    <div class="step">
+      <h3>Predice el síntoma</h3>
+      <p class="hint">Paso 1: clic en la estación del pipeline donde MORIRÁ el request. Paso 2: elige el síntoma que saldrá en la terminal.</p>
+      <div class="opts">
+        ${sc.symptoms.map((d,i)=>`<button class="${guessDx===i?'sel':''}" ${solved?'disabled':''} onclick="pickDx(${i})">${esc(d.x)}</button>`).join("")}
+      </div>
+      <div style="margin-top:12px;display:flex;align-items:center">
+        <button class="act" id="ejecutar" onclick="ejecutarSim()">Ejecutar simulación ▶</button>
+        <span class="attempts">${solved?'✓ predicho':'intentos: '+(attempts[sc.id]||0)}</span>
+      </div>
+      <div class="fb" id="fb"></div>
+    </div>
+    <div id="revbox"></div>`;
+  paintPipe();
+  syncBtn();
+  if(solved) reveal(sc);
+}
+function goto(id){
+  current=id; guessGate=null; guessDx=null;
+  renderNav(); renderMain();
+}
+document.getElementById("reset").addEventListener("click",()=>{
+  if(!confirm("¿Borrar todo el progreso?")) return;
+  done=new Set(); anclas={}; save();
+  attempts={}; guessGate=null; guessDx=null;
+  renderProgress(); renderNav(); renderAnclas(); renderMain();
+});
+
+/* ===================== arranque ===================== */
+renderPipe();
+renderProgress();
+renderAnclas();
+renderNav();
+renderMain();
+</script>
+</body>
+</html>

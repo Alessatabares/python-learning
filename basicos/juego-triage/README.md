@@ -47,6 +47,19 @@ Dos escenarios son **engañosos** a propósito: el síntoma apunta a una estaci�
 pero la raíz está en otra. Eso te obliga a *trazar la cadena*, no a memorizar
 un mapeo síntoma → respuesta.
 
+## Dos modos (toggle en el header)
+
+| Modo | Dirección | Qué entrena |
+|------|-----------|-------------|
+| 🩺 **Diagnosticar** | efecto → causa | ves el síntoma, encuentras dónde murió |
+| 🔧 **Romper y predecir** | causa → efecto | te doy el código sano + el cambio que lo rompió; predices **dónde muere** y **qué síntoma** sale, *sin ver la terminal*; recién ahí se revela |
+
+El modo inverso reusa los mismos 9 escenarios al revés y tiene **progreso propio**
+(`localStorage`), así "dominarlo" se mide aparte. La idea: no basta saber diagnosticar
+un bug que ya pasó; hay que poder **predecir** qué romperá un cambio antes de hacerlo.
+Algún síntoma es trampa a propósito (p. ej. un email duplicado *debería* ser `409`,
+pero el código crudo lo deja escapar como `500`).
+
 ## Correr
 
 No necesita servidor: abre `index.html` en el navegador. O con servidor local:
@@ -59,5 +72,5 @@ python -m http.server 8001
 
 ---
 
-*Siguiente nivel posible: escribir el fix (tecleas la línea que arregla el bug) y
-el modo inverso sandbox (tú rompes una compuerta y predices el síntoma).*
+*Siguiente nivel posible: escribir el fix (tecleas la línea que arregla el bug).*
+*(El modo inverso — romper y predecir — ya está implementado, ver arriba.)*

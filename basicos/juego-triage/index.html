@@ -87,6 +87,14 @@
   .pill{display:inline-block;font-size:12px;padding:3px 9px;border-radius:99px;margin:2px;
     background:rgba(245,158,11,.1);border:1px solid var(--amber);color:#fde68a}
   .footnote{font-size:12px;color:var(--mut)}
+
+  /* toggle de modo (diagnosticar / inverso) */
+  .modesw{display:flex;gap:4px;margin-left:8px}
+  .modesw button{font-size:12px;padding:6px 10px;border-radius:8px;background:var(--panel);
+    border:1px solid var(--line);color:var(--mut);cursor:pointer;transition:.15s}
+  .modesw button:hover{color:var(--ink)}
+  .modesw button.on{background:var(--violet);border-color:var(--violet);color:#fff}
+  .break-note{padding:8px 14px;border-top:1px solid var(--line);font-size:12px;color:var(--amber)}
 </style>
 </head>
 <body>
@@ -94,6 +102,10 @@
   <div>
     <h1>🚨 Código Azul en la API · Triage del Pipeline</h1>
     <div class="sub">El request es el paciente. Localiza dónde colapsó y por qué. (Diagnóstico diferencial de bugs.)</div>
+  </div>
+  <div class="modesw">
+    <button id="m_dx" class="on" onclick="setMode('dx')">🩺 Diagnosticar</button>
+    <button id="m_inv" onclick="setMode('inv')">🔧 Romper y predecir</button>
   </div>
   <div class="prog">
     <button class="ghost" id="reset" title="Borrar progreso">reiniciar</button>
@@ -395,7 +407,215 @@ async def ver(mid: int, db = Depends(get_db)):
   concepto:"Eje Response: response_model = filtro de salida. Un 200 'correcto' puede seguir filtrando datos sensibles."
 });
 
+/* ===================== modo inverso: causa → efecto ===================== */
+// Reusa cada escenario al revés: doy el código SANO + el cambio que lo rompió,
+// y tú predices estación de muerte (pipeline) + síntoma (status code).
+// `well` = versión sana; el código roto es sc.code; la terminal es el efecto revelado.
+const INV = {
+  s1:{ well:`CMD ["uvicorn","main:app","--host","0.0.0.0","--port","8000"]`,
+    breakNote:`--host 0.0.0.0  →  --host 127.0.0.1`,
+    symptoms:[
+      {ok:true,  x:"curl: (7) Connection refused — nadie respondió",
+       why:"uvicorn solo escucha al loopback del contenedor; tu host nunca conecta. No es 404 (eso sería 'respondió y no encontró') ni 500 (eso sería 'corrió y reventó'): aquí no hubo respuesta."},
+      {ok:false, x:"404 Not Found",
+       why:"404 = alguien escuchó y no halló la ruta. Aquí no hubo nadie escuchando en esa interfaz."},
+      {ok:false, x:"500 Internal Server Error",
+       why:"500 = la app corrió y lanzó una excepción. Aquí la app ni recibió la conexión."},
+    ]},
+  s2:{ well:`nuevo = Paciente(**p.dict())
+db.add(nuevo)
+db.commit()        # ✅ confirma a disco
+db.refresh(nuevo)
+return nuevo`,
+    breakNote:`se quitó db.commit()`,
+    symptoms:[
+      {ok:true,  x:"201 al crear; tras docker restart, 404 al pedirlo",
+       why:"El objeto vive en la sesión (RAM) y por eso el 201 sale bien; sin commit nunca se escribe a disco, así que el restart se lo lleva → 404."},
+      {ok:false, x:"500 IntegrityError al crear",
+       why:"Sin commit no se confirma nada a la BD, así que no hay constraint que chocar. El insert ni se materializa."},
+      {ok:false, x:"422 al crear",
+       why:"422 sería validación. El body es válido y pasó Pydantic; el problema está más adentro, en la persistencia."},
+    ]},
+  s3:{ well:`@app.post("/login")          # ✅ coincide con el POST
+async def login(...):
+    ...`,
+    breakNote:`@app.post → @app.get`,
+    symptoms:[
+      {ok:true,  x:"405 Method Not Allowed (allow: GET)",
+       why:"La ruta /login sigue existiendo (por eso no es 404), pero ahora solo acepta GET y tú llamas con POST: el verbo no calza."},
+      {ok:false, x:"404 Not Found",
+       why:"404 sería si la ruta no existiera. Existe; lo que cambió es el método permitido."},
+      {ok:false, x:"200 OK",
+       why:"El verbo ya no coincide, así que el request muere en routing y nunca entra a la función."},
+    ]},
+  s4:{ well:`# Dockerfile
+COPY main.py auth.py models.py .env .   # ✅ carga el secreto
+# auth.py:  SECRET = os.getenv("JWT_SECRET")`,
+    breakNote:`el Dockerfile dejó de copiar/cargar el .env → SECRET=None`,
+    symptoms:[
+      {ok:true,  x:"200 al hacer login, pero 401 'Invalid token signature' con un token recién emitido",
+       why:"La app levanta (no es red), pero sin SECRET ninguna firma valida. La pista: falla un token FRESCO, no uno viejo → no es expiración, es el secreto roto en el entorno."},
+      {ok:false, x:"Connection refused",
+       why:"La app sí corre y responde 200 al login; el problema no es de red ni de puerto."},
+      {ok:false, x:"403 Forbidden",
+       why:"403 sería authz tras autenticar bien. Aquí el token ni siquiera valida su firma → 401."},
+    ]},
+  s5:{ well:`paciente = db.get(Paciente, pid)
+if paciente.medico_id != user.id:    # ✅ chequeo de dueño
+    raise HTTPException(403)
+return paciente`,
+    breakNote:`se quitó el chequeo de pertenencia (medico_id != user.id)`,
+    symptoms:[
+      {ok:true,  x:"200 OK devolviendo el paciente de OTRO médico",
+       why:"Auth pasó (token válido), pero sin el chequeo de pertenencia nada impide que A pida un recurso de B. La fuga es silenciosa: status 'correcto', dato ajeno."},
+      {ok:false, x:"403 Forbidden",
+       why:"403 es justo lo que faltó. Sin el if que lo lance, no se niega nada."},
+      {ok:false, x:"401 Unauthorized",
+       why:"El médico está autenticado; auth (¿quién eres?) no es el problema."},
+    ]},
+  s6:{ well:`class PacienteIn(BaseModel):
+    nombre: str
+    edad: int          # ✅ el cliente debe mandar un entero`,
+    breakNote:`el cliente mandó  "edad": "treinta"  (string) a un campo int`,
+    symptoms:[
+      {ok:true,  x:'422 Unprocessable Entity (loc: body.edad)',
+       why:"Pydantic hace el triage en la puerta: 'treinta' no es int, así que corta con 422 y el request nunca llega al ORM ni al SQL."},
+      {ok:false, x:"500 Internal Server Error",
+       why:"Pydantic frena antes de que el código corra; no hay excepción interna que dé 500."},
+      {ok:false, x:"201 Created",
+       why:"El tipo no calza, así que no pasa validación: nada se crea."},
+    ]},
+  s7:{ well:`# cliente:
+curl -X POST /login -F username=ana -F password=x   # ✅ form-data
+# endpoint:  username: str = Form(...)`,
+    breakNote:`se mandó JSON a un endpoint que espera Form(...)`,
+    symptoms:[
+      {ok:true,  x:"422 'field required' en username/password",
+       why:"Form(...) lee form-data, no JSON. Con un cuerpo JSON los campos Form quedan vacíos → 'field required'. El bug está en CÓMO se envió, no en el modelo."},
+      {ok:false, x:"200 OK",
+       why:"Los campos Form nunca se llenan desde JSON; el request no completa la entrada."},
+      {ok:false, x:"415 Unsupported Media Type",
+       why:"FastAPI no devuelve 415 aquí; simplemente no llena los Form y responde 422 'field required'."},
+    ]},
+  s8:{ well:`# atrapando el duplicado:
+try:
+    db.add(Medico(**p.dict())); db.commit()
+except IntegrityError:
+    raise HTTPException(409, "email ya registrado")   # ✅`,
+    breakNote:`se insertó un email duplicado sin try/except (columna unique=True)`,
+    symptoms:[
+      {ok:true,  x:"500 Internal Server Error — IntegrityError: UNIQUE constraint",
+       why:"Pydantic valida forma (email es str válido); la regla unique vive en la BD. El código crudo deja escapar el IntegrityError → 500."},
+      {ok:false, x:"409 Conflict",
+       why:"409 es lo CORRECTO… pero solo si atrapas el IntegrityError y lo traduces. Sin el try/except, el error escapa crudo como 500. (Buen recordatorio de ideal vs realidad.)"},
+      {ok:false, x:"422 Unprocessable Entity",
+       why:"El email es un str válido; Pydantic no lo frena. La unicidad no es un tema de tipos."},
+    ]},
+  s9:{ well:`@app.get("/medicos/{mid}", response_model=MedicoOut)   # ✅ filtro de salida
+async def ver(mid: int, db = Depends(get_db)):
+    return db.get(Medico, mid)`,
+    breakNote:`se quitó response_model=MedicoOut`,
+    symptoms:[
+      {ok:true,  x:"200 OK, pero el body incluye password_hash",
+       why:"Sin response_model que filtre, FastAPI serializa TODO el objeto ORM, hash incluido. El 200 'correcto' es justo lo peligroso: no rompe, filtra."},
+      {ok:false, x:"200 OK sin password_hash",
+       why:"Sin filtro de salida no hay nada que excluya el hash: sale entero."},
+      {ok:false, x:"500 Internal Server Error",
+       why:"No hay error; el objeto serializa bien. El daño es que expone de más."},
+    ]},
+};
+function modeDone(){ return mode==="inv" ? doneInv : done; }
+function rerender(){ if(mode==="inv") renderInverse(); else renderMain(); }
+
+function setMode(m){
+  mode=m; guessGate=null; guessDx=null;
+  document.getElementById("m_dx").classList.toggle("on", m==="dx");
+  document.getElementById("m_inv").classList.toggle("on", m==="inv");
+  renderProgress(); renderNav(); renderAnclas(); rerender();
+}
+
+function paintDeath(dead){
+  const idx=STATIONS.indexOf(dead);
+  [...pipeEl.querySelectorAll(".stage")].forEach((e,i)=>{
+    e.classList.remove("pick","ok","err");
+    if(i<idx) e.classList.add("ok");
+    else if(i===idx) e.classList.add("err");
+  });
+}
+
+function renderInverse(){
+  const sc=curScn(), inv=INV[current];
+  const solved=doneInv.has(sc.id);
+  const m=document.getElementById("main");
+  m.innerHTML = `
+    <span class="tag">${esc(sc.tag)}</span>
+    <h2>🔧 ${esc(sc.title)}</h2>
+    <p class="lead">Modo inverso: te doy el código <b>sano</b> y el <b>cambio</b> que lo rompió.
+      Predice <b>dónde muere</b> (pipeline arriba) y <b>qué síntoma</b> sale — <i>sin mirar la terminal</i>.</p>
+    <div class="panels">
+      <div class="panel-box"><h4>✅ ${esc(sc.codeTitle)} · sano</h4><pre>${esc(inv.well)}</pre></div>
+      <div class="panel-box"><h4>🔧 ${esc(sc.codeTitle)} · roto</h4><pre>${esc(sc.code)}</pre>
+        <div class="break-note">cambio: ${esc(inv.breakNote)}</div></div>
+    </div>
+
+    <div class="step">
+      <h3>Predice el síntoma</h3>
+      <p class="hint">Paso 1: clic en la estación del pipeline donde MORIRÁ el request. Paso 2: elige el síntoma que saldrá en la terminal.</p>
+      <div class="opts">
+        ${inv.symptoms.map((d,i)=>`<button class="${guessDx===i?'sel':''}" ${solved?'disabled':''} onclick="pickDx(${i})">${esc(d.x)}</button>`).join("")}
+      </div>
+      <div style="margin-top:12px;display:flex;align-items:center">
+        <button class="act" id="ejecutar" onclick="ejecutarSim()">Ejecutar simulación ▶</button>
+        <span class="attempts">${solved?'✓ predicho':'intentos: '+(attempts[sc.id+'_inv']||0)}</span>
+      </div>
+      <div class="fb" id="fb"></div>
+    </div>
+    <div id="revbox"></div>`;
+  paintPipe();
+  syncBtn();
+  if(solved) revealInverse(sc,inv);
+}
+
+function revealInverse(sc,inv){
+  paintDeath(sc.dead);
+  const correct=inv.symptoms.find(d=>d.ok);
+  const fb=document.getElementById("fb");
+  fb.className="fb show good";
+  fb.innerHTML = `✅ <b>Predicción correcta.</b> Muere en <b>${esc(sc.dead)}</b>.`
+    + `<div class="why">${esc(correct.why)}</div>`
+    + `<div class="frase">🪝 «${esc(sc.frase)}»</div>`
+    + `<div class="concepto">📎 ${esc(sc.concepto)}</div>`;
+  const rev=document.getElementById("revbox");
+  if(rev) rev.innerHTML =
+    `<div class="panel-box" style="margin-top:14px"><h4>🖥️ Terminal · lo que realmente pasó</h4>`
+    + `<pre class="term">${termHTML(sc.terminal)}</pre></div>`;
+}
+
+function ejecutarSim(){
+  const sc=curScn(), inv=INV[current];
+  const key=sc.id+"_inv";
+  attempts[key]=(attempts[key]||0)+1;
+  const gateOk = guessGate===sc.dead;
+  const symOk  = guessDx!==null && inv.symptoms[guessDx].ok;
+  const fb=document.getElementById("fb");
+  if(gateOk && symOk){
+    doneInv.add(sc.id); anclas[sc.id]=sc.frase; saveInv(); save();
+    revealInverse(sc,inv);
+    renderProgress(); renderNav(); renderAnclas(); syncBtn();
+  } else if(!gateOk){
+    [...pipeEl.querySelectorAll(".stage")].forEach(e=>{ if(e.dataset.s===guessGate) e.classList.add("err"); });
+    fb.className="fb show bad";
+    fb.innerHTML = `❌ No muere ahí. Mira el <b>cambio</b>: ¿qué capa toca esa línea? Esa es la que falla primero.`;
+  } else {
+    fb.className="fb show info";
+    fb.innerHTML = `🟡 Estación correcta (<b>${esc(sc.dead)}</b>), pero ese no es el síntoma. ¿Qué status code produce exactamente ese fallo?`;
+  }
+}
+
 /* ===================== estado de la partida ===================== */
+let mode = "dx";          // "dx" diagnóstico (efecto→causa) | "inv" inverso (causa→efecto)
+let doneInv = new Set(JSON.parse(localStorage.getItem(STORE_KEY+"_inv")||"[]"));
+function saveInv(){ localStorage.setItem(STORE_KEY+"_inv", JSON.stringify([...doneInv])); }
 let current = SCN[0].id;
 let guessGate = null;     // estación clicada
 let guessDx = null;       // índice de diagnóstico elegido
@@ -404,19 +624,19 @@ let attempts = {};        // por escenario
 function curScn(){ return SCN.find(s=>s.id===current); }
 
 function pickGate(s){
-  if(done.has(current)) return;
+  if(modeDone().has(current)) return;
   guessGate = (guessGate===s) ? null : s;
   paintPipe();
   syncBtn();
 }
 function pickDx(i){
-  if(done.has(current)) return;
+  if(modeDone().has(current)) return;
   guessDx = (guessDx===i) ? null : i;
-  renderMain();   // re-render para marcar selección + mantener pipe
+  rerender();   // re-render para marcar selección + mantener pipe (modo actual)
 }
 function syncBtn(){
-  const b=document.getElementById("estabilizar");
-  if(b) b.disabled = done.has(current) || guessGate===null || guessDx===null;
+  const b=document.querySelector("button.act");   // estabilizar (dx) o ejecutar (inv)
+  if(b) b.disabled = modeDone().has(current) || guessGate===null || guessDx===null;
 }
 
 function estabilizar(){
@@ -459,8 +679,10 @@ function reanimar(sc){
 
 /* ===================== render ===================== */
 function renderProgress(){
-  document.getElementById("progtxt").textContent = `${done.size} / ${SCN.length}`;
-  document.getElementById("progbar").style.width = (done.size/SCN.length*100)+"%";
+  const d=modeDone();
+  const lbl = mode==="inv" ? "predichos" : "estabilizados";
+  document.getElementById("progtxt").textContent = `${d.size} / ${SCN.length} ${lbl}`;
+  document.getElementById("progbar").style.width = (d.size/SCN.length*100)+"%";
 }
 function renderAnclas(){
   const c=document.getElementById("anclas");
@@ -470,10 +692,11 @@ function renderAnclas(){
 }
 function renderNav(){
   const nav=document.getElementById("nav");
+  const d=modeDone();
   nav.innerHTML = SCN.map(s=>
     `<button class="${s.id===current?'active':''}" onclick="goto('${s.id}')">`
     + `${s.emoji} ${esc(s.title)}`
-    + `${done.has(s.id)?'<span class="done">✓</span>':''}</button>`
+    + `${d.has(s.id)?'<span class="done">✓</span>':''}</button>`
   ).join("");
 }
 function termHTML(lines){
@@ -519,13 +742,15 @@ function renderMain(){
 }
 function goto(id){
   current=id; guessGate=null; guessDx=null;
-  renderNav(); renderMain();
+  renderNav(); rerender();
 }
 document.getElementById("reset").addEventListener("click",()=>{
-  if(!confirm("¿Borrar todo el progreso?")) return;
-  done=new Set(); anclas={}; save();
+  const scope = mode==="inv" ? "del modo inverso" : "del modo diagnóstico";
+  if(!confirm(`¿Borrar el progreso ${scope}?`)) return;
+  if(mode==="inv"){ doneInv=new Set(); saveInv(); }
+  else { done=new Set(); save(); }
   attempts={}; guessGate=null; guessDx=null;
-  renderProgress(); renderNav(); renderAnclas(); renderMain();
+  renderProgress(); renderNav(); renderAnclas(); rerender();
 });
 
 /* ===================== arranque ===================== */

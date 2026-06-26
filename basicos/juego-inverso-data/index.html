@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sala de Simulación · Datos — Romper y Predecir</title>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#161d2e; --panel2:#1d2740; --line:#2a3550;
+    --ink:#e7ecf5; --mut:#93a0bd; --blue:#3b82f6; --teal:#0ea5a4;
+    --green:#22c55e; --amber:#f59e0b; --red:#ef4444; --violet:#8b5cf6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    background:linear-gradient(180deg,#0c111c,#0f1420);color:var(--ink);line-height:1.5}
+  header{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  header h1{font-size:18px;margin:0;letter-spacing:.3px}
+  header .sub{color:var(--mut);font-size:13px}
+  .prog{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--mut)}
+  .bar{width:160px;height:8px;background:var(--panel2);border-radius:99px;overflow:hidden}
+  .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--violet),var(--green));transition:width .4s}
+
+  /* pipeline / estaciones clicables */
+  .pipe{display:flex;gap:6px;padding:14px 24px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line);background:#0d1320}
+  .stage{font-size:11px;padding:7px 11px;border-radius:8px;background:var(--panel);border:1px solid var(--line);
+    color:var(--mut);white-space:nowrap;transition:all .2s;cursor:pointer}
+  .stage:hover{border-color:var(--blue);color:var(--ink)}
+  .stage.pick{background:var(--amber);color:#231a02;border-color:var(--amber);box-shadow:0 0 0 3px rgba(245,158,11,.18)}
+  .stage.ok{background:var(--green);color:#06210f;border-color:var(--green)}
+  .stage.err{background:var(--red);color:#fff;border-color:var(--red)}
+  .arrow{color:var(--mut);font-size:11px}
+  .ring-lbl{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;margin-right:4px}
+
+  .wrap{display:flex;min-height:calc(100vh - 150px)}
+  nav{width:270px;border-right:1px solid var(--line);padding:14px;flex-shrink:0}
+  nav button{display:block;width:100%;text-align:left;margin:0 0 6px;padding:9px 12px;border-radius:10px;
+    background:transparent;border:1px solid transparent;color:var(--ink);cursor:pointer;font-size:12.5px;transition:.15s}
+  nav button:hover{background:var(--panel)}
+  nav button.active{background:var(--panel2);border-color:var(--line)}
+  nav button .done{color:var(--green);float:right}
+  .navgrp{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);
+    margin:14px 4px 6px;padding-top:8px;border-top:1px solid var(--line)}
+  .navgrp:first-child{margin-top:0;padding-top:0;border-top:none}
+  main{flex:1;padding:24px;max-width:920px}
+  h2{margin:0 0 4px;font-size:22px}
+  .tag{display:inline-block;font-size:11px;color:var(--violet);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+  .lead{color:var(--mut);margin:0 0 18px}
+
+  .panels{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 16px}
+  .panel-box{flex:1;min-width:300px;background:#0c1322;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .panel-box h4{margin:0;padding:9px 14px;font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;
+    background:var(--panel2);border-bottom:1px solid var(--line)}
+  pre{margin:0;padding:14px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;
+    white-space:pre-wrap;word-break:break-word;overflow-x:auto}
+  .term .cmd{color:#bfdbfe}
+  .term .out{color:var(--mut)}
+  .term .ok{color:#86efac}
+  .term .err{color:#fca5a5;font-weight:600}
+  .break-note{padding:8px 14px;border-top:1px solid var(--line);font-size:12px;color:var(--amber)}
+
+  .step{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:0 0 14px}
+  .step h3{margin:0 0 4px;font-size:14px}
+  .step p.hint{color:var(--mut);font-size:13px;margin:0 0 10px}
+  .opts{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+  .opts button{text-align:left;background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+    padding:11px 14px;border-radius:9px;cursor:pointer;font-size:14px;transition:.15s}
+  .opts button:hover{border-color:var(--blue)}
+  .opts button.sel{border-color:var(--amber);background:rgba(245,158,11,.12)}
+  button.act{background:var(--violet);border:none;color:#fff;padding:11px 20px;border-radius:9px;cursor:pointer;
+    font-size:14px;font-weight:600;margin-top:6px}
+  button.act:hover{filter:brightness(1.1)}
+  button.act:disabled{opacity:.5;cursor:not-allowed}
+  button.ghost{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:7px 13px;border-radius:8px;cursor:pointer;font-size:12px}
+  button.ghost:hover{background:var(--line)}
+  .attempts{font-size:12px;color:var(--mut);margin-left:12px}
+
+  .fb{margin-top:14px;padding:13px 15px;border-radius:10px;font-size:14px;display:none}
+  .fb.show{display:block}
+  .fb.good{background:rgba(34,197,94,.12);border:1px solid var(--green);color:#bbf7d0}
+  .fb.bad{background:rgba(239,68,68,.12);border:1px solid var(--red);color:#fecaca}
+  .fb.info{background:rgba(59,130,246,.12);border:1px solid var(--blue);color:#bfdbfe}
+  .fb .why{margin-top:8px;color:var(--ink);font-size:13px}
+  .fb .frase{margin-top:10px;font-style:italic;color:var(--amber)}
+  .fb .concepto{margin-top:8px;font-size:12.5px;color:var(--mut)}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:12.5px}
+
+  .ancla-wrap{padding:16px 24px;border-top:1px solid var(--line)}
+  .ancla-wrap h3{font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.8px;margin:0 0 8px}
+  .pill{display:inline-block;font-size:12px;padding:3px 9px;border-radius:99px;margin:2px;
+    background:rgba(139,92,246,.1);border:1px solid var(--violet);color:#ddd6fe}
+  .footnote{font-size:12px;color:var(--mut)}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🔧 Sala de Simulación · Datos</h1>
+    <div class="sub">Te doy el código sano y el cambio que lo rompió. Predice <b>dónde muere el pipeline</b> y <b>qué síntoma</b> sale — <i>antes</i> de ver la terminal.</div>
+  </div>
+  <div class="prog">
+    <button class="ghost" id="reset" title="Borrar progreso">reiniciar</button>
+    <span id="progtxt">0 / 0</span>
+    <div class="bar"><i id="progbar"></i></div>
+  </div>
+</header>
+
+<div class="pipe" id="pipe"></div>
+
+<div class="wrap">
+  <nav id="nav"></nav>
+  <main id="main"></main>
+</div>
+
+<div class="ancla-wrap">
+  <h3>🪝 Frases ancla desbloqueadas</h3>
+  <div id="anclas"><span class="footnote">Aún ninguna. Predice correctamente para coleccionarlas.</span></div>
+</div>
+
+<script>
+/* ===================== el tablero del pipeline de datos ===================== */
+const BOARDS = {
+  data: {stations:["Carga","Tipos","Faltantes","Transformar","Unir","Resumen","Inferencia"],
+         infra:new Set(), lbl:"crudo ⟶ limpio ⟶ análisis"},
+};
+const pipeEl = document.getElementById("pipe");
+let curStations = BOARDS.data.stations;
+let renderedBoard = null;
+
+function ensurePipe(board){
+  if(renderedBoard===board) return;
+  renderedBoard=board;
+  const B=BOARDS[board];
+  curStations=B.stations;
+  pipeEl.innerHTML = `<span class="ring-lbl">${B.lbl}</span>`;
+  B.stations.forEach((s,i)=>{
+    if(i) pipeEl.insertAdjacentHTML("beforeend",'<span class="arrow">→</span>');
+    pipeEl.insertAdjacentHTML("beforeend",`<span class="stage" data-s="${s}">${s}</span>`);
+  });
+  pipeEl.querySelectorAll(".stage").forEach(el=>{
+    el.addEventListener("click",()=>pickGate(el.dataset.s));
+  });
+}
+function paintPipe(){
+  pipeEl.querySelectorAll(".stage").forEach(el=>{
+    el.classList.remove("pick","ok","err");
+    if(el.dataset.s===guessGate) el.classList.add("pick");
+  });
+}
+function paintDeath(dead){
+  const idx=curStations.indexOf(dead);
+  [...pipeEl.querySelectorAll(".stage")].forEach((e,i)=>{
+    e.classList.remove("pick","ok","err");
+    if(i<idx) e.classList.add("ok");
+    else if(i===idx) e.classList.add("err");
+  });
+}
+
+const STORE_KEY="inversoDataProgress";
+let done = new Set(JSON.parse(localStorage.getItem(STORE_KEY)||"[]"));
+let anclas = JSON.parse(localStorage.getItem(STORE_KEY+"_anclas")||"{}");
+function save(){
+  localStorage.setItem(STORE_KEY, JSON.stringify([...done]));
+  localStorage.setItem(STORE_KEY+"_anclas", JSON.stringify(anclas));
+}
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+/* ============================================================
+   Cada escenario: código sano + el cambio que lo rompió.
+     dead     = estación del tablero donde MUERE (causa raíz)
+     symptoms = uno es ok:true (el síntoma real)
+     terminal = el efecto real, oculto hasta acertar
+   ============================================================ */
+const SCN = [];
+function scn(o){ SCN.push(o); }
+
+/* ----- LIMPIEZA ----- */
+
+scn({
+  id:"d1", board:"data", group:"limpieza", emoji:"🔢", title:"El número que era texto", tag:"Tipos · to_numeric vs astype",
+  codeTitle:"limpieza.py", dead:"Tipos",
+  well:`df["edad"] = pd.to_numeric(df["edad"], errors="coerce")`,
+  breakNote:`to_numeric(coerce) → astype(int), y la columna tiene "unknown"`,
+  code:`df["edad"] = df["edad"].astype(int)   # 🔧`,
+  symptoms:[
+    {ok:true,  x:`ValueError: invalid literal for int() with base 10: 'unknown'`,
+     why:"astype(int) exige que TODAS las celdas sean convertibles; en cuanto encuentra 'unknown' lanza ValueError y no convierte nada. to_numeric(coerce) lo habría vuelto NaN sin romper."},
+    {ok:false, x:`La columna queda float con NaN donde había "unknown"`,
+     why:"Ese es justo el resultado de to_numeric(coerce), lo que se quitó. astype(int) no tolera: rompe."},
+    {ok:false, x:`KeyError: "edad"`,
+     why:"La columna existe; el problema no es el nombre sino el contenido no convertible."},
+  ],
+  terminal:[
+    {k:"cmd", x:`>>> df["edad"] = df["edad"].astype(int)`},
+    {k:"err", x:`ValueError: invalid literal for int() with base 10: 'unknown'`},
+  ],
+  frase:"astype(int) no perdona texto; to_numeric(coerce) lo vuelve NaN.",
+  concepto:"Eje Tipos: convierte tolerante (coerce) y decide los NaN después."
+});
+
+scn({
+  id:"d2", board:"data", group:"limpieza", emoji:"0️⃣", title:"Rellenar con cero", tag:"⚠ bug silencioso · sin error, pero miente",
+  codeTitle:"limpieza.py", dead:"Faltantes",
+  well:`df["glucosa"] = df["glucosa"].fillna(df["glucosa"].median())`,
+  breakNote:`mediana → 0 (y faltaban 10 glucosas)`,
+  code:`df["glucosa"] = df["glucosa"].fillna(0)   # 🔧`,
+  symptoms:[
+    {ok:true,  x:`Sin error, pero la media de glucosa se desploma (≈105 → ≈78)`,
+     why:"fillna(0) no da error: mete 10 ceros que no son glucosas reales. La media baja artificialmente y el análisis de después miente. Es el bug peligroso: silencioso."},
+    {ok:false, x:`ValueError: no se puede rellenar con 0`,
+     why:"Rellenar con 0 es válido en Python; el daño es estadístico, no una excepción."},
+    {ok:false, x:`Se borran las 10 filas con NaN`,
+     why:"Eso sería dropna. fillna NO borra: rellena (aquí con un valor que sesga)."},
+  ],
+  terminal:[
+    {k:"cmd", x:`>>> df["glucosa"].mean()   # antes`},
+    {k:"out", x:`105.2`},
+    {k:"cmd", x:`>>> df["glucosa"] = df["glucosa"].fillna(0)`},
+    {k:"cmd", x:`>>> df["glucosa"].mean()   # después`},
+    {k:"err", x:`78.4   ⚠ los ceros falsos hundieron la media`},
+  ],
+  frase:"fillna(0) solo si 0 significa 'ninguno' de verdad; si no, sesga la media.",
+  concepto:"Eje Faltantes: el método de imputación cambia la estadística de después."
+});
+
+scn({
+  id:"d3", board:"data", group:"limpieza", emoji:"🗑️", title:"El dropna que arrasa", tag:"Faltantes · dropna dirigido",
+  codeTitle:"limpieza.py", dead:"Faltantes",
+  well:`df = df.dropna(subset=["glucosa"])`,
+  breakNote:`subset=["glucosa"] → dropna() sin subset (y 'notas' tiene 60% NaN)`,
+  code:`df = df.dropna()   # 🔧`,
+  symptoms:[
+    {ok:true,  x:`df pasa de 100 a 38 filas: la columna 'notas' arrastró casi todo`,
+     why:"dropna() sin subset borra la fila si CUALQUIER columna tiene NaN. La columna más hueca ('notas', 60% NaN) decide por todas. Con subset=['glucosa'] solo perderías 10 filas."},
+    {ok:false, x:`KeyError: 'notas'`,
+     why:"No se nombra 'notas' en ningún sitio; el problema es que dropna mira TODAS las columnas."},
+    {ok:false, x:`Los NaN se rellenan con la media`,
+     why:"dropna borra, no rellena. Rellenar sería fillna."},
+  ],
+  terminal:[
+    {k:"cmd", x:`>>> df.shape   # antes`},
+    {k:"out", x:`(100, 5)`},
+    {k:"cmd", x:`>>> df = df.dropna()`},
+    {k:"cmd", x:`>>> df.shape   # después`},
+    {k:"err", x:`(38, 5)   ⚠ 'notas' (60% NaN) se llevó 62 filas`},
+  ],
+  frase:"dropna() sin subset deja que la peor columna borre la tabla.",
+  concepto:"Eje Faltantes: mira isna().sum() y borra dirigido (subset)."
+});
+
+scn({
+  id:"d4", board:"data", group:"limpieza", emoji:"🔗", title:"El merge que pierde pacientes", tag:"⚠ engañoso · parece quedar todo, pierdes filas",
+  codeTitle:"analisis.py", dead:"Unir",
+  well:`df = pacientes.merge(resultados, on="paciente_id", how="left")`,
+  breakNote:`how="left" → how="inner" (hay pacientes sin resultado)`,
+  code:`df = pacientes.merge(resultados, on="paciente_id", how="inner")   # 🔧`,
+  symptoms:[
+    {ok:true,  x:`Pacientes sin resultado desaparecen: 100 → 72 filas`,
+     why:"inner conserva solo IDs presentes en AMBAS tablas. Los 28 pacientes sin fila en 'resultados' se pierden en silencio. Para conservarlos, how='left'."},
+    {ok:false, x:`Filas duplicadas: 100 → 200`,
+     why:"La duplicación pasa si la llave se repite en la derecha; aquí es lo contrario: se pierden filas por inner."},
+    {ok:false, x:`KeyError: 'paciente_id'`,
+     why:"La llave existe en ambas tablas; el merge corre, pero recorta a la intersección."},
+  ],
+  terminal:[
+    {k:"cmd", x:`>>> len(pacientes)`},
+    {k:"out", x:`100`},
+    {k:"cmd", x:`>>> len(pacientes.merge(resultados, on="paciente_id", how="inner"))`},
+    {k:"err", x:`72   ⚠ 28 pacientes sin resultado se perdieron`},
+  ],
+  frase:"inner intersecta; left conserva la izquierda completa.",
+  concepto:"Eje Unir: el how decide a quién pierdes sin avisar."
+});
+
+scn({
+  id:"d5", board:"data", group:"limpieza", emoji:"⚡", title:"El if sobre la columna", tag:"Transformar · vectorización",
+  codeTitle:"analisis.py", dead:"Transformar",
+  well:`df["alta"] = df["glucosa"] > 100`,
+  breakNote:`la comparación vectorizada → un if sobre la columna entera`,
+  code:`if df["glucosa"] > 100:        # 🔧
+    df["alta"] = True`,
+  symptoms:[
+    {ok:true,  x:`ValueError: The truth value of a Series is ambiguous`,
+     why:"if necesita UN booleano, pero df['glucosa'] > 100 es una Series de 100 booleanos. pandas no sabe si eso significa 'todos', 'alguno'… La forma correcta es vectorizada: df['alta'] = df['glucosa'] > 100."},
+    {ok:false, x:`df["alta"] queda toda en True`,
+     why:"Nunca llega a ejecutarse: el if revienta antes con ValueError."},
+    {ok:false, x:`SyntaxError`,
+     why:"La sintaxis es válida; el error es de ejecución: una Series no es un solo booleano."},
+  ],
+  terminal:[
+    {k:"cmd", x:`>>> if df["glucosa"] > 100:`},
+    {k:"err", x:`ValueError: The truth value of a Series is ambiguous. Use a.any() or a.all().`},
+  ],
+  frase:"Una columna se compara como bloque, no con un if paciente por paciente.",
+  concepto:"Eje Transformar: vectoriza; la Series entera se evalúa de golpe."
+});
+
+/* ----- ANÁLISIS ----- */
+
+scn({
+  id:"d6", board:"data", group:"analisis", emoji:"🧮", title:"Promediar texto", tag:"⚠ engañoso · parece Resumen, es Tipos",
+  codeTitle:"se olvidó convertir 'edad'", dead:"Tipos",
+  well:`df["edad"] = pd.to_numeric(df["edad"], errors="coerce")   # ✅ antes
+df.groupby("sexo")["edad"].mean()`,
+  breakNote:`se saltó la conversión: 'edad' sigue object y se agrupa directo`,
+  code:`# 'edad' sigue como texto (object)
+df.groupby("sexo")["edad"].mean()   # 🔧`,
+  symptoms:[
+    {ok:true,  x:`TypeError: could not convert string to float: '25'`,
+     why:"mean() necesita números, pero 'edad' sigue siendo object (texto). Parece morir en Resumen/groupby, pero la causa real está aguas arriba: faltó convertir el dtype en Tipos."},
+    {ok:false, x:`Devuelve la media de edad por sexo, correcta`,
+     why:"No puede: promediar texto no está definido. Habría que convertir 'edad' antes."},
+    {ok:false, x:`KeyError: 'edad'`,
+     why:"La columna existe; el problema es su tipo (object), no su nombre."},
+  ],
+  terminal:[
+    {k:"cmd", x:`>>> df["edad"].dtype`},
+    {k:"out", x:`dtype('O')   # object = texto`},
+    {k:"cmd", x:`>>> df.groupby("sexo")["edad"].mean()`},
+    {k:"err", x:`TypeError: could not convert string to float: '25'`},
+  ],
+  frase:"Un error en Resumen suele tener su raíz en Tipos: convierte antes de agregar.",
+  concepto:"Eje Tipos→Resumen: el pipeline encadena; el síntoma sale tarde, la causa está temprano."
+});
+
+scn({
+  id:"d7", board:"data", group:"analisis", emoji:"📉", title:"«Baja 5 mmHg, recétalo»", tag:"Inferencia · intervalo de confianza",
+  codeTitle:"la conclusión", dead:"Inferencia",
+  well:`Dif. de medias = -5 mmHg
+IC 95% = -12 a +2   →  cruza 0  →  NO concluyente`,
+  breakNote:`se reporta el punto estimado (-5) y se ignora el IC`,
+  code:`"baja 5 mmHg en promedio → recétalo ya"   # 🔧 ignora el IC`,
+  symptoms:[
+    {ok:true,  x:`El IC (-12 a +2) cruza 0: el efecto real va de bajar 12 a SUBIR 2 → no significativo`,
+     why:"El -5 es solo el centro del rango. Como el IC incluye 0 (el valor nulo de una diferencia de medias), no puedes descartar que el fármaco no haga nada, o incluso suba la presión. Aún no concluyente."},
+    {ok:false, x:`p < 0.05, claramente eficaz`,
+     why:"Si el IC 95% cruza el nulo, el resultado NO es estadísticamente significativo: es lo contrario de p<0.05."},
+    {ok:false, x:`El efecto en la población es exactamente -5`,
+     why:"-5 es la estimación puntual de la muestra; la población está en algún punto del IC, que aquí es ancho."},
+  ],
+  terminal:[
+    {k:"out", x:`diferencia de medias: -5 mmHg`},
+    {k:"out", x:`IC 95%: [-12, +2]`},
+    {k:"err", x:`el intervalo incluye 0  →  no significativo (no concluir)`},
+  ],
+  frase:"El IC es el margen honesto; si cruza el nulo, no concluyas.",
+  concepto:"Eje Inferencia: el punto estimado es el centro; el IC dice si confiar. Nulo: 0 para diferencias, 1 para OR/RR."
+});
+
+scn({
+  id:"d8", board:"data", group:"analisis", emoji:"🎵", title:"I² alto, efectos fijos", tag:"Inferencia · heterogeneidad I²",
+  codeTitle:"el meta-análisis", dead:"Inferencia",
+  well:`I² = 88%   →  efectos ALEATORIOS y matizar el combinado`,
+  breakNote:`se combina con efectos FIJOS y se cita el -8 como verdad única`,
+  code:`modelo = "efectos fijos"
+"el tratamiento baja 8 mmHg"   # 🔧 con I² = 88%`,
+  symptoms:[
+    {ok:true,  x:`Con I²=88% los estudios discrepan; efectos fijos da un IC falsamente estrecho`,
+     why:"I² alto = los estudios cuentan historias distintas. Efectos fijos asume que todos estiman el MISMO efecto y produce un intervalo demasiado angosto que esconde el desacuerdo. Con esa heterogeneidad va efectos aleatorios."},
+    {ok:false, x:`I² no cambia el resultado combinado`,
+     why:"I² es justo lo que decide fijos vs aleatorios, y eso cambia el IC del combinado."},
+    {ok:false, x:`I²=88% significa que el tratamiento no sirve`,
+     why:"I² mide la discrepancia ENTRE estudios, no si el tratamiento funciona. Son cosas distintas."},
+  ],
+  terminal:[
+    {k:"out", x:`heterogeneidad I² = 88%  (alta)`},
+    {k:"out", x:`modelo usado: efectos fijos`},
+    {k:"err", x:`IC combinado demasiado estrecho: esconde que los estudios no concuerdan`},
+  ],
+  frase:"I² alto = canciones distintas: usa efectos aleatorios.",
+  concepto:"Eje Inferencia: I² guía el modelo. Bajo → fijos; alto → aleatorios."
+});
+
+scn({
+  id:"d9", board:"data", group:"analisis", emoji:"🌍", title:"De la muestra a todos", tag:"⚠ engañoso · descriptiva ≠ inferencial",
+  codeTitle:"la afirmación", dead:"Inferencia",
+  well:`muestra (n=30): edad media = 52   (descriptiva: resume lo visto)
+para TODOS los pacientes: usar IC / inferencia`,
+  breakNote:`se afirma sobre la población usando solo estadística descriptiva`,
+  code:`"la edad media de TODOS los pacientes es 52"   # 🔧 desde n=30, sin IC`,
+  symptoms:[
+    {ok:true,  x:`Salto inválido: 52 describe la muestra; sin IC no afirmas el valor de la población`,
+     why:"La media muestral resume lo que viste (descriptiva). Pasar a 'todos los pacientes' es inferir, y eso exige un margen (IC). Con n=30 ese margen puede ser ancho; 52 no es el valor poblacional exacto."},
+    {ok:false, x:`Correcto: la media muestral = la media poblacional`,
+     why:"Casi nunca son iguales; por eso existe el IC. La muestra estima, no iguala."},
+    {ok:false, x:`Falta usar más decimales`,
+     why:"El problema no es la precisión del número, es el salto de muestra a población sin cuantificar la incertidumbre."},
+  ],
+  terminal:[
+    {k:"out", x:`muestra n=30 → media = 52   (descriptiva)`},
+    {k:"err", x:`afirmar sobre la población sin IC = inferencia sin margen`},
+  ],
+  frase:"Describir resume lo que viste; inferir exige el margen (IC).",
+  concepto:"Eje Inferencia: descriptiva = mi muestra; inferencial = la población, con su incertidumbre."
+});
+
+/* ===================== estado de la partida ===================== */
+let current = SCN[0].id;
+let guessGate = null;
+let guessDx = null;
+let attempts = {};
+
+function curScn(){ return SCN.find(s=>s.id===current); }
+
+function pickGate(s){
+  if(done.has(current)) return;
+  guessGate = (guessGate===s) ? null : s;
+  paintPipe();
+  syncBtn();
+}
+function pickDx(i){
+  if(done.has(current)) return;
+  guessDx = (guessDx===i) ? null : i;
+  renderMain();
+}
+function syncBtn(){
+  const b=document.getElementById("ejecutar");
+  if(b) b.disabled = done.has(current) || guessGate===null || guessDx===null;
+}
+
+function ejecutarSim(){
+  const sc=curScn();
+  attempts[current]=(attempts[current]||0)+1;
+  const gateOk = guessGate===sc.dead;
+  const symOk  = guessDx!==null && sc.symptoms[guessDx].ok;
+  const fb=document.getElementById("fb");
+  if(gateOk && symOk){
+    done.add(current); anclas[current]=sc.frase; save();
+    reveal(sc);
+    renderProgress(); renderNav(); renderAnclas(); syncBtn();
+  } else if(!gateOk){
+    [...pipeEl.querySelectorAll(".stage")].forEach(e=>{ if(e.dataset.s===guessGate) e.classList.add("err"); });
+    fb.className="fb show bad";
+    fb.innerHTML = `❌ No muere ahí. Mira el <b>cambio</b>: ¿qué etapa del pipeline toca esa línea? Esa es la que falla primero.`;
+  } else {
+    fb.className="fb show info";
+    fb.innerHTML = `🟡 Etapa correcta (<b>${esc(sc.dead)}</b>), pero ese no es el síntoma. ¿Qué verías exactamente en la terminal?`;
+  }
+}
+
+function reveal(sc){
+  paintDeath(sc.dead);
+  const correct=sc.symptoms.find(d=>d.ok);
+  const fb=document.getElementById("fb");
+  fb.className="fb show good";
+  fb.innerHTML = `✅ <b>Predicción correcta.</b> Muere en <b>${esc(sc.dead)}</b>.`
+    + `<div class="why">${esc(correct.why)}</div>`
+    + `<div class="frase">🪝 «${esc(sc.frase)}»</div>`
+    + `<div class="concepto">📎 ${esc(sc.concepto)}</div>`;
+  const rev=document.getElementById("revbox");
+  if(rev) rev.innerHTML =
+    `<div class="panel-box" style="margin-top:14px"><h4>🖥️ Terminal · lo que realmente pasó</h4>`
+    + `<pre class="term">${termHTML(sc.terminal)}</pre></div>`;
+}
+
+/* ===================== render ===================== */
+function renderProgress(){
+  document.getElementById("progtxt").textContent = `${done.size} / ${SCN.length} predichos`;
+  document.getElementById("progbar").style.width = (done.size/SCN.length*100)+"%";
+}
+function renderAnclas(){
+  const c=document.getElementById("anclas");
+  const items=Object.values(anclas);
+  c.innerHTML = items.length ? items.map(f=>`<span class="pill">🪝 ${esc(f)}</span>`).join("")
+    : '<span class="footnote">Aún ninguna. Predice correctamente para coleccionarlas.</span>';
+}
+function renderNav(){
+  const nav=document.getElementById("nav");
+  const groups=[
+    {lbl:"🩺 Limpieza · del crudo a la tabla", list:SCN.filter(s=>s.group==="limpieza")},
+    {lbl:"📊 Análisis · describir e inferir", list:SCN.filter(s=>s.group==="analisis")},
+  ];
+  nav.innerHTML = groups.map(g=>
+    `<div class="navgrp">${g.lbl}</div>`
+    + g.list.map(s=>
+        `<button class="${s.id===current?'active':''}" onclick="goto('${s.id}')">`
+        + `${s.emoji} ${esc(s.title)}`
+        + `${done.has(s.id)?'<span class="done">✓</span>':''}</button>`
+      ).join("")
+  ).join("");
+}
+function termHTML(lines){
+  return lines.map(l=>`<span class="${l.k}">${esc(l.x)}</span>`).join("\n");
+}
+function renderMain(){
+  const sc=curScn();
+  ensurePipe(sc.board);
+  const solved=done.has(sc.id);
+  const m=document.getElementById("main");
+  m.innerHTML = `
+    <span class="tag">${esc(sc.tag)}</span>
+    <h2>🔧 ${esc(sc.title)}</h2>
+    <p class="lead">Te doy el código (o la lectura) <b>sana</b> y el <b>cambio</b> que lo rompió.
+      Predice <b>dónde muere</b> (tablero arriba) y <b>qué síntoma</b> sale — <i>sin mirar la terminal</i>.</p>
+    <div class="panels">
+      <div class="panel-box"><h4>✅ ${esc(sc.codeTitle)} · sano</h4><pre>${esc(sc.well)}</pre></div>
+      <div class="panel-box"><h4>🔧 ${esc(sc.codeTitle)} · roto</h4><pre>${esc(sc.code)}</pre>
+        <div class="break-note">cambio: ${esc(sc.breakNote)}</div></div>
+    </div>
+
+    <div class="step">
+      <h3>Predice el síntoma</h3>
+      <p class="hint">Paso 1: clic en la etapa del tablero donde MORIRÁ. Paso 2: elige el síntoma que saldrá.</p>
+      <div class="opts">
+        ${sc.symptoms.map((d,i)=>`<button class="${guessDx===i?'sel':''}" ${solved?'disabled':''} onclick="pickDx(${i})">${esc(d.x)}</button>`).join("")}
+      </div>
+      <div style="margin-top:12px;display:flex;align-items:center">
+        <button class="act" id="ejecutar" onclick="ejecutarSim()">Ejecutar simulación ▶</button>
+        <span class="attempts">${solved?'✓ predicho':'intentos: '+(attempts[sc.id]||0)}</span>
+      </div>
+      <div class="fb" id="fb"></div>
+    </div>
+    <div id="revbox"></div>`;
+  paintPipe();
+  syncBtn();
+  if(solved) reveal(sc);
+}
+function goto(id){
+  current=id; guessGate=null; guessDx=null;
+  renderNav(); renderMain();
+}
+document.getElementById("reset").addEventListener("click",()=>{
+  if(!confirm("¿Borrar todo el progreso?")) return;
+  done=new Set(); anclas={}; save();
+  attempts={}; guessGate=null; guessDx=null;
+  renderProgress(); renderNav(); renderAnclas(); renderMain();
+});
+
+/* ===================== arranque ===================== */
+renderProgress();
+renderAnclas();
+renderNav();
+renderMain();
+</script>
+</body>
+</html>

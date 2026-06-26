@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manos al Teclado · Pandas — teclea el pipeline de datos</title>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#161d2e; --panel2:#1d2740; --line:#2a3550;
+    --ink:#e7ecf5; --mut:#93a0bd; --blue:#3b82f6; --teal:#0ea5a4;
+    --green:#22c55e; --amber:#f59e0b; --red:#ef4444; --violet:#8b5cf6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    background:linear-gradient(180deg,#0c111c,#0f1420);color:var(--ink);line-height:1.5}
+  header{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  header h1{font-size:18px;margin:0;letter-spacing:.3px}
+  header .sub{color:var(--mut);font-size:13px}
+  .prog{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--mut)}
+  .bar{width:160px;height:8px;background:var(--panel2);border-radius:99px;overflow:hidden}
+  .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--green));transition:width .4s}
+
+  .pipe{display:flex;gap:6px;padding:14px 24px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line);background:#0d1320}
+  .stage{font-size:11px;padding:7px 11px;border-radius:8px;background:var(--panel);border:1px solid var(--line);color:var(--mut);white-space:nowrap}
+  .arrow{color:var(--mut);font-size:11px}
+  .ring-lbl{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;margin-right:4px}
+
+  .wrap{display:flex;min-height:calc(100vh - 150px)}
+  nav{width:280px;border-right:1px solid var(--line);padding:14px;flex-shrink:0}
+  nav .grp{font-size:10px;color:var(--teal);text-transform:uppercase;letter-spacing:.8px;margin:16px 4px 7px}
+  nav .grp:first-child{margin-top:0}
+  nav button{display:block;width:100%;text-align:left;margin:0 0 6px;padding:9px 12px;border-radius:10px;
+    background:transparent;border:1px solid transparent;color:var(--ink);cursor:pointer;font-size:13px;transition:.15s}
+  nav button:hover{background:var(--panel)}
+  nav button.active{background:var(--panel2);border-color:var(--line)}
+  nav button .cnt{float:right;font-size:11px;color:var(--mut)}
+  nav button .cnt.full{color:var(--green)}
+  main{flex:1;padding:24px;max-width:920px}
+  h2{margin:0 0 4px;font-size:22px}
+  .tag{display:inline-block;font-size:11px;color:var(--teal);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+  .lead{color:var(--mut);margin:0 0 20px}
+  .sintoma{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.4);border-radius:10px;padding:10px 14px;margin:0 0 22px;font-size:13.5px;color:#fde68a}
+
+  .capcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:0 0 16px}
+  .capcard.capdone{border-color:rgba(34,197,94,.5)}
+  .capbadge{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.4px;padding:3px 10px;border-radius:99px;
+    background:rgba(139,92,246,.14);border:1px solid var(--violet);color:#ddd6fe;margin-bottom:12px}
+
+  .panel-box{background:#0c1322;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:0 0 14px}
+  .panel-box h4{margin:0;padding:9px 14px;font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;
+    background:var(--panel2);border-bottom:1px solid var(--line)}
+  pre{margin:0;padding:14px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;
+    white-space:pre-wrap;word-break:break-word;overflow-x:auto}
+
+  .quiero{background:rgba(59,130,246,.10);border:1px solid var(--blue);border-radius:10px;padding:11px 14px;margin:0 0 12px;font-size:14px}
+  .quiero b{color:#bfdbfe}
+  .steplbl{font-size:13px;color:var(--mut);margin:8px 0 3px}
+  .pista{font-size:11px;color:var(--mut);margin-top:2px}
+
+  .inp-wrap{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+  .inp-line{display:flex;align-items:center;gap:8px}
+  input.cmd-in{flex:1;background:#0a1020;border:1px solid var(--line);color:#bfdbfe;
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13.5px;padding:10px 12px;border-radius:9px;outline:none}
+  input.cmd-in:focus{border-color:var(--blue)}
+  input.cmd-in:disabled{opacity:.85}
+  .mark{font-size:15px;width:18px;text-align:center}
+  .mark.ok{color:var(--green)} .mark.bad{color:var(--red)}
+  .prompt-sym{color:var(--green);font-family:ui-monospace,monospace;font-size:13.5px}
+
+  .btns{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+  button.act{background:var(--blue);border:none;color:#fff;padding:9px 18px;border-radius:9px;cursor:pointer;font-size:13.5px;font-weight:600}
+  button.act:hover{filter:brightness(1.1)}
+  button.ghost{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:7px 12px;border-radius:8px;cursor:pointer;font-size:12px}
+  button.ghost:hover{background:var(--line)}
+  .attempts{font-size:12px;color:var(--mut);margin-left:2px}
+
+  .fb{margin-top:13px;padding:12px 14px;border-radius:10px;font-size:13.5px;display:none}
+  .fb.show{display:block}
+  .fb.good{background:rgba(34,197,94,.12);border:1px solid var(--green);color:#bbf7d0}
+  .fb.bad{background:rgba(239,68,68,.12);border:1px solid var(--red);color:#fecaca}
+  .fb.info{background:rgba(59,130,246,.12);border:1px solid var(--blue);color:#bfdbfe}
+  .fb .why{margin-top:7px;color:var(--ink);font-size:13px}
+  .fb .frase{margin-top:9px;font-style:italic;color:var(--amber)}
+  .fb .concepto{margin-top:7px;font-size:12.5px;color:var(--mut)}
+  .fb .sol{margin-top:8px;font-family:ui-monospace,monospace;font-size:13px;color:#bfdbfe;background:#0a1020;padding:8px 11px;border-radius:8px;white-space:pre-wrap}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:12.5px}
+
+  .ancla-wrap{padding:16px 24px;border-top:1px solid var(--line)}
+  .ancla-wrap h3{font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.8px;margin:0 0 8px}
+  .pill{display:inline-block;font-size:12px;padding:3px 9px;border-radius:99px;margin:2px;background:rgba(245,158,11,.1);border:1px solid var(--amber);color:#fde68a}
+  .footnote{font-size:12px;color:var(--mut)}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>⌨️ Manos al Teclado · Pandas</h1>
+    <div class="sub">Cada paso del <i>pipeline de datos</i>, ahora para escribir de memoria. Reconocer el comando → teclearlo con las manos.</div>
+  </div>
+  <div class="prog">
+    <button class="ghost" id="reset" title="Borrar progreso">reiniciar</button>
+    <span id="progtxt">0 / 0</span>
+    <div class="bar"><i id="progbar"></i></div>
+  </div>
+</header>
+
+<div class="pipe">
+  <span class="ring-lbl">las 4 capas</span>
+  <span class="stage">1 · Vocabulario (la pieza)</span><span class="arrow">→</span>
+  <span class="stage">2 · El comando (la línea)</span><span class="arrow">→</span>
+  <span class="stage">3 · La secuencia (el flujo)</span><span class="arrow">→</span>
+  <span class="stage">4 · El arreglo (el bug)</span>
+</div>
+
+<div class="wrap">
+  <nav id="nav"></nav>
+  <main id="main"></main>
+</div>
+
+<div class="ancla-wrap">
+  <h3>🪝 Frases ancla desbloqueadas</h3>
+  <div id="anclas"><span class="footnote">Aún ninguna. Teclea bien para coleccionarlas.</span></div>
+</div>
+
+<script>
+/* ============================================================
+   Organizado por ESCENARIO del pipeline de datos. Cada escenario
+   trae sus capas; en TODAS tecleas tú.
+     kind:"token" -> capa 1 (una pieza)
+     kind:"term"  -> capa 2 (un comando)
+     kind:"seq"   -> capa 3 (varios comandos)
+     kind:"fix"   -> capa 4 (línea corregida)  [mode: code|term]
+   ============================================================ */
+const CAPA_LBL = {1:"Vocabulario · la pieza", 2:"El comando · la línea", 3:"La secuencia · el flujo", 4:"El arreglo · el bug"};
+const SITES = [
+  {key:"limpieza", lbl:"🩺 Limpieza · del crudo a la tabla"},
+  {key:"analisis", lbl:"📊 Resumen · de agrupar a describir"},
+];
+
+const SC=[];
+function sc(o){ SC.push(o); }
+
+/* ===================== SITIO 1 · LIMPIEZA ===================== */
+
+sc({id:"s1", site:"limpieza", emoji:"🩺", title:"Signos vitales del dataset",
+  sintoma:"Cargaste el CSV y no sabes qué columnas están mal tipadas ni cuántos huecos hay.",
+  caps:[
+   {capa:1, kind:"token", quiero:"Quiero ver de un vistazo <b>filas, columnas, no-nulos y dtype</b> de cada columna. ¿Qué método del DataFrame?",
+     lbl:"método sobre df", accept:["df.info()"], sol:"df.info()",
+     why:"info() son los signos vitales: cuántas filas, qué dtype y cuántos no-nulos por columna.",
+     frase:"Antes de analizar, tomo signos vitales con info().",
+     concepto:"Eje diagnóstico: info() revela tipos mal puestos y huecos antes de tocar nada."},
+   {capa:2, kind:"term", quiero:"Cuenta cuántos <b>NaN</b> hay en cada columna.",
+     accept:["df.isna().sum()","df.isnull().sum()"], sol:"df.isna().sum()",
+     why:"isna() marca True en cada hueco; sum() los cuenta columna por columna.",
+     frase:"isna().sum() = el conteo de huecos, columna por columna.",
+     concepto:"Eje diagnóstico: localizar los faltantes guía si borras o imputas."},
+   {capa:3, kind:"seq", quiero:"Haz el chequeo completo del dataset recién cargado.",
+     steps:[
+       {p:"1) ¿Cuántas filas y columnas tiene?", accept:["df.shape"], sol:"df.shape"},
+       {p:"2) Tipos y no-nulos de cada columna", accept:["df.info()"], sol:"df.info()"},
+       {p:"3) Cuántos huecos por columna", accept:["df.isna().sum()","df.isnull().sum()"], sol:"df.isna().sum()"},
+     ],
+     why:"shape mide el tamaño, info() el estado de cada columna, isna().sum() dónde faltan datos.",
+     frase:"shape → info → isna().sum(): tamaño, estado, huecos.",
+     concepto:"Eje diagnóstico: nunca analices a ciegas; primero el tablero de control."},
+  ]});
+
+sc({id:"s2", site:"limpieza", emoji:"🔢", title:"El número atrapado como texto",
+  sintoma:"La columna edad trae 25, 30, 'unknown', 28… y pandas la ve como object, no como número.",
+  caps:[
+   {capa:1, kind:"token", quiero:"La pieza que, al convertir, vuelve <b>NaN</b> lo que no se puede convertir (en vez de reventar).",
+     lbl:"argumento de to_numeric", accept:[`errors="coerce"`], sol:`errors="coerce"`,
+     why:"coerce = 'fuerza con tolerancia': la celda no convertible se vuelve NaN sin lanzar error.",
+     frase:"errors='coerce': lo que no es número → NaN, sin romper.",
+     concepto:"Eje tipos: coerce te deja convertir columnas sucias sin que una celda mala detenga todo."},
+   {capa:2, kind:"term", quiero:"Convierte la columna <code>edad</code> a número y guárdala en su sitio.",
+     accept:[`df["edad"] = pd.to_numeric(df["edad"], errors="coerce")`], sol:`df["edad"] = pd.to_numeric(df["edad"], errors="coerce")`,
+     why:"to_numeric intenta convertir cada celda; con coerce, 'unknown' → NaN y el resto pasa a float.",
+     frase:"Un número atrapado como texto: lo libero con to_numeric.",
+     concepto:"Eje tipos: tras esto, isna().sum() te muestra cuánta basura había escondida."},
+   {capa:4, kind:"fix", file:"limpieza.py", mode:"code",
+     quiero:"Esta línea revienta porque la columna tiene <code>'unknown'</code>. Reescríbela para que el texto malo se vuelva <b>NaN</b> en vez de romper.",
+     broken:`df["edad"] = df["edad"].astype(int)   # 💥 ValueError: 'unknown'`,
+     errorModel:"astype(int) no perdona: si UNA celda es 'unknown', lanza ValueError y no convierte nada. to_numeric(coerce) tolera y marca NaN.",
+     accept:[`df["edad"] = pd.to_numeric(df["edad"], errors="coerce")`], sol:`df["edad"] = pd.to_numeric(df["edad"], errors="coerce")`,
+     why:"astype exige que TODO sea convertible; to_numeric con coerce convierte lo bueno y marca lo malo.",
+     frase:"astype(int) explota con texto; to_numeric(coerce) lo vuelve NaN.",
+     concepto:"Eje tipos: convierte tolerante primero, decide los NaN después."},
+  ]});
+
+sc({id:"s3", site:"limpieza", emoji:"🕳️", title:"El hueco que no es cero",
+  sintoma:"A glucosa le faltan 10 valores. Hay que rellenarlos sin inventar una glucosa de 0.",
+  caps:[
+   {capa:1, kind:"token", quiero:"La función que da el <b>centro</b> y NO se deja arrastrar por outliers.",
+     lbl:"sobre df[\"glucosa\"]", accept:[`df["glucosa"].median()`], sol:`df["glucosa"].median()`,
+     why:"La mediana es el valor del medio; un outlier gigante casi no la mueve (la media sí).",
+     frase:"Con outliers, imputo con la mediana, no con la media.",
+     concepto:"Eje faltantes: media si los datos son simétricos; mediana si hay outliers."},
+   {capa:2, kind:"term", quiero:"Rellena los NaN de <code>glucosa</code> con su <b>mediana</b>.",
+     accept:[`df["glucosa"] = df["glucosa"].fillna(df["glucosa"].median())`], sol:`df["glucosa"] = df["glucosa"].fillna(df["glucosa"].median())`,
+     why:"fillna sustituye cada NaN por el valor que le pases; aquí, la mediana de la propia columna.",
+     frase:"fillna rellena el hueco; el qué (media/mediana/0) es decisión clínica.",
+     concepto:"Eje faltantes: imputar conserva la fila cuando perderla cuesta caro."},
+   {capa:4, kind:"fix", file:"limpieza.py", mode:"code",
+     quiero:"Rellenar con <b>0</b> hunde el promedio (0 no es una glucosa real). Reescríbelo con un valor honesto.",
+     broken:`df["glucosa"] = df["glucosa"].fillna(0)   # ⚠ inventa glucosas de 0`,
+     errorModel:"Rellenar con 0 mete valores falsos: la media de glucosa se desploma y el análisis miente. 0 solo vale si 'ausencia' significa de verdad 'ninguno'.",
+     accept:[`df["glucosa"] = df["glucosa"].fillna(df["glucosa"].median())`], sol:`df["glucosa"] = df["glucosa"].fillna(df["glucosa"].median())`,
+     why:"0 sesga todo hacia abajo; la mediana rellena sin distorsionar el centro.",
+     frase:"fillna(0) solo si 0 significa 'ninguno' de verdad; aquí, mediana.",
+     concepto:"Eje faltantes: el método de imputación cambia tus estadísticas de después."},
+  ]});
+
+sc({id:"s4", site:"limpieza", emoji:"🗑️", title:"¿Borrar o imputar?",
+  sintoma:"Hay filas con NaN. dropna() a ciegas borra media tabla; necesitas borrar con criterio.",
+  caps:[
+   {capa:1, kind:"token", quiero:"La pieza para borrar solo las filas donde falte <b>glucosa</b> (no donde falte cualquier cosa).",
+     lbl:"argumento de dropna", accept:[`subset=["glucosa"]`], sol:`subset=["glucosa"]`,
+     why:"subset limita el borrado a las columnas que de verdad te importan.",
+     frase:"dropna(subset=...) borra mirando solo lo que necesitas.",
+     concepto:"Eje faltantes: borrar dirigido pierde menos información."},
+   {capa:2, kind:"term", quiero:"Borra las filas que <b>no tengan glucosa</b>.",
+     accept:[`df.dropna(subset=["glucosa"])`,`df = df.dropna(subset=["glucosa"])`], sol:`df.dropna(subset=["glucosa"])`,
+     why:"Sin subset, dropna borra la fila si CUALQUIER columna tiene NaN.",
+     frase:"Borro si son pocos y aleatorios; imputo si perder la fila cuesta caro.",
+     concepto:"Eje faltantes: dropna dirigido vs fillna, según cuánto duela perder la fila."},
+   {capa:4, kind:"fix", file:"limpieza.py", mode:"code",
+     quiero:"La columna <code>notas</code> tiene 60% de NaN y este <code>dropna()</code> borra casi toda la tabla. Bórralo solo por glucosa.",
+     broken:`df = df.dropna()   # 100 → 38 filas, por culpa de 'notas'`,
+     errorModel:"dropna() sin subset borra la fila si CUALQUIER columna tiene NaN; una columna muy hueca arrastra a todas. Limita el borrado con subset.",
+     accept:[`df = df.dropna(subset=["glucosa"])`,`df.dropna(subset=["glucosa"])`], sol:`df = df.dropna(subset=["glucosa"])`,
+     why:"El problema no era glucosa, era 'notas'. Con subset borras solo donde de verdad importa.",
+     frase:"dropna() sin subset deja que la peor columna decida por todas.",
+     concepto:"Eje faltantes: revisa isna().sum() antes de borrar a ciegas."},
+  ]});
+
+/* ===================== SITIO 2 · ANÁLISIS ===================== */
+
+sc({id:"s5", site:"analisis", emoji:"📊", title:"Resumen por grupo",
+  sintoma:"Quieres la glucosa promedio de hombres vs mujeres, no el promedio global.",
+  caps:[
+   {capa:1, kind:"token", quiero:"Tras agrupar y elegir la columna, ¿qué <b>aplicas</b> para el promedio de cada grupo?",
+     lbl:"método de agregación", accept:["mean()",".mean()"], sol:".mean()",
+     why:"groupby parte la tabla; mean() se aplica DENTRO de cada grupo y luego se combinan.",
+     frase:"groupby es partir-aplicar-combinar.",
+     concepto:"Eje resumen: groupby es el GROUP BY de SQL."},
+   {capa:2, kind:"term", quiero:"Glucosa <b>promedio por sexo</b>.",
+     accept:[`df.groupby("sexo")["glucosa"].mean()`], sol:`df.groupby("sexo")["glucosa"].mean()`,
+     why:"groupby('sexo') parte por sexo; ['glucosa'] elige la columna; mean() promedia cada grupo.",
+     frase:"groupby divide, aplica dentro de cada grupo y combina el resumen.",
+     concepto:"Eje resumen: partir-aplicar-combinar = split-apply-combine."},
+   {capa:3, kind:"seq", quiero:"Compara los grupos con más detalle.",
+     steps:[
+       {p:"1) ¿Cuántos pacientes por sexo?", accept:[`df["sexo"].value_counts()`,`df.groupby("sexo").size()`], sol:`df["sexo"].value_counts()`},
+       {p:"2) Glucosa media por sexo", accept:[`df.groupby("sexo")["glucosa"].mean()`], sol:`df.groupby("sexo")["glucosa"].mean()`},
+       {p:"3) Media y desviación por sexo", accept:[`df.groupby("sexo")["glucosa"].agg(["mean","std"])`], sol:`df.groupby("sexo")["glucosa"].agg(["mean","std"])`},
+     ],
+     why:"value_counts cuenta, mean resume el centro, agg(['mean','std']) añade la dispersión.",
+     frase:"Primero cuántos, luego el centro, luego cuánto varían.",
+     concepto:"Eje resumen: n + media + DE describen cada grupo."},
+   {capa:4, kind:"fix", file:"analisis.py", mode:"code",
+     quiero:"Esto intenta promediar <b>toda</b> la tabla por sexo, pero <code>nombre</code> es texto y estorba. Selecciona solo glucosa.",
+     broken:`df.groupby("sexo").mean()   # 💥 falla por las columnas de texto`,
+     errorModel:"mean() sobre el grupo intenta promediar TODAS las columnas, incluidas las de texto (nombre). Elige antes la columna numérica.",
+     accept:[`df.groupby("sexo")["glucosa"].mean()`], sol:`df.groupby("sexo")["glucosa"].mean()`,
+     why:"Selecciona la columna numérica ANTES de agregar y el texto deja de estorbar.",
+     frase:"Agrupa, elige la columna, y entonces resume.",
+     concepto:"Eje resumen: groupby(col)[numérica].agg — en ese orden."},
+  ]});
+
+sc({id:"s6", site:"analisis", emoji:"🔗", title:"Unir dos tablas",
+  sintoma:"Tienes 'pacientes' y 'resultados' en tablas separadas; necesitas una sola por paciente_id.",
+  caps:[
+   {capa:1, kind:"token", quiero:"La pieza que dice <b>por qué columna</b> se unen las dos tablas.",
+     lbl:"argumento de merge", accept:[`on="paciente_id"`], sol:`on="paciente_id"`,
+     why:"on = la llave compartida por la que se enlazan las filas de ambas tablas.",
+     frase:"merge enlaza tablas por identidad compartida.",
+     concepto:"Eje unir: el merge de pandas es el JOIN de SQL."},
+   {capa:1, kind:"token", quiero:"La pieza para conservar <b>todos</b> los pacientes, aunque a alguno le falte resultado.",
+     lbl:"tipo de unión", accept:[`how="left"`], sol:`how="left"`,
+     why:"left conserva toda la tabla izquierda; los que no casen quedan con NaN en las columnas de la derecha.",
+     frase:"how='left' = no pierdo a nadie de la tabla izquierda.",
+     concepto:"Eje unir: inner solo lo común; left conserva la izquierda completa."},
+   {capa:2, kind:"term", quiero:"Une <code>pacientes</code> con <code>resultados</code> por paciente_id.",
+     accept:[`pacientes.merge(resultados, on="paciente_id")`], sol:`pacientes.merge(resultados, on="paciente_id")`,
+     why:"merge alinea fila por fila donde coincide la llave y pega las columnas de la otra tabla.",
+     frase:"merge = pegar columnas de otra tabla, alineando por la llave.",
+     concepto:"Eje unir: por defecto es inner (solo los IDs presentes en ambas)."},
+   {capa:4, kind:"fix", file:"analisis.py", mode:"code",
+     quiero:"Quieres <b>todos</b> los pacientes, pero este merge borra a los que no tienen resultado. Arréglalo.",
+     broken:`pacientes.merge(resultados, on="paciente_id", how="inner")   # pierde pacientes sin resultado`,
+     errorModel:"inner solo conserva IDs presentes en AMBAS tablas; los pacientes sin resultado desaparecen. Para conservarlos todos, how='left'.",
+     accept:[`pacientes.merge(resultados, on="paciente_id", how="left")`], sol:`pacientes.merge(resultados, on="paciente_id", how="left")`,
+     why:"left mantiene a todos los de la izquierda; los sin resultado quedan con NaN, pero no desaparecen.",
+     frase:"inner intersecta; left conserva la izquierda completa.",
+     concepto:"Eje unir: elige el how según a quién no puedes permitirte perder."},
+  ]});
+
+sc({id:"s7", site:"analisis", emoji:"⚡", title:"Toda la columna de golpe",
+  sintoma:"Quieres sumar 10 a cada glucosa. Tu primer instinto es un for, pero eso no es pandas.",
+  caps:[
+   {capa:2, kind:"term", quiero:"Crea una columna <code>glucosa_aj</code> con glucosa + 10, <b>vectorizado</b>.",
+     accept:[`df["glucosa_aj"] = df["glucosa"] + 10`], sol:`df["glucosa_aj"] = df["glucosa"] + 10`,
+     why:"En pandas, una operación sobre la columna se aplica a todas las celdas a la vez.",
+     frase:"En pandas, la columna se procesa como bloque, no paciente por paciente.",
+     concepto:"Eje transformar: vectorizar = más rápido, más limpio, más legible."},
+   {capa:4, kind:"fix", file:"analisis.py", mode:"code",
+     quiero:"Reescribe este bucle como una sola línea <b>vectorizada</b>.",
+     broken:`nueva = []
+for v in df["glucosa"]:
+    nueva.append(v + 10)
+df["glucosa_aj"] = nueva`,
+     errorModel:"El for recorre celda por celda: lento y poco pandas. La misma operación sobre la columna entera lo hace de golpe.",
+     accept:[`df["glucosa_aj"] = df["glucosa"] + 10`], sol:`df["glucosa_aj"] = df["glucosa"] + 10`,
+     why:"pandas suma el escalar a toda la Series de una vez; no necesitas recorrerla tú.",
+     frase:"Si te ves escribiendo un for sobre una columna, casi siempre hay versión vectorizada.",
+     concepto:"Eje transformar: pensar 'todo de golpe', no 'uno por uno'."},
+  ]});
+
+/* ===================== ids + estado ===================== */
+SC.forEach(s=>s.caps.forEach((c,i)=> c.id = s.id+"-"+c.capa+"-"+i ));
+const ALL_CAPS = SC.flatMap(s=>s.caps);
+
+const STORE="comandosDataProgress";
+let done = new Set(JSON.parse(localStorage.getItem(STORE)||"[]"));
+let anclas = JSON.parse(localStorage.getItem(STORE+"_anclas")||"{}");
+let attempts = {};
+function save(){
+  localStorage.setItem(STORE, JSON.stringify([...done]));
+  localStorage.setItem(STORE+"_anclas", JSON.stringify(anclas));
+}
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+let current = SC[0].id;
+function curScn(){ return SC.find(s=>s.id===current); }
+function capById(id){ return ALL_CAPS.find(c=>c.id===id); }
+
+/* ===================== normalización ===================== */
+function normTerm(s){
+  return String(s).replace(/^[\s$#>]+/,"")
+    .replace(/[“”]/g,'"').replace(/[‘’]/g,"'").replace(/'/g,'"')
+    .replace(/\s+/g," ").trim();
+}
+function normCode(s){
+  return String(s).replace(/[“”]/g,'"').replace(/[‘’]/g,"'").replace(/'/g,'"')
+    .replace(/\s+/g,"").trim();
+}
+function capMode(cap){ return cap.kind==="fix" ? (cap.mode||"term") : "term"; }
+function matchOne(val, accept, mode){
+  const f = mode==="code"?normCode:normTerm;
+  const got=f(val);
+  return accept.some(a=>f(a)===got);
+}
+
+/* ===================== nav / progreso / leyenda ===================== */
+function scnDoneCount(s){ return s.caps.filter(c=>done.has(c.id)).length; }
+function renderNav(){
+  const nav=document.getElementById("nav");
+  let html="";
+  SITES.forEach(site=>{
+    html+=`<div class="grp">${esc(site.lbl)}</div>`;
+    SC.filter(s=>s.site===site.key).forEach(s=>{
+      const dc=scnDoneCount(s), tot=s.caps.length, full=dc===tot;
+      html+=`<button class="${s.id===current?'active':''}" onclick="goto('${s.id}')">`
+        +`${s.emoji} ${esc(s.title)}`
+        +`<span class="cnt ${full?'full':''}">${dc}/${tot}</span></button>`;
+    });
+  });
+  nav.innerHTML=html;
+}
+function renderProgress(){
+  document.getElementById("progtxt").textContent=`${done.size} / ${ALL_CAPS.length}`;
+  document.getElementById("progbar").style.width=(done.size/ALL_CAPS.length*100)+"%";
+}
+function renderAnclas(){
+  const c=document.getElementById("anclas");
+  const items=[...new Set(Object.values(anclas))];
+  c.innerHTML=items.length?items.map(f=>`<span class="pill">🪝 ${esc(f)}</span>`).join("")
+    :'<span class="footnote">Aún ninguna. Teclea bien para coleccionarlas.</span>';
+}
+
+/* ===================== render de tarjetas (capas) ===================== */
+function capCard(cap){
+  const id=cap.id, solved=done.has(id);
+  let h=`<div class="capbadge">Capa ${cap.capa} · ${CAPA_LBL[cap.capa]}</div>`;
+  if(cap.kind==="fix"){
+    h+=`<div class="panel-box"><h4>📄 ${esc(cap.file)} · está roto</h4><pre>${esc(cap.broken)}</pre></div>`;
+  }
+  h+=`<div class="quiero">🎯 ${cap.quiero}</div>`;
+  if(cap.kind==="seq"){
+    h+=`<div class="inp-wrap">`;
+    cap.steps.forEach((st,i)=>{
+      h+=`<div class="steplbl">${esc(st.p)}</div>`
+        +`<div class="inp-line"><span class="prompt-sym">&gt;&gt;&gt;</span>`
+        +`<input class="cmd-in" id="in_${id}_${i}" ${solved?'disabled':''} autocomplete="off" spellcheck="false" placeholder="escribe el comando...">`
+        +`<span class="mark" id="mk_${id}_${i}"></span></div>`;
+    });
+    h+=`</div>`;
+  } else {
+    const sym=cap.kind==="fix"?"":`<span class="prompt-sym">&gt;&gt;&gt;</span>`;
+    const ph=cap.kind==="token"?"escribe la pieza...":(cap.kind==="fix"?"escribe la línea corregida...":"escribe el comando...");
+    h+=`<div class="inp-wrap"><div class="inp-line">${sym}`
+      +`<input class="cmd-in" id="in_${id}_0" ${solved?'disabled':''} autocomplete="off" spellcheck="false" placeholder="${ph}">`
+      +`<span class="mark" id="mk_${id}_0"></span></div></div>`;
+    if(cap.kind==="token") h+=`<div class="pista">Pista: ${esc(cap.lbl)}</div>`;
+  }
+  h+=`<div class="btns"><button class="act" onclick="checkItem('${id}')">Comprobar ▶</button>`;
+  if(cap.kind==="fix") h+=`<button class="ghost" onclick="verMal('${id}')">¿qué estaba mal?</button>`;
+  h+=`<button class="ghost" onclick="verSol('${id}')">ver solución</button>`
+    +`<span class="attempts" id="at_${id}">${solved?'✓ dominado':'intentos: '+(attempts[id]||0)}</span></div>`
+    +`<div class="fb" id="fb_${id}"></div>`;
+  return `<div class="capcard ${solved?'capdone':''}" id="card_${id}">${h}</div>`;
+}
+
+function renderMain(){
+  const s=curScn();
+  const m=document.getElementById("main");
+  const siteLbl=SITES.find(x=>x.key===s.site).lbl;
+  m.innerHTML=`
+    <span class="tag">${esc(siteLbl)}</span>
+    <h2>${s.emoji} ${esc(s.title)}</h2>
+    <p class="lead">Las capas de este escenario, de la pieza al arreglo. Teclea cada una de memoria.</p>
+    <div class="sintoma">🩺 El problema: ${esc(s.sintoma)}</div>
+    ${s.caps.map(capCard).join("")}`;
+  s.caps.forEach(cap=>{
+    if(done.has(cap.id)){ fillSolved(cap); return; }
+    const first=document.getElementById("in_"+cap.id+"_0");
+    if(first && cap.kind!=="seq") first.addEventListener("keydown",e=>{ if(e.key==="Enter") checkItem(cap.id); });
+    if(cap.kind==="seq"){
+      cap.steps.forEach((st,i)=>{ const el=document.getElementById("in_"+cap.id+"_"+i); if(el) el.addEventListener("keydown",e=>{ if(e.key==="Enter") checkItem(cap.id); }); });
+    }
+  });
+}
+
+function feedbackHTML(cap){
+  return `✅ <b>¡Correcto!</b> — en ${attempts[cap.id]||1} intento(s).`
+    +`<div class="why">${esc(cap.why)}</div>`
+    +`<div class="frase">🪝 «${esc(cap.frase)}»</div>`
+    +`<div class="concepto">📎 ${esc(cap.concepto)}</div>`;
+}
+function solText(cap){ return cap.kind==="seq" ? cap.steps.map(s=>s.sol).join("\n") : cap.sol; }
+
+function fillSolved(cap){
+  const fb=document.getElementById("fb_"+cap.id);
+  if(fb){ fb.className="fb show good"; fb.innerHTML=feedbackHTML(cap)+`<div class="sol">${esc(solText(cap))}</div>`; }
+  if(cap.kind==="seq"){
+    cap.steps.forEach((st,i)=>{ const el=document.getElementById("in_"+cap.id+"_"+i); if(el){el.value=st.sol; el.disabled=true;} const mk=document.getElementById("mk_"+cap.id+"_"+i); if(mk){mk.textContent="✓"; mk.className="mark ok";} });
+  } else {
+    const el=document.getElementById("in_"+cap.id+"_0"); if(el){el.value=cap.sol; el.disabled=true;}
+    const mk=document.getElementById("mk_"+cap.id+"_0"); if(mk){mk.textContent="✓"; mk.className="mark ok";}
+  }
+}
+
+/* ===================== acciones ===================== */
+function checkItem(id){
+  const cap=capById(id);
+  if(done.has(id)) return;
+  attempts[id]=(attempts[id]||0)+1;
+  const fb=document.getElementById("fb_"+id);
+  const mode=capMode(cap);
+
+  if(cap.kind==="seq"){
+    let all=true;
+    cap.steps.forEach((st,i)=>{
+      const val=document.getElementById("in_"+id+"_"+i).value;
+      const ok=matchOne(val, st.accept, "term");
+      const mk=document.getElementById("mk_"+id+"_"+i);
+      mk.textContent= val.trim()?(ok?"✓":"✗"):""; mk.className="mark "+(ok?"ok":"bad");
+      if(!ok) all=false;
+    });
+    if(all) return winItem(cap);
+    fb.className="fb show bad";
+    fb.innerHTML="❌ Algún paso aún no calza (mira las ✗). Revisa el orden y cada pieza. Comillas y espacios de más te los perdono.";
+    document.getElementById("at_"+id).textContent="intentos: "+attempts[id];
+    return;
+  }
+
+  const val=document.getElementById("in_"+id+"_0").value;
+  const ok=matchOne(val, cap.accept, mode);
+  const mk=document.getElementById("mk_"+id+"_0");
+  mk.textContent=ok?"✓":"✗"; mk.className="mark "+(ok?"ok":"bad");
+  if(ok) return winItem(cap);
+  fb.className="fb show bad";
+  let msg="❌ Aún no. ";
+  if(cap.kind==="token") msg+="Piensa qué pieza hace exactamente eso.";
+  else if(cap.kind==="fix") msg+="La idea ya la tienes; revisa el token exacto. Usa «¿qué estaba mal?» si dudas.";
+  else msg+="Te falta o sobra una pieza.";
+  fb.innerHTML=msg;
+  document.getElementById("at_"+id).textContent="intentos: "+attempts[id];
+}
+
+function winItem(cap){
+  done.add(cap.id); anclas[cap.id]=cap.frase; save();
+  const fb=document.getElementById("fb_"+cap.id);
+  fb.className="fb show good"; fb.innerHTML=feedbackHTML(cap);
+  document.getElementById("card_"+cap.id).classList.add("capdone");
+  document.getElementById("at_"+cap.id).textContent="✓ dominado";
+  document.querySelectorAll("#card_"+cap.id+" .cmd-in").forEach(el=>el.disabled=true);
+  renderProgress(); renderNav(); renderAnclas();
+}
+
+function verSol(id){
+  const cap=capById(id);
+  const fb=document.getElementById("fb_"+id);
+  fb.className="fb show info";
+  fb.innerHTML=`👀 Solución (no cuenta como dominado — ahora tecléala tú):<div class="sol">${esc(solText(cap))}</div>`;
+}
+function verMal(id){
+  const cap=capById(id);
+  const fb=document.getElementById("fb_"+id);
+  fb.className="fb show info";
+  fb.innerHTML=`🔎 Qué estaba mal: ${esc(cap.errorModel)}<div class="why" style="color:var(--mut)">Ahora escribe tú la línea corregida.</div>`;
+}
+
+function goto(id){ current=id; renderNav(); renderMain(); window.scrollTo(0,0); }
+document.getElementById("reset").addEventListener("click",()=>{
+  if(!confirm("¿Borrar todo el progreso?")) return;
+  done=new Set(); anclas={}; attempts={}; save();
+  renderProgress(); renderNav(); renderAnclas(); renderMain();
+});
+
+/* ===================== arranque ===================== */
+renderProgress();
+renderNav();
+renderAnclas();
+renderMain();
+</script>
+</body>
+</html>

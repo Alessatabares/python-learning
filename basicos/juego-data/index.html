@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pipeline de Datos Clínicos — prototipo</title>
+<style>
+  :root{
+    --bg:#0f1720; --panel:#16212e; --line:#27384a; --ink:#e8eef5;
+    --muted:#8aa0b5; --teal:#2dd4bf; --red:#f87171; --green:#4ade80;
+    --amber:#fbbf24; --code:#0b1118;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+  .wrap{max-width:960px;margin:0 auto;padding:24px}
+  h1{font-size:22px;margin:0 0 4px}
+  h2{font-size:18px;margin:0 0 12px;color:var(--teal)}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:20px}
+
+  /* --- mapa del pipeline, siempre visible --- */
+  .pipeline{display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:24px}
+  .node{flex:1;min-width:90px;text-align:center;padding:8px 6px;border-radius:8px;
+    border:1px solid var(--line);font-size:12px;color:var(--muted)}
+  .node.done{border-color:var(--green);color:var(--green)}
+  .node.active{border-color:var(--teal);color:var(--teal);background:#0d2b2a;font-weight:600}
+  .arrow{color:var(--muted)}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:24px}
+
+  /* --- traducción código <-> tabla --- */
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:760px){.split{grid-template-columns:1fr}}
+  pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px;
+    overflow-x:auto;font-size:13px;margin:0}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .kw{color:var(--teal)} .str{color:var(--amber)} .com{color:var(--muted)}
+
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  th,td{border:1px solid var(--line);padding:6px 10px;text-align:left}
+  th{background:#0d1925;color:var(--muted);font-weight:600}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  .nan{color:var(--red);font-weight:600}
+  .txt{color:var(--amber)}            /* número atrapado como texto */
+  .badge{display:inline-block;font-size:11px;padding:1px 7px;border-radius:10px;margin-left:6px}
+  .badge.obj{background:#3a1d1d;color:var(--red)}
+  .badge.flo{background:#0d2b2a;color:var(--green)}
+
+  button{background:var(--teal);color:#04201d;border:0;border-radius:8px;
+    padding:9px 14px;font-weight:600;cursor:pointer;font-size:14px}
+  button.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+  button:disabled{opacity:.4;cursor:default}
+  .controls{margin-top:14px;display:flex;gap:10px}
+
+  .note{font-size:13px;color:var(--muted);margin-top:12px;border-left:2px solid var(--teal);padding-left:12px}
+  .note b{color:var(--ink)}
+
+  /* --- contraste descriptiva / inferencial --- */
+  .contrast{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  @media(max-width:760px){.contrast{grid-template-columns:1fr}}
+  .contrast > div{padding:16px}
+  .contrast .desc{background:#13202c}
+  .contrast .inf{background:#101b26;border-left:1px solid var(--line)}
+  .contrast h3{margin:0 0 4px;font-size:15px}
+  .desc h3{color:var(--green)} .inf h3{color:var(--amber)}
+  .q{font-size:12px;color:var(--muted);font-style:italic;margin-bottom:8px}
+
+  /* --- cartas de escenario --- */
+  .tag{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+  .tag.fix{background:#3a2a0d;color:var(--amber)}
+  .tag.use{background:#0d2b2a;color:var(--teal)}
+  .situ{margin:12px 0}
+  .dato{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:10px 12px;
+    font-family:ui-monospace,monospace;font-size:13px;margin:10px 0}
+  .opts{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+  .opt{text-align:left;background:#0d1925;color:var(--ink);border:1px solid var(--line);
+    border-radius:8px;padding:10px 12px;cursor:pointer;font-size:14px}
+  .opt:hover{border-color:var(--teal)}
+  .opt.right{border-color:var(--green);background:#0d2417}
+  .opt.wrong{border-color:var(--red);background:#241010}
+  .feedback{margin-top:12px;font-size:14px;display:none}
+  .feedback.show{display:block}
+  .ancla{margin-top:8px;font-size:13px;color:var(--teal);border-top:1px dashed var(--line);padding-top:8px}
+  .ancla::before{content:"🧷 "}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Pipeline de Datos Clínicos</h1>
+  <div class="sub">Prototipo — del dato crudo a la conclusión honesta. Dos estaciones de muestra.</div>
+
+  <!-- MAPA: la imagen de sistema, siempre presente -->
+  <div class="pipeline">
+    <div class="node done">1 · Signos vitales<br><small>info()</small></div>
+    <span class="arrow">→</span>
+    <div class="node active" id="n2">2 · Tipos<br><small>to_numeric</small></div>
+    <span class="arrow">→</span>
+    <div class="node">3 · Faltantes<br><small>dropna / fillna</small></div>
+    <span class="arrow">→</span>
+    <div class="node">4 · Transformar<br><small>groupby · merge</small></div>
+    <span class="arrow">→</span>
+    <div class="node" id="n5">5 · Inferir<br><small>IC · I²</small></div>
+  </div>
+
+  <!-- ===== ESTACIÓN DE DATOS: código <-> tabla ===== -->
+  <div class="card">
+    <h2>Estación 2 · Tipos — del código a la tabla</h2>
+    <div class="split">
+      <div>
+        <pre><code><span class="com"># la columna "edad" llegó como texto</span>
+df[<span class="str">"edad"</span>] = pd.<span class="kw">to_numeric</span>(
+    df[<span class="str">"edad"</span>],
+    errors=<span class="str">"coerce"</span>
+)</code></pre>
+        <div class="note" id="explica">
+          <b>to_numeric</b>: intenta convertir cada celda a número.<br>
+          <b>errors="coerce"</b>: lo que no se puede convertir → <span class="nan">NaN</span> (no rompe, marca el hueco).
+        </div>
+        <div class="controls">
+          <button id="run">▶ Ejecutar</button>
+          <button class="ghost" id="reset">↺ Volver al crudo</button>
+        </div>
+      </div>
+      <div>
+        <div style="margin-bottom:6px;font-size:12px;color:var(--muted)">
+          columna <code>edad</code> <span id="dtype" class="badge obj">dtype: object 🚩</span>
+        </div>
+        <div id="tabla"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ESTACIÓN DE ESTADÍSTICA ===== -->
+  <div class="card">
+    <h2>Estación 5 · Describir vs Inferir</h2>
+    <p class="sub" style="margin-bottom:14px">Mismo estudio (100 pacientes), dos preguntas distintas:</p>
+    <div class="contrast">
+      <div class="desc">
+        <h3>DESCRIPTIVA</h3>
+        <div class="q">¿Qué veo en MI muestra?</div>
+        Glucosa media = <b>105 mg/dL</b><br>
+        Mediana = 102 · DE = 18<br>
+        <small style="color:var(--muted)">Solo resume los 100 que medí. No promete nada del resto.</small>
+      </div>
+      <div class="inf">
+        <h3>INFERENCIAL</h3>
+        <div class="q">¿Qué concluyo sobre los que NO vi?</div>
+        Diferencia tratado − placebo = <b>−6 mg/dL</b><br>
+        IC 95% = <b>−10 a −2</b><br>
+        <small style="color:var(--muted)">Apuesta sobre la población. El IC dice cuánto puedo confiar.</small>
+      </div>
+    </div>
+    <div class="note" style="margin-top:14px">
+      <b>Describir</b> es contar lo que veo. <b>Inferir</b> es apostar sobre lo que no veo — y el IC es el margen de esa apuesta.
+    </div>
+  </div>
+
+  <!-- ===== CARTAS DE ESCENARIO ===== -->
+  <div class="card">
+    <h2>Estación 5 · Casos — ¿qué nos dice IC / I² aquí?</h2>
+    <div id="carta"></div>
+    <div class="controls">
+      <button class="ghost" id="prev">← Anterior</button>
+      <button class="ghost" id="next">Siguiente carta →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   1) DATOS COMO DATOS. La tabla es un array; los comandos solo
+   la transforman. Así "código → tabla" es literal en el código.
+   ============================================================ */
+const crudo = [
+  {nombre:"Ana",   edad:"25",      glucosa:90,  sexo:"F"},
+  {nombre:"Luis",  edad:"30",      glucosa:140, sexo:"M"},
+  {nombre:"Sofía", edad:"unknown", glucosa:110, sexo:"F"},
+  {nombre:"Marco", edad:"28",      glucosa:140, sexo:"M"},
+];
+
+// to_numeric(errors="coerce") como función real, no como adorno:
+function toNumeric(valor){
+  const n = Number(valor);
+  return Number.isNaN(n) ? null : n;   // null = NaN = hueco
+}
+
+function renderTabla(modo){
+  const filas = crudo.map(p=>{
+    let edadCell;
+    if(modo==="crudo"){
+      edadCell = `<td class="txt">"${p.edad}"</td>`;        // texto entre comillas
+    } else {
+      const v = toNumeric(p.edad);
+      edadCell = v===null
+        ? `<td class="num nan">NaN</td>`                     // "unknown" → NaN
+        : `<td class="num">${v}</td>`;                       // número, alineado a la derecha
+    }
+    return `<tr><td>${p.nombre}</td>${edadCell}<td class="num">${p.glucosa}</td><td>${p.sexo}</td></tr>`;
+  }).join("");
+  document.getElementById("tabla").innerHTML =
+    `<table><tr><th>nombre</th><th>edad</th><th>glucosa</th><th>sexo</th></tr>${filas}</table>`;
+}
+
+document.getElementById("run").onclick = ()=>{
+  renderTabla("num");
+  document.getElementById("dtype").className = "badge flo";
+  document.getElementById("dtype").innerHTML = "dtype: float64 ✓";
+};
+document.getElementById("reset").onclick = ()=>{
+  renderTabla("crudo");
+  document.getElementById("dtype").className = "badge obj";
+  document.getElementById("dtype").innerHTML = "dtype: object 🚩";
+};
+renderTabla("crudo");
+
+/* ============================================================
+   2) CARTAS COMO DATOS. Agregar un caso = agregar un objeto.
+   La lógica del juego nunca cambia.
+   ============================================================ */
+const cartas = [
+  {
+    tipo:"use", concepto:"IC",
+    situacion:"Ensayo de un antihipertensivo. Reportan: «baja la presión 5 mmHg en promedio». El jefe quiere recetarlo ya.",
+    dato:"Diferencia de medias = −5 mmHg   ·   IC 95% = −12 a +2",
+    opciones:["Recétalo, baja 5","No concluir aún","Es dañino, la sube"],
+    correcta:1,
+    feedback:"El IC cruza 0: el efecto real plausible va desde bajar 12 hasta SUBIR 2. El −5 es solo el centro del rango, no la verdad.",
+    ancla:"El IC es el margen de error honesto; el punto estimado es solo el centro."
+  },
+  {
+    tipo:"fix", concepto:"IC",
+    situacion:"Dos estudios, ambos OR = 1.5. Alguien dice «dan exactamente lo mismo».",
+    dato:"Estudio A → IC 1.3–1.7 (n=4000)   ·   Estudio B → IC 0.6–3.8 (n=25)",
+    opciones:["Son iguales, mismo OR","A es evidencia más fuerte","B es evidencia más fuerte"],
+    correcta:1,
+    feedback:"Mismo número, pero B es casi ruido: su IC es enorme y cruza 1 (el nulo). El OR solo no basta; la precisión la da el IC.",
+    ancla:"IC estrecho = preciso; IC ancho = incierto."
+  },
+  {
+    tipo:"fix", concepto:"I²",
+    situacion:"Meta-análisis de 4 estudios. El efecto combinado se ve limpio: −8 mmHg. Te piden citarlo como conclusión.",
+    dato:"I² = 88%",
+    opciones:["Cito el −8 tal cual","Efectos aleatorios y matizo","Efectos fijos, está bien"],
+    correcta:1,
+    feedback:"I² altísimo: los estudios cuentan historias distintas. El −8 esconde ese desacuerdo; venderlo como verdad única es la trampa. Usa efectos aleatorios.",
+    ancla:"I² te dice si cantan la misma canción; 88% = canciones distintas."
+  },
+  {
+    tipo:"use", concepto:"I²",
+    situacion:"Otro meta-análisis. Tres estudios muy parecidos entre sí: −5, −6, −4 mmHg.",
+    dato:"I² = 0%",
+    opciones:["Efectos fijos, el combinado es sólido","Efectos aleatorios, no confío"],
+    correcta:0,
+    feedback:"Baja heterogeneidad: misma canción. Efectos fijos es razonable y el número combinado se sostiene. Aquí el I² te da PERMISO de confiar.",
+    ancla:"I² bajo = misma canción = el combinado se sostiene."
+  },
+];
+
+let i = 0;
+function renderCarta(){
+  const c = cartas[i];
+  const tag = c.tipo==="fix"
+    ? `<span class="tag fix">🔧 Algo falla, corrígelo</span>`
+    : `<span class="tag use">💡 ¿Para qué sirve?</span>`;
+  const opts = c.opciones.map((o,k)=>`<button class="opt" data-k="${k}">${o}</button>`).join("");
+  document.getElementById("carta").innerHTML = `
+    <div>${tag} <span style="color:var(--muted);font-size:12px">· concepto: ${c.concepto}</span></div>
+    <div class="situ">${c.situacion}</div>
+    <div class="dato">${c.dato}</div>
+    <div class="opts">${opts}</div>
+    <div class="feedback" id="fb"></div>`;
+  document.querySelectorAll(".opt").forEach(btn=>{
+    btn.onclick = ()=>{
+      const k = +btn.dataset.k;
+      document.querySelectorAll(".opt").forEach((b,idx)=>{
+        b.disabled = true;
+        if(idx===c.correcta) b.classList.add("right");
+        else if(idx===k) b.classList.add("wrong");
+      });
+      const fb = document.getElementById("fb");
+      fb.className = "feedback show";
+      fb.innerHTML = `${c.feedback}<div class="ancla">${c.ancla}</div>`;
+    };
+  });
+}
+document.getElementById("next").onclick = ()=>{ i=(i+1)%cartas.length; renderCarta(); };
+document.getElementById("prev").onclick = ()=>{ i=(i-1+cartas.length)%cartas.length; renderCarta(); };
+renderCarta();
+</script>
+</body>
+</html>

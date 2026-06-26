@@ -92,7 +92,7 @@
 
   <!-- MAPA: la imagen de sistema, siempre presente -->
   <div class="pipeline">
-    <div class="node done">1 · Signos vitales<br><small>info()</small></div>
+    <div class="node active" id="n1">1 · Signos vitales<br><small>info()</small></div>
     <span class="arrow">→</span>
     <div class="node active" id="n2">2 · Tipos<br><small>to_numeric</small></div>
     <span class="arrow">→</span>
@@ -101,6 +101,28 @@
     <div class="node active" id="n4">4 · Transformar<br><small>groupby · merge</small></div>
     <span class="arrow">→</span>
     <div class="node" id="n5">5 · Inferir<br><small>IC · I²</small></div>
+  </div>
+
+  <!-- ===== ESTACIÓN 1 · SIGNOS VITALES (info) ===== -->
+  <div class="card">
+    <h2>Estación 1 · Signos vitales — info()</h2>
+    <div class="split">
+      <div>
+        <pre><code><span class="com"># ¿qué tan sana está la tabla?</span>
+df.<span class="kw">info</span>()</code></pre>
+        <div class="note">
+          <b>info()</b> son los signos vitales: filas, columnas, cuántos <b>no-nulos</b> tiene cada
+          una y su <b>dtype</b>. Antes de tocar nada, diagnosticas qué está roto.
+        </div>
+        <div class="controls">
+          <button id="run1">▶ df.info()</button>
+          <button class="ghost" id="reset1">↺ ocultar</button>
+        </div>
+      </div>
+      <div>
+        <div id="info1"></div>
+      </div>
+    </div>
   </div>
 
   <!-- ===== ESTACIÓN DE DATOS: código <-> tabla ===== -->
@@ -285,6 +307,49 @@ document.getElementById("reset").onclick = ()=>{
   document.getElementById("dtype").innerHTML = "dtype: object 🚩";
 };
 renderTabla("crudo");
+
+/* ============================================================
+   ESTACIÓN 1 · Signos vitales. info() leído del MISMO array:
+   por cada columna, no-nulos + dtype, y una 🚩 si algo está roto.
+   El diagnóstico apunta a las estaciones 2 (tipos) y 3 (faltantes).
+   ============================================================ */
+const looksNumeric = v => v!==null && v!=="" && !Number.isNaN(Number(v));
+function colInfo(key){
+  const vals = crudo.map(r=>r[key]);
+  const total = vals.length;
+  const nonNull = vals.filter(v=>v!==null).length;
+  const numericish = vals.filter(looksNumeric).length;
+  const allNum = vals.every(v=> v===null || typeof v==="number");
+  const dtype = allNum ? (nonNull<total ? "float64" : "int64") : "object";
+  let flag=null;
+  if(nonNull<total) flag="hueco (NaN)";
+  else if(dtype==="object" && numericish>total/2) flag="texto, debería ser número";
+  return {key, nonNull, total, dtype, flag};
+}
+const COLS1 = ["nombre","edad","glucosa","sexo"];
+function render1(show){
+  const box=document.getElementById("info1");
+  if(!show){
+    box.innerHTML = `<div style="color:var(--muted);font-size:13px">Pulsa ▶ para tomar los signos vitales.</div>`;
+    return;
+  }
+  const info=COLS1.map(colInfo);
+  const filas=info.map((c,idx)=>{
+    const nn = c.nonNull<c.total ? `<td class="num nan">${c.nonNull}</td>` : `<td class="num">${c.nonNull}</td>`;
+    const dtCls = c.flag ? (c.dtype==="object" ? "txt" : "nan") : "";
+    const dt = `<td><span class="${dtCls}">${c.dtype}</span></td>`;
+    const fl = c.flag ? `<td class="nan">🚩 ${c.flag}</td>` : `<td style="color:var(--green)">✓</td>`;
+    return `<tr><td class="num">${idx}</td><td>${c.key}</td>${nn}${dt}${fl}</tr>`;
+  }).join("");
+  box.innerHTML =
+    `<pre style="margin-bottom:8px">RangeIndex: 4 entries, 0 to 3
+Data columns (total 4 columns):</pre>`
+    + `<table><tr><th>#</th><th>Column</th><th>Non-Null</th><th>Dtype</th><th>diagnóstico</th></tr>${filas}</table>`
+    + `<div class="note" style="margin-top:12px"><b>Lectura clínica:</b> <code>edad</code> es un número atrapado como texto → <b>estación 2</b>. <code>glucosa</code> tiene 1 hueco (3/4) → <b>estación 3</b>.</div>`;
+}
+document.getElementById("run1").onclick  = ()=>render1(true);
+document.getElementById("reset1").onclick= ()=>render1(false);
+render1(false);
 
 /* ============================================================
    ESTACIONES 3 y 4. Mismo principio que la 2: la tabla es un array

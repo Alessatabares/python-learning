@@ -441,6 +441,60 @@ const cartas = [
     feedback:"Baja heterogeneidad: misma canción. Efectos fijos es razonable y el número combinado se sostiene. Aquí el I² te da PERMISO de confiar.",
     ancla:"I² bajo = misma canción = el combinado se sostiene."
   },
+  {
+    tipo:"use", concepto:"Descriptiva vs inferencial",
+    situacion:"Mediste la glucosa de tus 100 pacientes: media 105. Vas a escribir la conclusión del estudio.",
+    dato:"media muestral = 105 mg/dL   (n = 100)",
+    opciones:["«la glucosa media de la población es 105»","«en MI muestra la media fue 105»","Da igual cómo lo escriba"],
+    correcta:1,
+    feedback:"105 describe lo que mediste (descriptiva). Afirmar sobre «la población» es inferir, y eso necesita un IC. Sin él, solo puedes hablar de tu muestra.",
+    ancla:"Describir resume lo que viste; inferir exige el margen (IC)."
+  },
+  {
+    tipo:"fix", concepto:"IC",
+    situacion:"Un estudio chico no halló diferencia entre dos fármacos y concluye «son iguales».",
+    dato:"Diferencia = −2 mmHg   ·   IC 95% = −15 a +11   (n = 20)",
+    opciones:["Correcto, son iguales","No hallar diferencia ≠ probar que son iguales","El fármaco A es mejor"],
+    correcta:1,
+    feedback:"El IC es enorme (−15 a +11): cabe una diferencia grande en cualquier dirección. No encontrar diferencia con tan poca precisión no prueba que sean iguales.",
+    ancla:"Ausencia de evidencia no es evidencia de ausencia."
+  },
+  {
+    tipo:"use", concepto:"IC",
+    situacion:"Mismo efecto estimado, pero subes la muestra de 50 a 5000 pacientes.",
+    dato:"n=50 → IC −10 a +2   ·   n=5000 → IC −6 a −4",
+    opciones:["El IC se estrecha y ahora sí concluye","El IC no cambia con n","Con más n el efecto desaparece"],
+    correcta:0,
+    feedback:"Más datos = estimación más precisa = IC más estrecho. Con n=50 cruzaba 0 (no concluyente); con n=5000 ya no toca 0: el efecto se vuelve claro.",
+    ancla:"Más n estrecha el IC; la precisión se gana con tamaño de muestra."
+  },
+  {
+    tipo:"fix", concepto:"IC",
+    situacion:"Un estudio reporta un odds ratio y alguien busca «si el IC cruza 0».",
+    dato:"OR = 1.2   ·   IC 95% = 0.8 a 1.7",
+    opciones:["Cruza 0 → no significativo","El nulo de un OR es 1, y lo cruza → no significativo","Es significativo porque OR > 1"],
+    correcta:1,
+    feedback:"Para razones (OR, RR, HR) el valor nulo es 1, no 0. El IC 0.8–1.7 incluye 1, así que la asociación no es estadísticamente significativa.",
+    ancla:"El nulo cambia con la métrica: 0 para diferencias, 1 para OR/RR/HR."
+  },
+  {
+    tipo:"fix", concepto:"I²",
+    situacion:"Te dicen: «el I² del meta-análisis es 90%, o sea que el tratamiento no funciona».",
+    dato:"I² = 90%   ·   efecto combinado = −7 mmHg",
+    opciones:["Cierto, I² alto = no sirve","I² mide discrepancia ENTRE estudios, no si sirve","I² es el p-value"],
+    correcta:1,
+    feedback:"I² no dice nada sobre si el tratamiento funciona; mide cuánto se contradicen los estudios entre sí. Puede haber efecto real Y mucha heterogeneidad a la vez.",
+    ancla:"I² mide desacuerdo entre estudios, no eficacia."
+  },
+  {
+    tipo:"fix", concepto:"Pipeline → inferencia",
+    situacion:"Rellenaste las glucosas faltantes con 0 (estación 3) y luego calculaste el IC de la media.",
+    dato:"media con ceros = 78   ·   IC 95% = 74 a 82",
+    opciones:["El IC es válido: es estrecho","Basura entra, basura sale: IC preciso pero falso","Hay que ampliar el IC"],
+    correcta:1,
+    feedback:"Un IC angosto sobre datos corruptos solo te da confianza en un número equivocado. Los 0 falsos hundieron la media; la inferencia hereda el error de la limpieza.",
+    ancla:"El IC no arregla datos sucios: limpia bien antes de inferir."
+  },
 ];
 
 let i = 0;
@@ -451,7 +505,7 @@ function renderCarta(){
     : `<span class="tag use">💡 ¿Para qué sirve?</span>`;
   const opts = c.opciones.map((o,k)=>`<button class="opt" data-k="${k}">${o}</button>`).join("");
   document.getElementById("carta").innerHTML = `
-    <div>${tag} <span style="color:var(--muted);font-size:12px">· concepto: ${c.concepto}</span></div>
+    <div>${tag} <span style="color:var(--muted);font-size:12px">· concepto: ${c.concepto} · carta ${i+1}/${cartas.length}</span></div>
     <div class="situ">${c.situacion}</div>
     <div class="dato">${c.dato}</div>
     <div class="opts">${opts}</div>

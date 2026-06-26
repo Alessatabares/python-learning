@@ -45,6 +45,7 @@
   .badge{display:inline-block;font-size:11px;padding:1px 7px;border-radius:10px;margin-left:6px}
   .badge.obj{background:#3a1d1d;color:var(--red)}
   .badge.flo{background:#0d2b2a;color:var(--green)}
+  .fill{color:var(--green);font-weight:600}   /* valor recién imputado */
 
   button{background:var(--teal);color:#04201d;border:0;border-radius:8px;
     padding:9px 14px;font-weight:600;cursor:pointer;font-size:14px}
@@ -87,7 +88,7 @@
 <body>
 <div class="wrap">
   <h1>Pipeline de Datos Clínicos</h1>
-  <div class="sub">Prototipo — del dato crudo a la conclusión honesta. Dos estaciones de muestra.</div>
+  <div class="sub">Del dato crudo a la conclusión honesta. Recorre el pipeline: cada comando transforma la tabla frente a ti.</div>
 
   <!-- MAPA: la imagen de sistema, siempre presente -->
   <div class="pipeline">
@@ -95,9 +96,9 @@
     <span class="arrow">→</span>
     <div class="node active" id="n2">2 · Tipos<br><small>to_numeric</small></div>
     <span class="arrow">→</span>
-    <div class="node">3 · Faltantes<br><small>dropna / fillna</small></div>
+    <div class="node active" id="n3">3 · Faltantes<br><small>dropna / fillna</small></div>
     <span class="arrow">→</span>
-    <div class="node">4 · Transformar<br><small>groupby · merge</small></div>
+    <div class="node active" id="n4">4 · Transformar<br><small>groupby · merge</small></div>
     <span class="arrow">→</span>
     <div class="node" id="n5">5 · Inferir<br><small>IC · I²</small></div>
   </div>
@@ -127,6 +128,78 @@ df[<span class="str">"edad"</span>] = pd.<span class="kw">to_numeric</span>(
         </div>
         <div id="tabla"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- ===== ESTACIÓN 3 · FALTANTES ===== -->
+  <div class="card">
+    <h2>Estación 3 · Faltantes — borrar o imputar</h2>
+    <div class="split">
+      <div>
+        <pre><code><span class="com"># a Luis le falta la glucosa → NaN</span>
+<span class="com"># opción A — imputar con la mediana</span>
+df[<span class="str">"glucosa"</span>] = df[<span class="str">"glucosa"</span>].<span class="kw">fillna</span>(
+    df[<span class="str">"glucosa"</span>].<span class="kw">median</span>()
+)
+<span class="com"># opción B — borrar solo si falta glucosa</span>
+df.<span class="kw">dropna</span>(subset=[<span class="str">"glucosa"</span>])</code></pre>
+        <div class="note">
+          <b>fillna(mediana)</b>: rellena el hueco sin inventar un 0. Mediana porque resiste outliers.<br>
+          <b>dropna(subset)</b>: borra la fila de Luis, pero solo porque falta <i>glucosa</i> (no cualquier cosa).
+        </div>
+        <div class="controls">
+          <button id="run3a">▶ fillna(mediana)</button>
+          <button id="run3b">▶ dropna(subset)</button>
+          <button class="ghost" id="reset3">↺ crudo</button>
+        </div>
+      </div>
+      <div>
+        <div style="margin-bottom:6px;font-size:12px;color:var(--muted)">
+          glucosa: <span id="info3" class="badge obj">1 NaN (Luis) 🚩</span>
+        </div>
+        <div id="tabla3"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ESTACIÓN 4 · TRANSFORMAR ===== -->
+  <div class="card">
+    <h2>Estación 4 · Transformar — agrupar y unir</h2>
+
+    <!-- 4a · groupby: la tabla COLAPSA a un resumen -->
+    <div class="split">
+      <div>
+        <pre><code><span class="com"># glucosa promedio por sexo</span>
+df.<span class="kw">groupby</span>(<span class="str">"sexo"</span>)[<span class="str">"glucosa"</span>].<span class="kw">mean</span>()</code></pre>
+        <div class="note">
+          <b>groupby</b> = partir-aplicar-combinar: parte por sexo, promedia cada grupo y devuelve un resumen.
+          Las 4 filas <b>colapsan</b> a una por grupo.
+        </div>
+        <div class="controls">
+          <button id="run4a">▶ groupby + mean</button>
+          <button class="ghost" id="reset4a">↺ tabla</button>
+        </div>
+      </div>
+      <div><div id="tabla4a"></div></div>
+    </div>
+
+    <!-- 4b · merge: la tabla se ENSANCHA con otra tabla -->
+    <div class="split" style="margin-top:18px">
+      <div>
+        <pre><code><span class="com"># traigo hba1c de otra tabla (resultados)</span>
+pacientes.<span class="kw">merge</span>(resultados,
+    on=<span class="str">"nombre"</span>,
+    how=<span class="str">"left"</span>)</code></pre>
+        <div class="note">
+          <b>merge</b> enlaza por una llave compartida (<code>nombre</code>). <b>how="left"</b> conserva a
+          todos: <code>resultados</code> no tiene a Marco, así que su hba1c queda <span class="nan">NaN</span>.
+        </div>
+        <div class="controls">
+          <button id="run4b">▶ merge(how="left")</button>
+          <button class="ghost" id="reset4b">↺ tabla</button>
+        </div>
+      </div>
+      <div><div id="tabla4b"></div></div>
     </div>
   </div>
 
@@ -172,10 +245,10 @@ df[<span class="str">"edad"</span>] = pd.<span class="kw">to_numeric</span>(
    la transforman. Así "código → tabla" es literal en el código.
    ============================================================ */
 const crudo = [
-  {nombre:"Ana",   edad:"25",      glucosa:90,  sexo:"F"},
-  {nombre:"Luis",  edad:"30",      glucosa:140, sexo:"M"},
-  {nombre:"Sofía", edad:"unknown", glucosa:110, sexo:"F"},
-  {nombre:"Marco", edad:"28",      glucosa:140, sexo:"M"},
+  {nombre:"Ana",   edad:"25",      glucosa:90,   sexo:"F"},
+  {nombre:"Luis",  edad:"30",      glucosa:null, sexo:"M"},   // a Luis le falta la glucosa
+  {nombre:"Sofía", edad:"unknown", glucosa:110,  sexo:"F"},
+  {nombre:"Marco", edad:"28",      glucosa:140,  sexo:"M"},
 ];
 
 // to_numeric(errors="coerce") como función real, no como adorno:
@@ -195,7 +268,7 @@ function renderTabla(modo){
         ? `<td class="num nan">NaN</td>`                     // "unknown" → NaN
         : `<td class="num">${v}</td>`;                       // número, alineado a la derecha
     }
-    return `<tr><td>${p.nombre}</td>${edadCell}<td class="num">${p.glucosa}</td><td>${p.sexo}</td></tr>`;
+    return `<tr><td>${p.nombre}</td>${edadCell}${celNum(p.glucosa)}<td>${p.sexo}</td></tr>`;
   }).join("");
   document.getElementById("tabla").innerHTML =
     `<table><tr><th>nombre</th><th>edad</th><th>glucosa</th><th>sexo</th></tr>${filas}</table>`;
@@ -212,6 +285,120 @@ document.getElementById("reset").onclick = ()=>{
   document.getElementById("dtype").innerHTML = "dtype: object 🚩";
 };
 renderTabla("crudo");
+
+/* ============================================================
+   ESTACIONES 3 y 4. Mismo principio que la 2: la tabla es un array
+   y cada comando es una FUNCIÓN REAL que la transforma frente a ti.
+   Y el dato FLUYE: partimos de lo que ya limpió la estación 2.
+   ============================================================ */
+
+// celda numérica: null/NaN -> NaN; fill=true -> resaltado verde (imputado)
+function celNum(v, fill){
+  if(v===null || v===undefined || Number.isNaN(v)) return `<td class="num nan">NaN</td>`;
+  return `<td class="num${fill?" fill":""}">${v}</td>`;
+}
+// render genérico de tabla: filas + columnas {h, cell}
+function tabla(rows, cols){
+  const head = cols.map(c=>`<th>${c.h}</th>`).join("");
+  const body = rows.map(r=>"<tr>"+cols.map(c=>c.cell(r)).join("")+"</tr>").join("");
+  return `<table><tr>${head}</tr>${body}</table>`;
+}
+
+// el dataset YA limpio en la estación 2: edad numérica (Sofía "unknown" -> NaN),
+// glucosa con el hueco de Luis (NaN)
+const base = crudo.map(p => ({...p, edad: toNumeric(p.edad)}));
+
+/* ---------- Estación 3 · Faltantes ---------- */
+const cols3 = [
+  {h:"nombre",  cell:r=>`<td>${r.nombre}</td>`},
+  {h:"glucosa", cell:r=> celNum(r.glucosa, r._fill)},
+  {h:"sexo",    cell:r=>`<td>${r.sexo}</td>`},
+];
+function mediana(nums){
+  const xs=[...nums].sort((a,b)=>a-b), n=xs.length, m=n>>1;
+  return n%2 ? xs[m] : (xs[m-1]+xs[m])/2;
+}
+const GLU_MEDIANA = mediana(base.filter(r=>r.glucosa!==null).map(r=>r.glucosa)); // 110
+function setInfo3(txt, ok){
+  const el=document.getElementById("info3");
+  el.className = "badge "+(ok?"flo":"obj");
+  el.innerHTML = txt;
+}
+function render3(modo){
+  let rows;
+  if(modo==="fill"){
+    rows = base.map(r=> r.glucosa===null ? {...r, glucosa:GLU_MEDIANA, _fill:true} : r);
+    setInfo3(`imputado con mediana = ${GLU_MEDIANA} ✓`, true);
+  } else if(modo==="drop"){
+    rows = base.filter(r=> r.glucosa!==null);
+    setInfo3(`Luis borrado → ${rows.length} filas`, true);
+  } else {
+    rows = base;
+    setInfo3("1 NaN (Luis) 🚩", false);
+  }
+  document.getElementById("tabla3").innerHTML = tabla(rows, cols3);
+}
+document.getElementById("run3a").onclick  = ()=>render3("fill");
+document.getElementById("run3b").onclick  = ()=>render3("drop");
+document.getElementById("reset3").onclick = ()=>render3("crudo");
+render3("crudo");
+
+/* ---------- Estación 4 · Transformar ---------- */
+// para transformar usamos el dataset ya imputado (Luis = mediana): el dato fluye
+const lleno = base.map(r=> r.glucosa===null ? {...r, glucosa:GLU_MEDIANA} : r);
+const media = nums => nums.reduce((a,b)=>a+b,0)/nums.length;
+
+const cols4full = [
+  {h:"nombre",  cell:r=>`<td>${r.nombre}</td>`},
+  {h:"glucosa", cell:r=> celNum(r.glucosa)},
+  {h:"sexo",    cell:r=>`<td>${r.sexo}</td>`},
+];
+
+// 4a · groupby: la tabla colapsa a un resumen por grupo
+const cols4group = [
+  {h:"sexo",            cell:r=>`<td>${r.sexo}</td>`},
+  {h:"glucosa (media)", cell:r=> celNum(r.glucosa)},
+];
+function render4a(agrupado){
+  if(agrupado){
+    const sexos=[...new Set(lleno.map(r=>r.sexo))];
+    const rows = sexos.map(s=>({sexo:s, glucosa: media(lleno.filter(r=>r.sexo===s).map(r=>r.glucosa))}));
+    document.getElementById("tabla4a").innerHTML = tabla(rows, cols4group);
+  } else {
+    document.getElementById("tabla4a").innerHTML = tabla(lleno, cols4full);
+  }
+}
+document.getElementById("run4a").onclick  = ()=>render4a(true);
+document.getElementById("reset4a").onclick= ()=>render4a(false);
+render4a(false);
+
+// 4b · merge: la tabla se ENSANCHA con una columna de otra tabla
+const resultados = [
+  {nombre:"Ana",   hba1c:5.4},
+  {nombre:"Luis",  hba1c:7.1},
+  {nombre:"Sofía", hba1c:6.0},
+  // (Marco no está en resultados → su hba1c quedará NaN con how="left")
+];
+const cols4merge = [
+  {h:"nombre",  cell:r=>`<td>${r.nombre}</td>`},
+  {h:"glucosa", cell:r=> celNum(r.glucosa)},
+  {h:"sexo",    cell:r=>`<td>${r.sexo}</td>`},
+  {h:"hba1c",   cell:r=> celNum(r.hba1c)},
+];
+function render4b(unido){
+  if(unido){
+    const rows = lleno.map(r=>{
+      const m = resultados.find(x=>x.nombre===r.nombre);
+      return {...r, hba1c: m ? m.hba1c : null};
+    });
+    document.getElementById("tabla4b").innerHTML = tabla(rows, cols4merge);
+  } else {
+    document.getElementById("tabla4b").innerHTML = tabla(lleno, cols4full);
+  }
+}
+document.getElementById("run4b").onclick  = ()=>render4b(true);
+document.getElementById("reset4b").onclick= ()=>render4b(false);
+render4b(false);
 
 /* ============================================================
    2) CARTAS COMO DATOS. Agregar un caso = agregar un objeto.

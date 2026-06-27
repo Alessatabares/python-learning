@@ -95,7 +95,7 @@
 <header>
   <div>
     <h1>🔧 Sala de Simulación · Datos</h1>
-    <div class="sub">Te doy el código sano y el cambio que lo rompió. Predice <b>dónde muere el pipeline</b> y <b>qué síntoma</b> sale — <i>antes</i> de ver la terminal.</div>
+    <div class="sub">El mismo pipeline del <i>juego-data</i> (Ana · Luis · Sofía · Marco), al revés: te doy el cambio que lo rompió y predices <b>en qué estación muere</b> y <b>qué síntoma</b> sale — <i>antes</i> de ver la terminal.</div>
   </div>
   <div class="prog">
     <button class="ghost" id="reset" title="Borrar progreso">reiniciar</button>
@@ -119,8 +119,8 @@
 <script>
 /* ===================== el tablero del pipeline de datos ===================== */
 const BOARDS = {
-  data: {stations:["Carga","Tipos","Faltantes","Transformar","Unir","Resumen","Inferencia"],
-         infra:new Set(), lbl:"crudo ⟶ limpio ⟶ análisis"},
+  data: {stations:["Signos vitales","Tipos","Faltantes","Transformar","Inferir"],
+         infra:new Set(), lbl:"el pipeline del juego-data"},
 };
 const pipeEl = document.getElementById("pipe");
 let curStations = BOARDS.data.stations;
@@ -204,75 +204,75 @@ scn({
   breakNote:`mediana → 0 (y faltaban 10 glucosas)`,
   code:`df["glucosa"] = df["glucosa"].fillna(0)   # 🔧`,
   symptoms:[
-    {ok:true,  x:`Sin error, pero la media de glucosa se desploma (≈105 → ≈78)`,
-     why:"fillna(0) no da error: mete 10 ceros que no son glucosas reales. La media baja artificialmente y el análisis de después miente. Es el bug peligroso: silencioso."},
+    {ok:true,  x:`Sin error, pero la media de glucosa se desploma (≈112 → 85)`,
+     why:"fillna(0) no da error: mete el cero de Luis, que no es una glucosa real. La media baja artificialmente y el análisis de después miente. Es el bug peligroso: silencioso. La estación 3 del juego-data imputa con la mediana (110) justo para evitar esto."},
     {ok:false, x:`ValueError: no se puede rellenar con 0`,
      why:"Rellenar con 0 es válido en Python; el daño es estadístico, no una excepción."},
     {ok:false, x:`Se borran las 10 filas con NaN`,
      why:"Eso sería dropna. fillna NO borra: rellena (aquí con un valor que sesga)."},
   ],
   terminal:[
-    {k:"cmd", x:`>>> df["glucosa"].mean()   # antes`},
-    {k:"out", x:`105.2`},
+    {k:"cmd", x:`>>> df["glucosa"].mean()   # imputando la mediana (110)`},
+    {k:"out", x:`112.5`},
     {k:"cmd", x:`>>> df["glucosa"] = df["glucosa"].fillna(0)`},
-    {k:"cmd", x:`>>> df["glucosa"].mean()   # después`},
-    {k:"err", x:`78.4   ⚠ los ceros falsos hundieron la media`},
+    {k:"cmd", x:`>>> df["glucosa"].mean()   # con el 0 de Luis`},
+    {k:"err", x:`85.0   ⚠ el cero falso hundió la media`},
   ],
   frase:"fillna(0) solo si 0 significa 'ninguno' de verdad; si no, sesga la media.",
   concepto:"Eje Faltantes: el método de imputación cambia la estadística de después."
 });
 
 scn({
-  id:"d3", board:"data", group:"limpieza", emoji:"🗑️", title:"El dropna que arrasa", tag:"Faltantes · dropna dirigido",
+  id:"d3", board:"data", group:"limpieza", emoji:"🗑️", title:"Borrar a Luis por un hueco", tag:"Faltantes · borrar vs imputar",
   codeTitle:"limpieza.py", dead:"Faltantes",
-  well:`df = df.dropna(subset=["glucosa"])`,
-  breakNote:`subset=["glucosa"] → dropna() sin subset (y 'notas' tiene 60% NaN)`,
-  code:`df = df.dropna()   # 🔧`,
+  well:`df["glucosa"] = df["glucosa"].fillna(df["glucosa"].median())   # ✅ conserva a Luis`,
+  breakNote:`imputar la mediana → dropna() (a Luis solo le falta la glucosa)`,
+  code:`df = df.dropna()   # 🔧 borra a Luis`,
   symptoms:[
-    {ok:true,  x:`df pasa de 100 a 38 filas: la columna 'notas' arrastró casi todo`,
-     why:"dropna() sin subset borra la fila si CUALQUIER columna tiene NaN. La columna más hueca ('notas', 60% NaN) decide por todas. Con subset=['glucosa'] solo perderías 10 filas."},
-    {ok:false, x:`KeyError: 'notas'`,
-     why:"No se nombra 'notas' en ningún sitio; el problema es que dropna mira TODAS las columnas."},
+    {ok:true,  x:`df pasa de 4 a 3 filas: pierdes a Luis por un único hueco`,
+     why:"dropna() borra la fila si falta cualquier dato. A Luis solo le falta la glucosa: imputando (mediana 110) lo conservas; borrando, pierdes un paciente entero. Es la decisión de la estación 3."},
+    {ok:false, x:`KeyError: glucosa`,
+     why:"La columna existe; dropna no falla, simplemente elimina la fila con NaN."},
     {ok:false, x:`Los NaN se rellenan con la media`,
      why:"dropna borra, no rellena. Rellenar sería fillna."},
   ],
   terminal:[
     {k:"cmd", x:`>>> df.shape   # antes`},
-    {k:"out", x:`(100, 5)`},
+    {k:"out", x:`(4, 4)`},
     {k:"cmd", x:`>>> df = df.dropna()`},
     {k:"cmd", x:`>>> df.shape   # después`},
-    {k:"err", x:`(38, 5)   ⚠ 'notas' (60% NaN) se llevó 62 filas`},
+    {k:"err", x:`(3, 4)   ⚠ Luis desapareció por un solo hueco`},
   ],
-  frase:"dropna() sin subset deja que la peor columna borre la tabla.",
-  concepto:"Eje Faltantes: mira isna().sum() y borra dirigido (subset)."
+  frase:"Borro si son pocos y aleatorios; imputo si perder la fila cuesta caro.",
+  concepto:"Eje Faltantes: con un solo hueco, imputar conserva la fila; dropna la elimina."
 });
 
 scn({
-  id:"d4", board:"data", group:"limpieza", emoji:"🔗", title:"El merge que pierde pacientes", tag:"⚠ engañoso · parece quedar todo, pierdes filas",
-  codeTitle:"analisis.py", dead:"Unir",
-  well:`df = pacientes.merge(resultados, on="paciente_id", how="left")`,
-  breakNote:`how="left" → how="inner" (hay pacientes sin resultado)`,
-  code:`df = pacientes.merge(resultados, on="paciente_id", how="inner")   # 🔧`,
+  id:"d4", board:"data", group:"analisis", emoji:"🔗", title:"El merge que pierde a Marco", tag:"⚠ engañoso · parece quedar todo, pierdes filas",
+  codeTitle:"analisis.py", dead:"Transformar",
+  well:`df = pacientes.merge(resultados, on="nombre", how="left")`,
+  breakNote:`how="left" → how="inner" (Marco no tiene hba1c en 'resultados')`,
+  code:`df = pacientes.merge(resultados, on="nombre", how="inner")   # 🔧`,
   symptoms:[
-    {ok:true,  x:`Pacientes sin resultado desaparecen: 100 → 72 filas`,
-     why:"inner conserva solo IDs presentes en AMBAS tablas. Los 28 pacientes sin fila en 'resultados' se pierden en silencio. Para conservarlos, how='left'."},
-    {ok:false, x:`Filas duplicadas: 100 → 200`,
-     why:"La duplicación pasa si la llave se repite en la derecha; aquí es lo contrario: se pierden filas por inner."},
-    {ok:false, x:`KeyError: 'paciente_id'`,
+    {ok:true,  x:`Marco desaparece: 4 → 3 filas`,
+     why:"inner conserva solo los nombres presentes en AMBAS tablas. Marco no está en 'resultados' (no tiene hba1c), así que se pierde en silencio. Con how='left' se queda, con hba1c en NaN — como en la estación 4 del juego-data."},
+    {ok:false, x:`Filas duplicadas: 4 → 8`,
+     why:"La duplicación pasaría si un nombre se repitiera en la derecha; aquí es lo contrario: se pierde una fila por inner."},
+    {ok:false, x:`KeyError: nombre`,
      why:"La llave existe en ambas tablas; el merge corre, pero recorta a la intersección."},
   ],
   terminal:[
     {k:"cmd", x:`>>> len(pacientes)`},
-    {k:"out", x:`100`},
-    {k:"cmd", x:`>>> len(pacientes.merge(resultados, on="paciente_id", how="inner"))`},
-    {k:"err", x:`72   ⚠ 28 pacientes sin resultado se perdieron`},
+    {k:"out", x:`4`},
+    {k:"cmd", x:`>>> len(pacientes.merge(resultados, on="nombre", how="inner"))`},
+    {k:"err", x:`3   ⚠ Marco (sin hba1c) se perdió`},
   ],
   frase:"inner intersecta; left conserva la izquierda completa.",
-  concepto:"Eje Unir: el how decide a quién pierdes sin avisar."
+  concepto:"Eje Transformar (merge): el how decide a quién pierdes sin avisar."
 });
 
 scn({
-  id:"d5", board:"data", group:"limpieza", emoji:"⚡", title:"El if sobre la columna", tag:"Transformar · vectorización",
+  id:"d5", board:"data", group:"analisis", emoji:"⚡", title:"El if sobre la columna", tag:"Transformar · vectorización",
   codeTitle:"analisis.py", dead:"Transformar",
   well:`df["alta"] = df["glucosa"] > 100`,
   breakNote:`la comparación vectorizada → un if sobre la columna entera`,
@@ -297,7 +297,7 @@ scn({
 /* ----- ANÁLISIS ----- */
 
 scn({
-  id:"d6", board:"data", group:"analisis", emoji:"🧮", title:"Promediar texto", tag:"⚠ engañoso · parece Resumen, es Tipos",
+  id:"d6", board:"data", group:"analisis", emoji:"🧮", title:"Promediar texto", tag:"⚠ engañoso · parece Transformar, es Tipos",
   codeTitle:"se olvidó convertir 'edad'", dead:"Tipos",
   well:`df["edad"] = pd.to_numeric(df["edad"], errors="coerce")   # ✅ antes
 df.groupby("sexo")["edad"].mean()`,
@@ -306,7 +306,7 @@ df.groupby("sexo")["edad"].mean()`,
 df.groupby("sexo")["edad"].mean()   # 🔧`,
   symptoms:[
     {ok:true,  x:`TypeError: could not convert string to float: '25'`,
-     why:"mean() necesita números, pero 'edad' sigue siendo object (texto). Parece morir en Resumen/groupby, pero la causa real está aguas arriba: faltó convertir el dtype en Tipos."},
+     why:"mean() necesita números, pero 'edad' sigue siendo object (texto). Parece morir en Transformar (el groupby), pero la causa real está aguas arriba: faltó convertir el dtype en Tipos (estación 2)."},
     {ok:false, x:`Devuelve la media de edad por sexo, correcta`,
      why:"No puede: promediar texto no está definido. Habría que convertir 'edad' antes."},
     {ok:false, x:`KeyError: 'edad'`,
@@ -318,13 +318,13 @@ df.groupby("sexo")["edad"].mean()   # 🔧`,
     {k:"cmd", x:`>>> df.groupby("sexo")["edad"].mean()`},
     {k:"err", x:`TypeError: could not convert string to float: '25'`},
   ],
-  frase:"Un error en Resumen suele tener su raíz en Tipos: convierte antes de agregar.",
-  concepto:"Eje Tipos→Resumen: el pipeline encadena; el síntoma sale tarde, la causa está temprano."
+  frase:"Un error en Transformar suele tener su raíz en Tipos: convierte antes de agregar.",
+  concepto:"Eje Tipos→Transformar: el pipeline encadena; el síntoma sale tarde, la causa está temprano."
 });
 
 scn({
   id:"d7", board:"data", group:"analisis", emoji:"📉", title:"«Baja 5 mmHg, recétalo»", tag:"Inferencia · intervalo de confianza",
-  codeTitle:"la conclusión", dead:"Inferencia",
+  codeTitle:"la conclusión", dead:"Inferir",
   well:`Dif. de medias = -5 mmHg
 IC 95% = -12 a +2   →  cruza 0  →  NO concluyente`,
   breakNote:`se reporta el punto estimado (-5) y se ignora el IC`,
@@ -348,7 +348,7 @@ IC 95% = -12 a +2   →  cruza 0  →  NO concluyente`,
 
 scn({
   id:"d8", board:"data", group:"analisis", emoji:"🎵", title:"I² alto, efectos fijos", tag:"Inferencia · heterogeneidad I²",
-  codeTitle:"el meta-análisis", dead:"Inferencia",
+  codeTitle:"el meta-análisis", dead:"Inferir",
   well:`I² = 88%   →  efectos ALEATORIOS y matizar el combinado`,
   breakNote:`se combina con efectos FIJOS y se cita el -8 como verdad única`,
   code:`modelo = "efectos fijos"
@@ -372,25 +372,25 @@ scn({
 
 scn({
   id:"d9", board:"data", group:"analisis", emoji:"🌍", title:"De la muestra a todos", tag:"⚠ engañoso · descriptiva ≠ inferencial",
-  codeTitle:"la afirmación", dead:"Inferencia",
-  well:`muestra (n=30): edad media = 52   (descriptiva: resume lo visto)
-para TODOS los pacientes: usar IC / inferencia`,
+  codeTitle:"la afirmación", dead:"Inferir",
+  well:`muestra (n=100): glucosa media = 105   (descriptiva: resume lo visto)
+para TODA la población: usar IC / inferencia`,
   breakNote:`se afirma sobre la población usando solo estadística descriptiva`,
-  code:`"la edad media de TODOS los pacientes es 52"   # 🔧 desde n=30, sin IC`,
+  code:`"la glucosa media de TODOS los pacientes es 105"   # 🔧 sin IC`,
   symptoms:[
-    {ok:true,  x:`Salto inválido: 52 describe la muestra; sin IC no afirmas el valor de la población`,
-     why:"La media muestral resume lo que viste (descriptiva). Pasar a 'todos los pacientes' es inferir, y eso exige un margen (IC). Con n=30 ese margen puede ser ancho; 52 no es el valor poblacional exacto."},
+    {ok:true,  x:`Salto inválido: 105 describe la muestra; sin IC no afirmas el valor de la población`,
+     why:"La media muestral resume lo que viste (descriptiva). Pasar a 'todos los pacientes' es inferir, y eso exige un margen (IC). 105 es el centro, no el valor poblacional exacto. Es justo el contraste de la estación 5 del juego-data."},
     {ok:false, x:`Correcto: la media muestral = la media poblacional`,
      why:"Casi nunca son iguales; por eso existe el IC. La muestra estima, no iguala."},
     {ok:false, x:`Falta usar más decimales`,
      why:"El problema no es la precisión del número, es el salto de muestra a población sin cuantificar la incertidumbre."},
   ],
   terminal:[
-    {k:"out", x:`muestra n=30 → media = 52   (descriptiva)`},
+    {k:"out", x:`muestra n=100 → media = 105   (descriptiva)`},
     {k:"err", x:`afirmar sobre la población sin IC = inferencia sin margen`},
   ],
   frase:"Describir resume lo que viste; inferir exige el margen (IC).",
-  concepto:"Eje Inferencia: descriptiva = mi muestra; inferencial = la población, con su incertidumbre."
+  concepto:"Eje Inferir: descriptiva = mi muestra; inferencial = la población, con su incertidumbre."
 });
 
 /* ===================== estado de la partida ===================== */
@@ -466,8 +466,8 @@ function renderAnclas(){
 function renderNav(){
   const nav=document.getElementById("nav");
   const groups=[
-    {lbl:"🩺 Limpieza · del crudo a la tabla", list:SCN.filter(s=>s.group==="limpieza")},
-    {lbl:"📊 Análisis · describir e inferir", list:SCN.filter(s=>s.group==="analisis")},
+    {lbl:"🩺 Limpieza · estaciones 1–3", list:SCN.filter(s=>s.group==="limpieza")},
+    {lbl:"📊 Transformar e inferir · estaciones 4–5", list:SCN.filter(s=>s.group==="analisis")},
   ];
   nav.innerHTML = groups.map(g=>
     `<div class="navgrp">${g.lbl}</div>`

@@ -95,7 +95,7 @@
 <header>
   <div>
     <h1>⌨️ Manos al Teclado · Pandas</h1>
-    <div class="sub">Cada paso del <i>pipeline de datos</i>, ahora para escribir de memoria. Reconocer el comando → teclearlo con las manos.</div>
+    <div class="sub">Las estaciones del <i>juego-data</i> (Ana · Luis · Sofía · Marco), ahora para teclear de memoria. Allí lo ves transformar la tabla → aquí lo escribes con las manos.</div>
   </div>
   <div class="prog">
     <button class="ghost" id="reset" title="Borrar progreso">reiniciar</button>
@@ -133,8 +133,8 @@
    ============================================================ */
 const CAPA_LBL = {1:"Vocabulario · la pieza", 2:"El comando · la línea", 3:"La secuencia · el flujo", 4:"El arreglo · el bug"};
 const SITES = [
-  {key:"limpieza", lbl:"🩺 Limpieza · del crudo a la tabla"},
-  {key:"analisis", lbl:"📊 Resumen · de agrupar a describir"},
+  {key:"limpieza", lbl:"🩺 Limpieza · estaciones 1–3 del juego-data"},
+  {key:"analisis", lbl:"📊 Transformar · estación 4 del juego-data"},
 ];
 
 const SC=[];
@@ -213,7 +213,7 @@ sc({id:"s3", site:"limpieza", emoji:"🕳️", title:"El hueco que no es cero",
   ]});
 
 sc({id:"s4", site:"limpieza", emoji:"🗑️", title:"¿Borrar o imputar?",
-  sintoma:"Hay filas con NaN. dropna() a ciegas borra media tabla; necesitas borrar con criterio.",
+  sintoma:"A Luis le falta la glucosa (NaN). Puedes borrar su fila o conservarlo imputando: la decisión de la estación 3.",
   caps:[
    {capa:1, kind:"token", quiero:"La pieza para borrar solo las filas donde falte <b>glucosa</b> (no donde falte cualquier cosa).",
      lbl:"argumento de dropna", accept:[`subset=["glucosa"]`], sol:`subset=["glucosa"]`,
@@ -226,13 +226,13 @@ sc({id:"s4", site:"limpieza", emoji:"🗑️", title:"¿Borrar o imputar?",
      frase:"Borro si son pocos y aleatorios; imputo si perder la fila cuesta caro.",
      concepto:"Eje faltantes: dropna dirigido vs fillna, según cuánto duela perder la fila."},
    {capa:4, kind:"fix", file:"limpieza.py", mode:"code",
-     quiero:"La columna <code>notas</code> tiene 60% de NaN y este <code>dropna()</code> borra casi toda la tabla. Bórralo solo por glucosa.",
-     broken:`df = df.dropna()   # 100 → 38 filas, por culpa de 'notas'`,
-     errorModel:"dropna() sin subset borra la fila si CUALQUIER columna tiene NaN; una columna muy hueca arrastra a todas. Limita el borrado con subset.",
-     accept:[`df = df.dropna(subset=["glucosa"])`,`df.dropna(subset=["glucosa"])`], sol:`df = df.dropna(subset=["glucosa"])`,
-     why:"El problema no era glucosa, era 'notas'. Con subset borras solo donde de verdad importa.",
-     frase:"dropna() sin subset deja que la peor columna decida por todas.",
-     concepto:"Eje faltantes: revisa isna().sum() antes de borrar a ciegas."},
+     quiero:"Solo a Luis le falta la glucosa. Este <code>dropna()</code> lo borra; mejor consérvalo imputando con la mediana. Reescríbelo.",
+     broken:`df = df.dropna()   # borra a Luis por un único hueco`,
+     errorModel:"Con un solo hueco, borrar la fila pierde a un paciente entero. Si perder la fila cuesta caro, imputa en vez de borrar (justo lo que hace la estación 3 del juego-data).",
+     accept:[`df["glucosa"] = df["glucosa"].fillna(df["glucosa"].median())`], sol:`df["glucosa"] = df["glucosa"].fillna(df["glucosa"].median())`,
+     why:"Imputar la mediana (110) conserva a Luis y no inventa un 0; dropna lo habría eliminado.",
+     frase:"Borro si son pocos y aleatorios; imputo si perder la fila cuesta caro.",
+     concepto:"Eje faltantes: dropna vs fillna según cuánto duela perder la fila."},
   ]});
 
 /* ===================== SITIO 2 · ANÁLISIS ===================== */
@@ -270,10 +270,10 @@ sc({id:"s5", site:"analisis", emoji:"📊", title:"Resumen por grupo",
   ]});
 
 sc({id:"s6", site:"analisis", emoji:"🔗", title:"Unir dos tablas",
-  sintoma:"Tienes 'pacientes' y 'resultados' en tablas separadas; necesitas una sola por paciente_id.",
+  sintoma:"'pacientes' y 'resultados' (la hba1c) están separadas. Quieres una sola, unida por nombre, sin perder a Marco (que no tiene hba1c).",
   caps:[
    {capa:1, kind:"token", quiero:"La pieza que dice <b>por qué columna</b> se unen las dos tablas.",
-     lbl:"argumento de merge", accept:[`on="paciente_id"`], sol:`on="paciente_id"`,
+     lbl:"argumento de merge", accept:[`on="nombre"`], sol:`on="nombre"`,
      why:"on = la llave compartida por la que se enlazan las filas de ambas tablas.",
      frase:"merge enlaza tablas por identidad compartida.",
      concepto:"Eje unir: el merge de pandas es el JOIN de SQL."},
@@ -282,17 +282,17 @@ sc({id:"s6", site:"analisis", emoji:"🔗", title:"Unir dos tablas",
      why:"left conserva toda la tabla izquierda; los que no casen quedan con NaN en las columnas de la derecha.",
      frase:"how='left' = no pierdo a nadie de la tabla izquierda.",
      concepto:"Eje unir: inner solo lo común; left conserva la izquierda completa."},
-   {capa:2, kind:"term", quiero:"Une <code>pacientes</code> con <code>resultados</code> por paciente_id.",
-     accept:[`pacientes.merge(resultados, on="paciente_id")`], sol:`pacientes.merge(resultados, on="paciente_id")`,
+   {capa:2, kind:"term", quiero:"Une <code>pacientes</code> con <code>resultados</code> por nombre.",
+     accept:[`pacientes.merge(resultados, on="nombre")`], sol:`pacientes.merge(resultados, on="nombre")`,
      why:"merge alinea fila por fila donde coincide la llave y pega las columnas de la otra tabla.",
      frase:"merge = pegar columnas de otra tabla, alineando por la llave.",
      concepto:"Eje unir: por defecto es inner (solo los IDs presentes en ambas)."},
    {capa:4, kind:"fix", file:"analisis.py", mode:"code",
-     quiero:"Quieres <b>todos</b> los pacientes, pero este merge borra a los que no tienen resultado. Arréglalo.",
-     broken:`pacientes.merge(resultados, on="paciente_id", how="inner")   # pierde pacientes sin resultado`,
-     errorModel:"inner solo conserva IDs presentes en AMBAS tablas; los pacientes sin resultado desaparecen. Para conservarlos todos, how='left'.",
-     accept:[`pacientes.merge(resultados, on="paciente_id", how="left")`], sol:`pacientes.merge(resultados, on="paciente_id", how="left")`,
-     why:"left mantiene a todos los de la izquierda; los sin resultado quedan con NaN, pero no desaparecen.",
+     quiero:"Quieres <b>todos</b> los pacientes, pero este merge borra a Marco (no tiene hba1c). Arréglalo.",
+     broken:`pacientes.merge(resultados, on="nombre", how="inner")   # Marco se queda fuera`,
+     errorModel:"inner solo conserva los nombres presentes en AMBAS tablas; como Marco no está en 'resultados', desaparece. Con how='left' se queda, con su hba1c en NaN.",
+     accept:[`pacientes.merge(resultados, on="nombre", how="left")`], sol:`pacientes.merge(resultados, on="nombre", how="left")`,
+     why:"left mantiene a todos los de la izquierda; Marco queda con hba1c NaN, pero no desaparece. Igual que en la estación 4 del juego-data.",
      frase:"inner intersecta; left conserva la izquierda completa.",
      concepto:"Eje unir: elige el how según a quién no puedes permitirte perder."},
   ]});

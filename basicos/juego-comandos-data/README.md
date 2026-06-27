@@ -5,6 +5,10 @@ de datos tecleándolo**, no reconociéndolo. Es la contraparte de **destreza** d
 `juego-data` (el pipeline visual): ahí ves cómo cada comando transforma la tabla; aquí
 lo escribes de memoria.
 
+Mismo dataset que el `juego-data`: **Ana · Luis · Sofía · Marco**, con `edad` como texto
+(`"unknown"`), la glucosa de Luis en `NaN` (mediana 110), `resultados` con la `hba1c`
+(sin Marco) y merge por `nombre`. Cada escenario es una de sus estaciones.
+
 > Saber *qué* hace `to_numeric` ≠ saber *teclearlo* sin mirar. Aquí entrenas las manos.
 
 ## Las 4 capas (de la pieza al procedimiento)
@@ -19,13 +23,16 @@ lo escribes de memoria.
 En **todas tecleas tú**. Al acertar sin ver la solución desbloqueas la **frase ancla** +
 el **eje** (concepto). El progreso se guarda en `localStorage`.
 
-## Contenido: 7 escenarios
+## Contenido: 7 escenarios (las estaciones del juego-data)
 
-- **🩺 Limpieza:** signos vitales (`info`/`isna`), número atrapado como texto
-  (`to_numeric`/`coerce` vs `astype`), el hueco que no es cero (`fillna` media/mediana/0),
-  borrar vs imputar (`dropna(subset=...)`).
-- **📊 Análisis:** resumen por grupo (`groupby`), unir tablas (`merge`, `how`),
-  toda la columna de golpe (vectorización vs `for`).
+- **🩺 Limpieza (estaciones 1–3):** signos vitales (`info`/`isna`), número atrapado como
+  texto (`to_numeric`/`coerce` vs `astype`), el hueco de Luis (`fillna(mediana)` vs `0`),
+  borrar a Luis vs imputar (`dropna` / `fillna`).
+- **📊 Transformar (estación 4):** resumen por grupo (`groupby("sexo")["glucosa"].mean()`),
+  unir por `nombre` sin perder a Marco (`merge`, `how`), toda la columna de golpe
+  (vectorización vs `for`).
+
+La estación 5 (inferir: IC / I²) no se teclea, se razona → vive en `juego-inverso-data`.
 
 ## Cómo se juega
 

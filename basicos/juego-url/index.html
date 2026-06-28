@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🛂 Aduana de Red · Discrimina la URL</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --ink:#e6edf3; --mut:#8b949e;
+    --line:#30363d; --blue:#58a6ff; --green:#3fb950; --amber:#d29922; --red:#f85149;
+    --violet:#a371f7; --mono:'SFMono-Regular',Consolas,'Liberation Mono',monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.5}
+  .wrap{max-width:760px;margin:0 auto;padding:24px 18px 80px}
+  h1{font-size:1.5rem;margin:0 0 4px}
+  .sub{color:var(--mut);font-size:.9rem;margin:0 0 18px}
+
+  .bar{display:flex;align-items:center;gap:14px;background:var(--panel);
+       border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:18px}
+  .bar .score{font-weight:700;font-size:1.1rem}
+  .track{flex:1;height:8px;background:var(--panel2);border-radius:99px;overflow:hidden}
+  .fill{height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--green));transition:width .4s}
+
+  .tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+  .tab{padding:6px 14px;border-radius:99px;border:1px solid var(--line);
+       background:var(--panel);color:var(--mut);font-size:.85rem;cursor:default}
+  .tab.on{background:var(--panel2);color:var(--ink);border-color:var(--blue)}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+        padding:22px;margin-bottom:18px}
+  .kicker{color:var(--mut);font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+  .prompt{font-family:var(--mono);font-size:1.45rem;background:var(--panel2);
+          border:1px solid var(--line);border-radius:10px;padding:18px;text-align:center;
+          word-break:break-all;margin-bottom:6px}
+  .q{margin:16px 0 10px;font-weight:600}
+
+  .opt{display:block;width:100%;text-align:left;background:var(--panel2);
+       border:1px solid var(--line);color:var(--ink);border-radius:10px;
+       padding:13px 15px;margin-bottom:9px;cursor:pointer;font-size:.96rem;transition:.15s}
+  .opt:hover:not(:disabled){border-color:var(--blue)}
+  .opt:disabled{cursor:default;opacity:.95}
+  .opt.correct{border-color:var(--green);background:rgba(63,185,80,.12)}
+  .opt.wrong{border-color:var(--red);background:rgba(248,81,73,.12)}
+
+  .fb{border-radius:10px;padding:14px 16px;margin-top:6px;display:none;font-size:.93rem}
+  .fb.show{display:block}
+  .fb.ok{background:rgba(63,185,80,.10);border:1px solid var(--green)}
+  .fb.no{background:rgba(248,81,73,.10);border:1px solid var(--red)}
+  .fb .why{color:var(--mut);margin:6px 0}
+  .frase{margin-top:10px;font-family:var(--mono);font-size:.88rem;color:var(--violet);
+         border-left:3px solid var(--violet);padding:6px 0 6px 12px;background:rgba(163,113,247,.06)}
+
+  .next{margin-top:14px;background:var(--blue);color:#06121f;border:0;border-radius:10px;
+        padding:11px 20px;font-weight:700;cursor:pointer;font-size:.95rem;display:none}
+  .next.show{display:inline-block}
+
+  .ancla{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .ancla h2{font-size:1rem;margin:0 0 12px}
+  .ancla ul{margin:0;padding-left:18px}
+  .ancla li{font-family:var(--mono);font-size:.84rem;color:var(--mut);margin-bottom:7px}
+  .ancla .empty{color:var(--mut);font-size:.86rem}
+  .done{text-align:center;padding:40px 20px}
+  .done h2{font-size:1.6rem}
+  .reset{background:none;border:1px solid var(--line);color:var(--mut);border-radius:8px;
+         padding:6px 12px;cursor:pointer;font-size:.8rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🛂 Aduana de Red</h1>
+  <p class="sub">Discrimina: <b>idioma://máquina:puerta/sala?notas</b> — ¿a qué máquina, qué puerto y qué path?</p>
+
+  <div class="bar">
+    <span class="score" id="score">0</span>
+    <div class="track"><div class="fill" id="fill"></div></div>
+    <span class="kicker" id="count" style="margin:0"></span>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div id="game"></div>
+
+  <div class="ancla">
+    <h2>🧩 Frases ancla coleccionadas</h2>
+    <ul id="anclaList"></ul>
+    <div class="empty" id="anclaEmpty">Acierta casos para desbloquearlas.</div>
+    <div style="margin-top:14px"><button class="reset" id="reset">↺ Reiniciar progreso</button></div>
+  </div>
+</div>
+
+<script>
+/* ───────── DATOS · cada caso es una discriminación ───────── */
+const CAT = {maq:"① Máquinas", port:"② Puertos", path:"③ Paths"};
+
+const CASOS = [
+  /* ── MÁQUINAS ── */
+  {cat:"maq", prompt:"127.0.0.1", q:"¿A qué máquina llega?",
+   opts:[
+     {x:"Mi propia máquina (loopback)", ok:true, why:"El 1 final siempre vuelve a ti: nunca sale a la red."},
+     {x:"Otra laptop en mi red de casa", why:"Esa sería 192.168.x.x"},
+     {x:"Un servidor en internet", why:"Eso necesitaría un dominio o IP pública."}],
+   frase:"127.0.0.1 = solo yo (loopback)"},
+
+  {cat:"maq", prompt:"uvicorn --host 0.0.0.0", q:"¿Qué significa ese 0.0.0.0?",
+   opts:[
+     {x:"«Acepto que me hablen desde cualquier lado»", ok:true, why:"No es un destino: es cómo el servidor RECIBE. Abre todas sus interfaces."},
+     {x:"Un servidor concreto en internet", why:"0.0.0.0 no es una dirección a la que visitas."},
+     {x:"Solo escucha a mi propia máquina", why:"Eso sería 127.0.0.1. 0.0.0.0 es lo contrario: abre a todos."}],
+   frase:"0.0.0.0 = ábrele a todos (cómo recibe, no a dónde voy)"},
+
+  {cat:"maq", prompt:"192.168.1.5", q:"¿A qué máquina llega?",
+   opts:[
+     {x:"Otra máquina en mi red local (LAN)", ok:true, why:"192.168.x.x y 10.x.x.x son «los de casa»."},
+     {x:"Mi misma máquina", why:"Esa es 127.0.0.1"},
+     {x:"Un servidor en internet", why:"Las 192.168 nunca salen a internet, son privadas."}],
+   frase:"192.168.x.x = los de casa (LAN)"},
+
+  {cat:"maq", prompt:"https://api.clinica.com", q:"¿A qué máquina llega y cómo se resuelve?",
+   opts:[
+     {x:"A internet; el DNS traduce el nombre → IP", ok:true, why:"Las máquinas no entienden nombres: el DNS es la recepción que lo convierte en número."},
+     {x:"A mi máquina local", why:"Local sería localhost / 127.0.0.1"},
+     {x:"Directo, sin traducción", why:"Todo nombre pasa por DNS antes de llegar a una IP."}],
+   frase:"nombre = el mundo · DNS traduce nombre → IP"},
+
+  /* ── PUERTOS ── */
+  {cat:"port", prompt:":8000", q:"¿Qué programa suele escuchar ahí (en dev)?",
+   opts:[
+     {x:"uvicorn / FastAPI", ok:true, why:"8000 es el puerto dev típico de uvicorn. Habla HTTP → tiene paths."},
+     {x:"PostgreSQL", why:"Postgres vive en 5432 y habla SQL, no HTTP."},
+     {x:"SSH", why:"SSH es el 22."}],
+   frase:"8000 = mi FastAPI"},
+
+  {cat:"port", prompt:":5432", q:"¿Quién atiende y qué idioma habla?",
+   opts:[
+     {x:"PostgreSQL — habla SQL, NO tiene paths", ok:true, why:"Cuenta regresiva 5-4-3-2. No es web: no le pidas /docs."},
+     {x:"FastAPI con /docs", why:"FastAPI está en 8000; 5432 no entiende HTTP."},
+     {x:"El front de React", why:"React dev suele estar en 3000 o 5173."}],
+   frase:"5432 = Postgres (SQL, sin paths)"},
+
+  {cat:"port", prompt:":443  vs  :80", q:"¿Cuál es la web CON candado (cifrada)?",
+   opts:[
+     {x:"443 → HTTPS (cifrada 🔒)", ok:true, why:"80 es HTTP sin cifrar; 443 añade el candado."},
+     {x:"80 → la cifrada", why:"Al revés: 80 es sin candado."},
+     {x:"Las dos son iguales", why:"No: 443 cifra, 80 no."}],
+   frase:"443 = web segura 🔒 · 80 = web sin candado"},
+
+  {cat:"port", prompt:":22", q:"¿Para qué sirve esa puerta?",
+   opts:[
+     {x:"SSH: entrar por terminal a otra máquina", ok:true, why:"22 = siempre la terminal remota. No es web."},
+     {x:"Servir una página web", why:"Web es 80/443; 22 es terminal."},
+     {x:"Conectar a una base de datos", why:"Las DB tienen sus propios puertos (5432, 3306...)."}],
+   frase:"22 = entrar por terminal (SSH)"},
+
+  {cat:"port", prompt:"8000  ·  5432", q:"¿Cuál de los dos NO tiene paths?",
+   opts:[
+     {x:"5432 (Postgres) — no habla HTTP", ok:true, why:"Los paths solo existen donde se habla HTTP. Postgres habla SQL."},
+     {x:"8000 (FastAPI)", why:"8000 sí tiene paths: /docs, /pacientes..."},
+     {x:"Ninguno tiene paths", why:"8000 sí los tiene."}],
+   frase:"Solo HTTP tiene paths (puerto = qué idioma)"},
+
+  /* ── PATHS ── */
+  {cat:"path", prompt:"http://127.0.0.1:8000/docs", q:"¿Qué hay en /docs?",
+   opts:[
+     {x:"El Swagger: doc interactiva de FastAPI", ok:true, why:"Path de infraestructura: lo regala el framework para probar la API."},
+     {x:"Un dato de mi base de datos", why:"Eso sería un path de recurso como /pacientes."},
+     {x:"Un archivo de imagen", why:"Los archivos fijos van en /static/..."}],
+   frase:"/docs = Swagger (path de infra, lo da FastAPI)"},
+
+  {cat:"path", prompt:"GET /pacientes", q:"¿Qué acción es?",
+   opts:[
+     {x:"Listar la colección (todos)", ok:true, why:"Plural sin id → la lista completa."},
+     {x:"Ver un paciente concreto", why:"Eso llevaría id: /pacientes/42"},
+     {x:"Crear uno nuevo", why:"Crear sería POST, no GET."}],
+   frase:"/algo = lista · /algo/42 = uno solo"},
+
+  {cat:"path", prompt:"POST /pacientes", q:"Mismo path, verbo POST. ¿Qué hace?",
+   opts:[
+     {x:"Crear un paciente nuevo", ok:true, why:"El verbo cambia la acción: POST = «aquí va uno nuevo»."},
+     {x:"Listar todos", why:"Listar es GET."},
+     {x:"Borrar uno", why:"Borrar es DELETE."}],
+   frase:"Mismo path + verbo distinto = acción distinta"},
+
+  {cat:"path", prompt:"GET /pacientes/42", q:"¿Qué pides?",
+   opts:[
+     {x:"Ver UN paciente (el id 42)", ok:true, why:"El id apunta a un recurso único."},
+     {x:"La lista completa", why:"La lista no lleva id."},
+     {x:"Las recetas de ese paciente", why:"Eso sería /pacientes/42/recetas"}],
+   frase:"El id (/42) = un recurso · sin id = la colección"},
+
+  {cat:"path", prompt:"DELETE /pacientes/42", q:"¿Qué hace?",
+   opts:[
+     {x:"Borrar al paciente 42", ok:true, why:"DELETE = quitar ese recurso."},
+     {x:"Ver al paciente 42", why:"Ver es GET."},
+     {x:"Borrar a todos los pacientes", why:"Lleva id 42 → solo ese."}],
+   frase:"Path = sustantivo · Verbo HTTP = acción"},
+
+  {cat:"path", prompt:"POST /login   (o /token)", q:"¿Para qué sirve?",
+   opts:[
+     {x:"Autenticarte; te devuelve tu credencial", ok:true, why:"Le mandas usuario/clave y recibes un token."},
+     {x:"Ver tu perfil", why:"Tu perfil sería GET /me"},
+     {x:"Listar usuarios", why:"Eso sería GET /usuarios"}],
+   frase:"/login = entrar · /me = quién soy yo"},
+
+  {cat:"path", prompt:"GET /api/v1/pacientes", q:"¿Qué aporta el /api/v1/?",
+   opts:[
+     {x:"Namespace + versión 1 de la API", ok:true, why:"v1 protege a quien la usa si luego cambias todo en v2."},
+     {x:"Es el nombre de un paciente", why:"Es un prefijo de organización, no un recurso."},
+     {x:"Indica que es privado", why:"La privacidad la da la autenticación, no el path."}],
+   frase:"/api/v1 = versión, por si la API cambia luego"},
+
+  {cat:"path", prompt:"GET /health", q:"¿Para qué se usa?",
+   opts:[
+     {x:"Chequear que el servicio está vivo 🩺", ok:true, why:"Path de infra: responde «sí, respiro» para monitoreo."},
+     {x:"Ver el historial de salud de un paciente", why:"Eso sería un recurso: /pacientes/42/historial"},
+     {x:"Configurar el servidor", why:"Solo informa estado, no configura."}],
+   frase:"/health = ¿estás vivo? (chequeo de pulso)"},
+];
+
+/* ───────── MOTOR ───────── */
+const KEY="juegoUrlProgress";
+let state = load();
+function load(){
+  try{ return JSON.parse(localStorage.getItem(KEY)) || fresh(); }
+  catch(e){ return fresh(); }
+}
+function fresh(){ return {i:0, score:0, anclas:[]}; }
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+
+const $ = id => document.getElementById(id);
+
+function renderTabs(){
+  const cats = Object.keys(CAT);
+  const cur = CASOS[state.i] ? CASOS[state.i].cat : null;
+  $("tabs").innerHTML = cats.map(c =>
+    `<span class="tab ${c===cur?'on':''}">${CAT[c]}</span>`).join("");
+}
+
+function renderBar(){
+  $("score").textContent = state.score;
+  $("count").textContent = Math.min(state.i+1, CASOS.length) + " / " + CASOS.length;
+  $("fill").style.width = (state.score / CASOS.length * 100) + "%";
+}
+
+function renderAnclas(){
+  const ul = $("anclaList"), empty = $("anclaEmpty");
+  if(state.anclas.length){
+    empty.style.display="none";
+    ul.innerHTML = state.anclas.map(f=>`<li>🧩 ${f}</li>`).join("");
+  } else { empty.style.display="block"; ul.innerHTML=""; }
+}
+
+function renderCaso(){
+  renderTabs(); renderBar(); renderAnclas();
+  if(state.i >= CASOS.length){ return renderDone(); }
+  const c = CASOS[state.i];
+  let answered = false;
+  const html = `
+    <div class="card">
+      <div class="kicker">${CAT[c.cat]} · caso ${state.i+1}</div>
+      <div class="prompt">${c.prompt}</div>
+      <div class="q">${c.q}</div>
+      <div id="opts"></div>
+      <div class="fb" id="fb"></div>
+      <button class="next" id="next">Siguiente →</button>
+    </div>`;
+  $("game").innerHTML = html;
+
+  const optsBox = $("opts");
+  c.opts.forEach((o, idx)=>{
+    const b = document.createElement("button");
+    b.className="opt"; b.textContent=o.x;
+    b.onclick = ()=>{
+      if(answered) return; answered=true;
+      const fb=$("fb"), next=$("next");
+      // marcar todas
+      [...optsBox.children].forEach((btn,j)=>{
+        btn.disabled=true;
+        if(c.opts[j].ok) btn.classList.add("correct");
+      });
+      if(o.ok){
+        b.classList.add("correct");
+        state.score++;
+        if(!state.anclas.includes(c.frase)) state.anclas.push(c.frase);
+        fb.className="fb show ok";
+        fb.innerHTML = `🟢 <b>¡Correcto!</b><div class="why">${o.why}</div>
+          <div class="frase">🧩 ${c.frase}</div>`;
+      } else {
+        b.classList.add("wrong");
+        const right = c.opts.find(x=>x.ok);
+        fb.className="fb show no";
+        fb.innerHTML = `🔴 <b>No.</b> <div class="why">${o.why}</div>
+          <div class="why">✅ Lo correcto: <b>${right.x}</b> — ${right.why}</div>
+          <div class="frase">🧩 ${c.frase}</div>`;
+      }
+      next.classList.add("show");
+      renderBar(); renderAnclas(); save();
+    };
+    optsBox.appendChild(b);
+  });
+
+  $("next").onclick = ()=>{ state.i++; save(); renderCaso(); };
+}
+
+function renderDone(){
+  renderBar(); renderAnclas();
+  $("tabs").innerHTML="";
+  const pct = Math.round(state.score / CASOS.length * 100);
+  $("game").innerHTML = `
+    <div class="card done">
+      <h2>🎉 Aduana completa</h2>
+      <p>Acertaste <b>${state.score}</b> de <b>${CASOS.length}</b> (${pct}%).</p>
+      <p class="sub">Desbloqueaste ${state.anclas.length} frases ancla. Repite mañana: la discriminación se graba repitiendo el contraste.</p>
+      <button class="next show" id="again">↺ Jugar otra vez</button>
+    </div>`;
+  $("again").onclick = ()=>{ state.i=0; state.score=0; save(); renderCaso(); };
+}
+
+$("reset").onclick = ()=>{ state=fresh(); save(); renderCaso(); };
+
+renderCaso();
+</script>
+</body>
+</html>

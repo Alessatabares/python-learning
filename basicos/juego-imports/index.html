@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧰 Caja de Herramientas · from … import …</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --ink:#e6edf3; --mut:#8b949e;
+    --line:#30363d; --blue:#58a6ff; --green:#3fb950; --amber:#d29922; --red:#f85149;
+    --violet:#a371f7; --mono:'SFMono-Regular',Consolas,'Liberation Mono',monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.5}
+  .wrap{max-width:760px;margin:0 auto;padding:24px 18px 80px}
+  h1{font-size:1.5rem;margin:0 0 4px}
+  .sub{color:var(--mut);font-size:.9rem;margin:0 0 18px}
+
+  .bar{display:flex;align-items:center;gap:14px;background:var(--panel);
+       border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:18px}
+  .bar .score{font-weight:700;font-size:1.1rem}
+  .track{flex:1;height:8px;background:var(--panel2);border-radius:99px;overflow:hidden}
+  .fill{height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--green));transition:width .4s}
+
+  .tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+  .tab{padding:6px 14px;border-radius:99px;border:1px solid var(--line);
+       background:var(--panel);color:var(--mut);font-size:.85rem;cursor:default}
+  .tab.on{background:var(--panel2);color:var(--ink);border-color:var(--blue)}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+        padding:22px;margin-bottom:18px}
+  .kicker{color:var(--mut);font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+  .prompt{font-family:var(--mono);font-size:1.25rem;background:var(--panel2);
+          border:1px solid var(--line);border-radius:10px;padding:18px;text-align:center;
+          word-break:break-word;margin-bottom:6px}
+  .prompt small{display:block;font-size:.8rem;color:var(--mut);margin-top:8px;font-family:system-ui}
+  .q{margin:16px 0 10px;font-weight:600}
+
+  .opt{display:block;width:100%;text-align:left;background:var(--panel2);
+       border:1px solid var(--line);color:var(--ink);border-radius:10px;
+       padding:13px 15px;margin-bottom:9px;cursor:pointer;font-size:.96rem;transition:.15s}
+  .opt:hover:not(:disabled){border-color:var(--blue)}
+  .opt:disabled{cursor:default;opacity:.95}
+  .opt.correct{border-color:var(--green);background:rgba(63,185,80,.12)}
+  .opt.wrong{border-color:var(--red);background:rgba(248,81,73,.12)}
+
+  .fb{border-radius:10px;padding:14px 16px;margin-top:6px;display:none;font-size:.93rem}
+  .fb.show{display:block}
+  .fb.ok{background:rgba(63,185,80,.10);border:1px solid var(--green)}
+  .fb.no{background:rgba(248,81,73,.10);border:1px solid var(--red)}
+  .fb .why{color:var(--mut);margin:6px 0}
+  .frase{margin-top:10px;font-family:var(--mono);font-size:.88rem;color:var(--violet);
+         border-left:3px solid var(--violet);padding:6px 0 6px 12px;background:rgba(163,113,247,.06)}
+
+  .next{margin-top:14px;background:var(--blue);color:#06121f;border:0;border-radius:10px;
+        padding:11px 20px;font-weight:700;cursor:pointer;font-size:.95rem;display:none}
+  .next.show{display:inline-block}
+
+  .ancla{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .ancla h2{font-size:1rem;margin:0 0 12px}
+  .ancla ul{margin:0;padding-left:18px}
+  .ancla li{font-family:var(--mono);font-size:.84rem;color:var(--mut);margin-bottom:7px}
+  .ancla .empty{color:var(--mut);font-size:.86rem}
+  .done{text-align:center;padding:40px 20px}
+  .done h2{font-size:1.6rem}
+  .reset{background:none;border:1px solid var(--line);color:var(--mut);border-radius:8px;
+         padding:6px 12px;cursor:pointer;font-size:.8rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🧰 Caja de Herramientas del Backend</h1>
+  <p class="sub">Cada <b>import</b> es un instrumento. Aprende <b>cuándo</b> lo sacas, <b>de dónde</b> viene y <b>para qué</b>.</p>
+
+  <div class="bar">
+    <span class="score" id="score">0</span>
+    <div class="track"><div class="fill" id="fill"></div></div>
+    <span class="kicker" id="count" style="margin:0"></span>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div id="game"></div>
+
+  <div class="ancla">
+    <h2>🧩 Frases ancla coleccionadas</h2>
+    <ul id="anclaList"></ul>
+    <div class="empty" id="anclaEmpty">Acierta casos para desbloquearlas.</div>
+    <div style="margin-top:14px"><button class="reset" id="reset">↺ Reiniciar progreso</button></div>
+  </div>
+</div>
+
+<script>
+/* ───────── DATOS · cada caso es una discriminación ───────── */
+const CAT = {
+  nucleo:"① Núcleo", param:"② Parámetros", flujo:"③ Flujo & errores",
+  datos:"④ Datos (Pydantic)", resp:"⑤ Respuestas & seguridad"
+};
+
+const CASOS = [
+  /* ── NÚCLEO ── */
+  {cat:"nucleo", prompt:"from fastapi import FastAPI", q:"¿Para qué y cuándo lo usas?",
+   opts:[
+     {x:"Crear la app: app = FastAPI(). El objeto central, una vez por proyecto.", ok:true, why:"Es la raíz: de ahí cuelgan rutas, middleware y routers."},
+     {x:"Definir un modelo de datos", why:"Eso es BaseModel, y viene de pydantic."},
+     {x:"Lanzar un error 404", why:"Eso es HTTPException."}],
+   frase:"FastAPI() = la app; el objeto raíz, se crea una sola vez."},
+
+  {cat:"nucleo", prompt:"from fastapi import APIRouter", q:"¿Cuándo lo sacas?",
+   opts:[
+     {x:"Cuando el proyecto crece: parto rutas en módulos y luego app.include_router()", ok:true, why:"Cada archivo (pacientes.py, auth.py) tiene su router; main.py los une."},
+     {x:"Para crear la app principal", why:"Esa es FastAPI()."},
+     {x:"Para conectarme a la base de datos", why:"Eso es del lado de SQLAlchemy/engine."}],
+   frase:"APIRouter = mini-app de rutas; ordena el proyecto en módulos."},
+
+  /* ── PARÁMETROS ── */
+  {cat:"param", prompt:"from fastapi import Query", q:"¿Para qué sirve?",
+   opts:[
+     {x:"Declarar y validar lo de la query string: ?q=… (default, min/max, regex)", ok:true, why:"Lo que va después del ? en la URL."},
+     {x:"Leer el {id} del path /items/{id}", why:"Ese es Path."},
+     {x:"Leer el cuerpo JSON", why:"Ese es el body → un BaseModel."}],
+   frase:"Query = lo de ?clave=valor (la query string)."},
+
+  {cat:"param", prompt:"from fastapi import Path", q:"¿Para qué sirve?",
+   opts:[
+     {x:"Validar el parámetro que va EN la ruta: /pacientes/{id} (gt=0, etc.)", ok:true, why:"El {id} incrustado en el path."},
+     {x:"Validar ?orden=fecha", why:"Eso es Query."},
+     {x:"Leer un encabezado", why:"Eso es Header."}],
+   frase:"Path = validar el {id} dentro de la ruta · Query = el ?…"},
+
+  {cat:"param", prompt:"from fastapi import Header", q:"¿Cuándo lo usas?",
+   opts:[
+     {x:"Para leer un encabezado HTTP de la petición (User-Agent, Authorization)", ok:true, why:"Los metadatos que viajan en la cabecera."},
+     {x:"Para leer la query string", why:"Eso es Query."},
+     {x:"Para devolver una página HTML", why:"Eso es HTMLResponse."}],
+   frase:"Header = leer encabezados de la petición."},
+
+  {cat:"param", prompt:"from fastapi import UploadFile", q:"¿Para qué sirve?",
+   opts:[
+     {x:"RECIBIR archivos que sube el cliente (imágenes, PDFs) por streaming", ok:true, why:"Eficiente: no carga todo el archivo en memoria de golpe."},
+     {x:"ENVIAR un archivo al cliente", why:"Eso es FileResponse (el opuesto)."},
+     {x:"Leer variables de entorno", why:"Eso no es de fastapi."}],
+   frase:"UploadFile = recibir lo que suben · FileResponse = enviar."},
+
+  /* ── FLUJO & ERRORES ── */
+  {cat:"flujo", prompt:"from fastapi import Depends", q:"¿Para qué y cuándo?",
+   opts:[
+     {x:"Inyección de dependencias: reusar lógica (sesión de DB, usuario autenticado) en muchas rutas", ok:true, why:"Cuándo: auth, conexión a DB, parámetros comunes — sin repetir código."},
+     {x:"Lanzar un 401", why:"Eso es HTTPException."},
+     {x:"Definir el modelo de respuesta", why:"Eso es response_model / BaseModel."}],
+   frase:"Depends = inyectar lo que la ruta necesita (DB, usuario)."},
+
+  {cat:"flujo", prompt:"from fastapi import HTTPException", q:"¿Cuándo lo usas?",
+   opts:[
+     {x:"Cuando quieres cortar la petición con un error: raise HTTPException(404, 'no existe')", ok:true, why:"El recurso no existe, no autorizado, regla de negocio rota."},
+     {x:"Para crear la app", why:"Eso es FastAPI()."},
+     {x:"Para validar tipos automáticamente", why:"Eso lo hace Pydantic solo."}],
+   frase:"HTTPException = raise un error HTTP a propósito (404, 401…)."},
+
+  {cat:"flujo", prompt:"from fastapi import status", q:"¿Para qué sirve?",
+   opts:[
+     {x:"Constantes legibles de códigos: status.HTTP_201_CREATED en vez de 201", ok:true, why:"Más legible y menos errores que el número crudo."},
+     {x:"Ver el estado de la base de datos", why:"No: son solo los códigos HTTP."},
+     {x:"La ruta /health de salud", why:"Esa la escribes tú; status son constantes."}],
+   frase:"status = nombres legibles para los códigos HTTP."},
+
+  {cat:"flujo", prompt:"from fastapi import BackgroundTasks", q:"¿Cuándo lo sacas?",
+   opts:[
+     {x:"Para hacer algo DESPUÉS de responder (enviar email, log) sin que el cliente espere", ok:true, why:"Respondes ya; la tarea corre en segundo plano tras la respuesta."},
+     {x:"Para tareas programadas tipo cron", why:"Eso es otra cosa (celery/cron). Esto corre justo tras responder."},
+     {x:"Para correr la app", why:"Eso es uvicorn."}],
+   frase:"BackgroundTasks = hazlo después de responder (no bloquea al cliente)."},
+
+  {cat:"flujo", prompt:"from fastapi import Request", q:"¿Cuándo lo necesitas?",
+   opts:[
+     {x:"Cuando necesitas la petición CRUDA: IP del cliente, headers completos, body sin parsear", ok:true, why:"Bajo nivel: lo que FastAPI no te da ya masticado."},
+     {x:"Para crear una respuesta", why:"Eso es Response."},
+     {x:"Para definir parámetros de query", why:"Eso es Query."}],
+   frase:"Request = la petición cruda (cuando necesitas lo de bajo nivel)."},
+
+  /* ── DATOS (Pydantic) ── */
+  {cat:"datos", prompt:"from pydantic import BaseModel", q:"¿Para qué y cuándo?",
+   opts:[
+     {x:"Definir el esquema de tus datos; valida tipos solo, al entrar y al salir", ok:true, why:"Cuándo: el body de entrada y el response_model de salida."},
+     {x:"Crear la app FastAPI", why:"Eso es FastAPI()."},
+     {x:"Conectarte a Postgres", why:"Eso es SQLAlchemy."}],
+   frase:"BaseModel = el contrato/forma de tus datos (valida solo)."},
+
+  {cat:"datos", prompt:"from pydantic import Field", q:"¿Para qué sirve?",
+   opts:[
+     {x:"Añadir validación/metadata a UN campo: edad: int = Field(gt=0, le=120)", ok:true, why:"Reglas finas por campo: rangos, longitud, default, descripción."},
+     {x:"Definir la clase modelo entera", why:"Esa es BaseModel; Field es para un campo."},
+     {x:"Una columna de la base de datos", why:"Eso sería Column de SQLAlchemy."}],
+   frase:"Field = reglas extra para UN campo (gt, max_length, default)."},
+
+  {cat:"datos", prompt:"¿De qué librería sale BaseModel?", isSituacion:true,
+   q:"Elige el origen correcto",
+   opts:[
+     {x:"pydantic", ok:true, why:"FastAPI lo USA, pero BaseModel vive en pydantic. Error clásico importarlo de fastapi."},
+     {x:"fastapi", why:"No: FastAPI se apoya en pydantic, pero no exporta BaseModel."},
+     {x:"sqlalchemy", why:"Esa es para la base de datos."}],
+   frase:"BaseModel vive en pydantic (aunque FastAPI lo use)."},
+
+  {cat:"datos", prompt:"Necesito recibir un JSON con varios campos (nombre, edad, dx) en el body", isSituacion:true,
+   q:"¿Qué usas?",
+   opts:[
+     {x:"Un modelo class Paciente(BaseModel)", ok:true, why:"El body estructurado se modela con un BaseModel; FastAPI lo valida y documenta."},
+     {x:"Query()", why:"Query es para la query string (?…), no para el body."},
+     {x:"Path()", why:"Path es para el {id} de la ruta."}],
+   frase:"Body estructurado = un BaseModel de pydantic."},
+
+  /* ── RESPUESTAS & SEGURIDAD ── */
+  {cat:"resp", prompt:"from fastapi.responses import RedirectResponse", q:"¿Para qué sirve?",
+   opts:[
+     {x:"Redirigir al cliente a otra URL (302/307)", ok:true, why:"Tras un login, o para mandar a / cuando algo cambió de sitio."},
+     {x:"Devolver JSON", why:"Eso es JSONResponse (o el return normal)."},
+     {x:"Recibir un archivo", why:"Eso es UploadFile."}],
+   frase:"RedirectResponse = mandar al cliente a otra URL."},
+
+  {cat:"resp", prompt:"from fastapi.responses import FileResponse", q:"¿Para qué sirve?",
+   opts:[
+     {x:"DEVOLVER un archivo del servidor al cliente (descargas, imágenes)", ok:true, why:"El opuesto de UploadFile."},
+     {x:"RECIBIR un archivo que suben", why:"Eso es UploadFile."},
+     {x:"Devolver un JSON", why:"Eso es JSONResponse."}],
+   frase:"FileResponse = enviar archivo · UploadFile = recibir archivo."},
+
+  {cat:"resp", prompt:"from fastapi.security import OAuth2PasswordBearer", q:"¿Cuándo lo usas?",
+   opts:[
+     {x:"En login con tokens: extrae el Bearer del header Authorization y protege rutas con Depends", ok:true, why:"Cuándo: autenticación con JWT/tokens."},
+     {x:"Para encriptar contraseñas", why:"Eso es passlib/bcrypt, no FastAPI."},
+     {x:"Para crear la base de usuarios", why:"Eso es tu modelo + DB."}],
+   frase:"OAuth2PasswordBearer = saca el token del header para proteger rutas."},
+];
+
+/* ───────── MOTOR ───────── */
+const KEY="juegoImportsProgress";
+let state = load();
+function load(){
+  try{ return JSON.parse(localStorage.getItem(KEY)) || fresh(); }
+  catch(e){ return fresh(); }
+}
+function fresh(){ return {i:0, score:0, anclas:[]}; }
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+
+const $ = id => document.getElementById(id);
+
+function renderTabs(){
+  const cats = Object.keys(CAT);
+  const cur = CASOS[state.i] ? CASOS[state.i].cat : null;
+  $("tabs").innerHTML = cats.map(c =>
+    `<span class="tab ${c===cur?'on':''}">${CAT[c]}</span>`).join("");
+}
+
+function renderBar(){
+  $("score").textContent = state.score;
+  $("count").textContent = Math.min(state.i+1, CASOS.length) + " / " + CASOS.length;
+  $("fill").style.width = (state.score / CASOS.length * 100) + "%";
+}
+
+function renderAnclas(){
+  const ul = $("anclaList"), empty = $("anclaEmpty");
+  if(state.anclas.length){
+    empty.style.display="none";
+    ul.innerHTML = state.anclas.map(f=>`<li>🧩 ${f}</li>`).join("");
+  } else { empty.style.display="block"; ul.innerHTML=""; }
+}
+
+function renderCaso(){
+  renderTabs(); renderBar(); renderAnclas();
+  if(state.i >= CASOS.length){ return renderDone(); }
+  const c = CASOS[state.i];
+  let answered = false;
+  const tag = c.isSituacion ? "🩺 Situación" : "import";
+  const html = `
+    <div class="card">
+      <div class="kicker">${CAT[c.cat]} · caso ${state.i+1}</div>
+      <div class="prompt">${c.prompt}<small>${tag}</small></div>
+      <div class="q">${c.q}</div>
+      <div id="opts"></div>
+      <div class="fb" id="fb"></div>
+      <button class="next" id="next">Siguiente →</button>
+    </div>`;
+  $("game").innerHTML = html;
+
+  const optsBox = $("opts");
+  c.opts.forEach((o, idx)=>{
+    const b = document.createElement("button");
+    b.className="opt"; b.textContent=o.x;
+    b.onclick = ()=>{
+      if(answered) return; answered=true;
+      const fb=$("fb"), next=$("next");
+      [...optsBox.children].forEach((btn,j)=>{
+        btn.disabled=true;
+        if(c.opts[j].ok) btn.classList.add("correct");
+      });
+      if(o.ok){
+        b.classList.add("correct");
+        state.score++;
+        if(!state.anclas.includes(c.frase)) state.anclas.push(c.frase);
+        fb.className="fb show ok";
+        fb.innerHTML = `🟢 <b>¡Correcto!</b><div class="why">${o.why}</div>
+          <div class="frase">🧩 ${c.frase}</div>`;
+      } else {
+        b.classList.add("wrong");
+        const right = c.opts.find(x=>x.ok);
+        fb.className="fb show no";
+        fb.innerHTML = `🔴 <b>No.</b> <div class="why">${o.why}</div>
+          <div class="why">✅ Lo correcto: <b>${right.x}</b> — ${right.why}</div>
+          <div class="frase">🧩 ${c.frase}</div>`;
+      }
+      next.classList.add("show");
+      renderBar(); renderAnclas(); save();
+    };
+    optsBox.appendChild(b);
+  });
+
+  $("next").onclick = ()=>{ state.i++; save(); renderCaso(); };
+}
+
+function renderDone(){
+  renderBar(); renderAnclas();
+  $("tabs").innerHTML="";
+  const pct = Math.round(state.score / CASOS.length * 100);
+  $("game").innerHTML = `
+    <div class="card done">
+      <h2>🎉 Caja dominada</h2>
+      <p>Acertaste <b>${state.score}</b> de <b>${CASOS.length}</b> (${pct}%).</p>
+      <p class="sub">Desbloqueaste ${state.anclas.length} frases ancla. Repite mañana: sacar el instrumento correcto se graba repitiendo el contraste.</p>
+      <button class="next show" id="again">↺ Jugar otra vez</button>
+    </div>`;
+  $("again").onclick = ()=>{ state.i=0; state.score=0; save(); renderCaso(); };
+}
+
+$("reset").onclick = ()=>{ state=fresh(); save(); renderCaso(); };
+
+renderCaso();
+</script>
+</body>
+</html>

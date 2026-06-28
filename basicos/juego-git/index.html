@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐙 Terminal Git · Teclea el comando</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --ink:#e6edf3; --mut:#8b949e;
+    --line:#30363d; --blue:#58a6ff; --green:#3fb950; --amber:#d29922; --red:#f85149;
+    --violet:#a371f7; --mono:'SFMono-Regular',Consolas,'Liberation Mono',monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.5}
+  .wrap{max-width:760px;margin:0 auto;padding:24px 18px 80px}
+  h1{font-size:1.5rem;margin:0 0 4px}
+  .sub{color:var(--mut);font-size:.9rem;margin:0 0 18px}
+
+  .bar{display:flex;align-items:center;gap:14px;background:var(--panel);
+       border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:18px}
+  .bar .score{font-weight:700;font-size:1.1rem}
+  .track{flex:1;height:8px;background:var(--panel2);border-radius:99px;overflow:hidden}
+  .fill{height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--green));transition:width .4s}
+
+  .tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+  .tab{padding:6px 14px;border-radius:99px;border:1px solid var(--line);
+       background:var(--panel);color:var(--mut);font-size:.85rem;cursor:default}
+  .tab.on{background:var(--panel2);color:var(--ink);border-color:var(--blue)}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+        padding:22px;margin-bottom:18px}
+  .kicker{color:var(--mut);font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+  .intent{font-size:1.1rem;background:var(--panel2);border:1px solid var(--line);
+          border-radius:10px;padding:16px 18px;margin-bottom:14px}
+  .intent b{color:var(--blue)}
+
+  .term{background:#010409;border:1px solid var(--line);border-radius:10px;
+        padding:12px 14px;font-family:var(--mono);font-size:1rem;display:flex;align-items:center;gap:8px}
+  .term .ps1{color:var(--green);white-space:nowrap}
+  .term input{flex:1;background:transparent;border:0;outline:none;color:var(--ink);
+              font-family:var(--mono);font-size:1rem}
+  .term input::placeholder{color:#3a414c}
+
+  .row{margin-top:12px;display:flex;gap:10px;flex-wrap:wrap}
+  .btn{background:var(--blue);color:#06121f;border:0;border-radius:10px;
+       padding:10px 18px;font-weight:700;cursor:pointer;font-size:.92rem}
+  .btn.ghost{background:none;border:1px solid var(--line);color:var(--mut);font-weight:500}
+
+  .fb{border-radius:10px;padding:14px 16px;margin-top:12px;display:none;font-size:.93rem}
+  .fb.show{display:block}
+  .fb.ok{background:rgba(63,185,80,.10);border:1px solid var(--green)}
+  .fb.no{background:rgba(248,81,73,.10);border:1px solid var(--red)}
+  .fb .why{color:var(--mut);margin:6px 0}
+  .sol{font-family:var(--mono);font-size:.92rem;color:var(--ink);background:#010409;
+       border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:6px 0;display:inline-block}
+  .frase{margin-top:10px;font-family:var(--mono);font-size:.88rem;color:var(--violet);
+         border-left:3px solid var(--violet);padding:6px 0 6px 12px;background:rgba(163,113,247,.06)}
+
+  .ancla{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .ancla h2{font-size:1rem;margin:0 0 12px}
+  .ancla ul{margin:0;padding-left:18px}
+  .ancla li{font-family:var(--mono);font-size:.84rem;color:var(--mut);margin-bottom:7px}
+  .ancla .empty{color:var(--mut);font-size:.86rem}
+  .done{text-align:center;padding:40px 20px}
+  .done h2{font-size:1.6rem}
+  .reset{background:none;border:1px solid var(--line);color:var(--mut);border-radius:8px;
+         padding:6px 12px;cursor:pointer;font-size:.8rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🐙 Terminal Git &amp; GitHub</h1>
+  <p class="sub">Yo digo qué quiero que pase. Tú lo tecleas como en tu terminal Ubuntu. <b>Enter</b> para comprobar.</p>
+
+  <div class="bar">
+    <span class="score" id="score">0</span>
+    <div class="track"><div class="fill" id="fill"></div></div>
+    <span class="kicker" id="count" style="margin:0"></span>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div id="game"></div>
+
+  <div class="ancla">
+    <h2>🧩 Frases ancla coleccionadas</h2>
+    <ul id="anclaList"></ul>
+    <div class="empty" id="anclaEmpty">Acierta casos para desbloquearlas.</div>
+    <div style="margin-top:14px"><button class="reset" id="reset">↺ Reiniciar progreso</button></div>
+  </div>
+</div>
+
+<script>
+/* ───────── DATOS ─────────
+   has  = todas estas subcadenas deben aparecer (orden libre, p.ej. flags)
+   acc  = coincidencia exacta (tras normalizar espacios)
+   re   = expresión regular (para urls, mensajes, nombres variables)
+*/
+const CAT = {
+  auth:"① Auth & setup", crear:"② Crear repo (gh)", local:"③ Local / clonar",
+  cambios:"④ add · commit", remote:"⑤ remote & origin", sync:"⑥ push · pull", rama:"⑦ ramas"
+};
+
+const CASOS = [
+  /* ── AUTH & SETUP ── */
+  {cat:"auth", intent:"Es tu primer día con la terminal nueva de Ubuntu. Aún no has conectado tu cuenta de GitHub y quieres empezar a trabajar con tus repos.",
+   acc:["gh auth login"], sol:"gh auth login",
+   why:"Abre el flujo interactivo (navegador o token) para conectar tu cuenta.",
+   frase:"gh auth login = entrar a GitHub desde la terminal."},
+
+  {cat:"auth", intent:"Vuelves después de días y no recuerdas si seguías logueada como Alessatabares. Antes de hacer nada, quieres confirmarlo.",
+   acc:["gh auth status"], sol:"gh auth status",
+   why:"Te dice quién eres y qué permisos (scopes) tiene tu token.",
+   frase:"gh auth status = ¿quién soy y con qué permisos?"},
+
+  {cat:"auth", intent:"Cada vez que haces push, git te pide usuario y contraseña y es tedioso. Quieres que use tu login de gh y dejar de teclearlos.",
+   acc:["gh auth setup-git"], sol:"gh auth setup-git",
+   why:"Deja a git usar las credenciales de gh; así el push no te pide usuario/clave.",
+   frase:"gh auth setup-git = git reutiliza el login de gh."},
+
+  {cat:"auth", intent:"Notas que tus commits salen firmados como 'unknown'. Quieres que lleven tu nombre en TODOS tus repos.",
+   re:'^git config --global user\\.name ["\'].+["\']$',
+   sol:'git config --global user.name "Alessa"',
+   why:"El nombre y el email forman la firma que queda en cada commit.",
+   frase:"user.name / user.email = tu firma en los commits."},
+
+  {cat:"auth", intent:"Ya pusiste tu nombre, pero falta el correo para que GitHub vincule los commits a tu cuenta. Lo configuras global.",
+   re:'^git config --global user\\.email ["\'].+["\']$',
+   sol:'git config --global user.email "tu@correo.com"',
+   why:"GitHub vincula los commits a tu cuenta por este email.",
+   frase:"El email del commit lo liga a tu cuenta de GitHub."},
+
+  /* ── CREAR REPO (gh) ── */
+  {cat:"crear", intent:"Terminaste el esqueleto de tu API de la clínica y quieres crear su repo en GitHub, pero que nadie lo vea todavía.",
+   has:["gh repo create","clinica","--private"], sol:"gh repo create clinica --private",
+   why:"gh repo create lo crea en tu cuenta; --private lo oculta del público.",
+   frase:"gh repo create <nombre> --private = repo nuevo y oculto."},
+
+  {cat:"crear", intent:"Decides que tu proyecto de portafolio sí sea visible para todos, y que arranque ya con un README.",
+   has:["gh repo create","clinica","--public","--add-readme"],
+   sol:"gh repo create clinica --public --add-readme",
+   why:"--add-readme te crea el README.md de arranque.",
+   frase:"--public = visible · --add-readme = README inicial."},
+
+  {cat:"crear", intent:"Vas a crear el repo y NO quieres que se suba el venv ni los __pycache__ de Python. Que el .gitignore venga listo.",
+   has:["gh repo create","clinica","--gitignore Python"],
+   sol:"gh repo create clinica --private --gitignore Python",
+   why:"--gitignore Python añade el .gitignore típico de Python (ignora venv, __pycache__…).",
+   frase:"--gitignore Python = ignora basura de Python desde el inicio."},
+
+  {cat:"crear", intent:"Tu repo estaba privado mientras lo pulías. Ya está presentable y quieres mostrarlo al mundo, sin abrir la web.",
+   has:["gh repo edit","--visibility public"], sol:"gh repo edit --visibility public",
+   why:"gh repo edit modifica ajustes del repo sin abrir la web.",
+   frase:"gh repo edit --visibility public = lo haces visible."},
+
+  {cat:"crear", intent:"Estás en la terminal y quieres saltar rápido a la página del repo en el navegador para revisarlo.",
+   acc:["gh repo view --web","gh browse"], sol:"gh repo view --web",
+   why:"Atajo para saltar de la terminal a la página del repo.",
+   frase:"gh repo view --web = abre el repo en el navegador."},
+
+  /* ── LOCAL / CLONAR ── */
+  {cat:"local", intent:"Vas a empezar un proyecto nuevo desde cero en tu máquina y necesitas una carpeta para él, llamada clinica.",
+   acc:["mkdir clinica"], sol:"mkdir clinica",
+   why:"mkdir = make directory. Aún no es un repo, solo una carpeta.",
+   frase:"mkdir <nombre> = crear carpeta."},
+
+  {cat:"local", intent:"Ya creaste la carpeta clinica; ahora necesitas meterte dentro para trabajar en ella.",
+   acc:["cd clinica"], sol:"cd clinica",
+   why:"cd = change directory; te mueves dentro de ella.",
+   frase:"cd <carpeta> = entrar en ella."},
+
+  {cat:"local", intent:"Estás dentro de la carpeta clinica y quieres que git empiece a rastrear tus cambios aquí.",
+   acc:["git init"], sol:"git init",
+   why:"Crea la carpeta oculta .git: a partir de ahí git rastrea cambios.",
+   frase:"git init = empezar a versionar esta carpeta."},
+
+  {cat:"local", intent:"Tu compañera subió un repo a GitHub y te pasó el link. Quieres bajarlo entero a tu máquina por primera vez.",
+   re:'^git clone \\S+$', sol:"git clone <url>",
+   why:"clone trae TODO el repo remoto a local (la primera vez). Distinto de pull.",
+   frase:"git clone <url> = traer un repo remoto por primera vez."},
+
+  /* ── add · commit ── */
+  {cat:"cambios", intent:"Llevas un rato editando varios archivos y ya no recuerdas qué cambiaste ni qué está listo para commitear.",
+   acc:["git status"], sol:"git status",
+   why:"Tu tablero: muestra cambios sin rastrear, en staging y la rama actual.",
+   frase:"git status = ¿qué cambió y qué está en staging?"},
+
+  {cat:"cambios", intent:"Revisaste y todos tus cambios están bien. Quieres prepararlos TODOS para el próximo commit.",
+   acc:["git add .","git add -A","git add --all"], sol:"git add .",
+   why:"add mueve cambios a staging (la antesala del commit). El punto = todo.",
+   frase:"git add . = preparar todos los cambios para el commit."},
+
+  {cat:"cambios", intent:"Ya tienes los cambios en staging y quieres sellarlos con una nota que diga qué hiciste.",
+   re:'^git commit -m ["\'].+["\']$', sol:'git commit -m "mensaje"',
+   why:"commit congela una foto de lo que pusiste en staging, con su mensaje.",
+   frase:'git commit -m "…" = sellar los cambios con una nota.'},
+
+  {cat:"cambios", intent:"Solo tocaste archivos que YA estaban rastreados (ningún archivo nuevo) y quieres prepararlos y sellarlos de un solo golpe.",
+   re:'^git commit -am ["\'].+["\']$', sol:'git commit -am "mensaje"',
+   why:"-a añade automáticamente lo ya rastreado; -m el mensaje. No incluye archivos nuevos.",
+   frase:"git commit -am = add + commit (solo lo ya rastreado)."},
+
+  {cat:"cambios", intent:"Quieres revisar rápido la historia de commits, viendo uno por línea.",
+   acc:["git log --oneline","git log"], sol:"git log --oneline",
+   why:"--oneline resume cada commit en una línea (hash + mensaje).",
+   frase:"git log = la historia · --oneline = compacta."},
+
+  /* ── remote & origin ── */
+  {cat:"remote", intent:"Clonaste un repo hace meses y no recuerdas a qué GitHub está conectado. Quieres ver las direcciones.",
+   acc:["git remote -v"], sol:"git remote -v",
+   why:"-v (verbose) muestra las URLs de fetch y push de cada remoto.",
+   frase:"git remote -v = ¿a qué GitHub estoy conectada?"},
+
+  {cat:"remote", intent:"Hiciste git init en local y ya creaste el repo vacío en GitHub. Ahora hay que enlazarlos por primera vez, llamándolo origin.",
+   re:'^git remote add origin \\S+$', sol:"git remote add origin <url>",
+   why:"origin es el apodo estándar del remoto principal.",
+   frase:"origin = el apodo del remoto principal en GitHub."},
+
+  {cat:"remote", intent:"Tu origin apunta por SSH y el push te falla. Quieres cambiarlo a la URL HTTPS sin borrarlo y volver a crearlo.",
+   re:'^git remote set-url origin \\S+$', sol:"git remote set-url origin <url>",
+   why:"set-url reemplaza la dirección sin tener que borrar y volver a añadir.",
+   frase:"git remote set-url origin <url> = cambiar la dirección del remoto."},
+
+  /* ── push · pull · sync ── */
+  {cat:"sync", intent:"Tienes tu primer commit local y el remoto ya enlazado. Quieres subir main por primera vez y dejar el seguimiento listo.",
+   has:["git push","-u","origin","main"], sol:"git push -u origin main",
+   why:"-u (upstream) enlaza tu main local con la remota; luego basta 'git push'.",
+   frase:"git push -u origin main = primer push + enlazar la rama."},
+
+  {cat:"sync", intent:"Hiciste un par de commits más durante el día y solo quieres subirlos (la rama ya está enlazada).",
+   acc:["git push"], sol:"git push",
+   why:"Ya enlazada la rama, git sabe a dónde mandar.",
+   frase:"git push = mandar mis commits al remoto."},
+
+  {cat:"sync", intent:"Editaste un archivo directo desde la web de GitHub y quieres traer esos cambios a tu local y fusionarlos.",
+   acc:["git pull","git pull origin main"], sol:"git pull",
+   why:"pull = fetch (bajar) + merge (fusionar) en un paso.",
+   frase:"git pull = bajar + fusionar lo del remoto."},
+
+  {cat:"sync", intent:"Quieres ver qué hay nuevo en el remoto, pero SIN que toque tu trabajo todavía. Solo mirar.",
+   acc:["git fetch","git fetch origin"], sol:"git fetch",
+   why:"fetch solo descarga; tú decides después si fusionas. Más seguro que pull.",
+   frase:"git fetch = mirar el remoto sin tocar mi trabajo."},
+
+  {cat:"sync", intent:"Hiciste un commit local, pero el remoto avanzó por otro lado y al hacer push te rechaza. Quieres sincronizar dejando tu commit encima.",
+   acc:["git pull --rebase","git pull --rebase origin main"], sol:"git pull --rebase",
+   why:"--rebase reaplica tus commits sobre lo bajado, evitando un merge enredado.",
+   frase:"git pull --rebase = sincronizar dejando mis commits encima."},
+
+  /* ── ramas ── */
+  {cat:"rama", intent:"Vas a probar una función nueva sin arriesgar main. Quieres crear una rama llamada feature y pasarte a ella en un paso.",
+   acc:["git checkout -b feature","git switch -c feature"], sol:"git checkout -b feature",
+   why:"-b crea y salta en un paso (switch -c es el equivalente moderno).",
+   frase:"git checkout -b <rama> = crear y entrar a una rama."},
+
+  {cat:"rama", intent:"Terminaste de experimentar en tu rama feature y quieres volver a la rama main.",
+   acc:["git switch main","git checkout main"], sol:"git switch main",
+   why:"switch cambia de rama (checkout también, pero switch es más claro).",
+   frase:"git switch <rama> = moverme entre ramas."},
+
+  {cat:"rama", intent:"Te perdiste: no recuerdas en qué rama estás ni cuántas tienes en local.",
+   acc:["git branch"], sol:"git branch",
+   why:"Marca con * la rama actual.",
+   frase:"git branch = ¿en qué rama estoy y cuáles hay?"},
+];
+
+/* ───────── MOTOR ───────── */
+const KEY="juegoGitProgress";
+let state = load();
+function load(){
+  try{ return JSON.parse(localStorage.getItem(KEY)) || fresh(); }
+  catch(e){ return fresh(); }
+}
+function fresh(){ return {i:0, score:0, anclas:[]}; }
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+
+const $ = id => document.getElementById(id);
+const norm = s => s.trim().replace(/\s+/g,' ');
+
+function esCorrecto(c, input){
+  const n = norm(input);
+  if(!n) return false;
+  if(c.has && c.has.every(sub => n.includes(norm(sub)))) return true;
+  if(c.acc && c.acc.some(a => norm(a) === n)) return true;
+  if(c.re && new RegExp(c.re).test(n)) return true;
+  return false;
+}
+
+function renderTabs(){
+  const cats = Object.keys(CAT);
+  const cur = CASOS[state.i] ? CASOS[state.i].cat : null;
+  $("tabs").innerHTML = cats.map(c =>
+    `<span class="tab ${c===cur?'on':''}">${CAT[c]}</span>`).join("");
+}
+
+function renderBar(){
+  $("score").textContent = state.score;
+  $("count").textContent = Math.min(state.i+1, CASOS.length) + " / " + CASOS.length;
+  $("fill").style.width = (state.score / CASOS.length * 100) + "%";
+}
+
+function renderAnclas(){
+  const ul = $("anclaList"), empty = $("anclaEmpty");
+  if(state.anclas.length){
+    empty.style.display="none";
+    ul.innerHTML = state.anclas.map(f=>`<li>🧩 ${f}</li>`).join("");
+  } else { empty.style.display="block"; ul.innerHTML=""; }
+}
+
+function renderCaso(){
+  renderTabs(); renderBar(); renderAnclas();
+  if(state.i >= CASOS.length){ return renderDone(); }
+  const c = CASOS[state.i];
+  let answered = false;
+  $("game").innerHTML = `
+    <div class="card">
+      <div class="kicker">${CAT[c.cat]} · caso ${state.i+1}</div>
+      <div class="intent">Quiero que suceda: <b>${c.intent}</b></div>
+      <div class="term">
+        <span class="ps1">alessa@ubuntu:~$</span>
+        <input id="cmd" autocomplete="off" autocapitalize="off" spellcheck="false"
+               placeholder="escribe el comando…">
+      </div>
+      <div class="row">
+        <button class="btn" id="check">Comprobar (Enter)</button>
+        <button class="btn ghost" id="skip">No sé, muéstrame</button>
+      </div>
+      <div class="fb" id="fb"></div>
+    </div>`;
+
+  const input = $("cmd");
+  input.focus();
+
+  function resolver(revelar){
+    if(answered) return; answered=true;
+    const fb=$("fb");
+    const ok = !revelar && esCorrecto(c, input.value);
+    input.disabled = true;
+    $("check").disabled = true; $("skip").disabled = true;
+    if(ok){
+      state.score++;
+      if(!state.anclas.includes(c.frase)) state.anclas.push(c.frase);
+      fb.className="fb show ok";
+      fb.innerHTML = `🟢 <b>¡Correcto!</b><div class="why">${c.why}</div>
+        <div class="frase">🧩 ${c.frase}</div>
+        <button class="btn" id="next">Siguiente →</button>`;
+    } else {
+      fb.className="fb show no";
+      const tuyo = input.value.trim() ? `<div class="why">Escribiste: <span class="sol">${input.value.trim()}</span></div>` : "";
+      fb.innerHTML = `${revelar?"👀 <b>Mira:</b>":"🔴 <b>Casi.</b>"} ${tuyo}
+        <div class="why">Comando: <span class="sol">${c.sol}</span></div>
+        <div class="why">${c.why}</div>
+        <div class="frase">🧩 ${c.frase}</div>
+        <button class="btn" id="next">Siguiente →</button>`;
+    }
+    $("next").onclick = ()=>{ state.i++; save(); renderCaso(); };
+    renderBar(); renderAnclas(); save();
+  }
+
+  $("check").onclick = ()=>resolver(false);
+  $("skip").onclick  = ()=>resolver(true);
+  input.addEventListener("keydown", e=>{ if(e.key==="Enter") resolver(false); });
+}
+
+function renderDone(){
+  renderBar(); renderAnclas();
+  $("tabs").innerHTML="";
+  const pct = Math.round(state.score / CASOS.length * 100);
+  $("game").innerHTML = `
+    <div class="card done">
+      <h2>🎉 Terminal dominada</h2>
+      <p>Acertaste <b>${state.score}</b> de <b>${CASOS.length}</b> (${pct}%).</p>
+      <p class="sub">Desbloqueaste ${state.anclas.length} frases ancla. Repite mañana: teclear el comando de memoria es lo que lo graba.</p>
+      <button class="btn" id="again">↺ Jugar otra vez</button>
+    </div>`;
+  $("again").onclick = ()=>{ state.i=0; state.score=0; save(); renderCaso(); };
+}
+
+$("reset").onclick = ()=>{ state=fresh(); save(); renderCaso(); };
+
+renderCaso();
+</script>
+</body>
+</html>

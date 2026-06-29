@@ -28,6 +28,11 @@
        background:var(--panel);color:var(--mut);font-size:.85rem;cursor:default}
   .tab.on{background:var(--panel2);color:var(--ink);border-color:var(--blue)}
 
+  .levels{display:flex;gap:10px;margin-bottom:16px}
+  .lvl{padding:8px 18px;border-radius:10px;border:1px solid var(--line);
+       background:var(--panel);color:var(--mut);cursor:pointer;font-weight:600;font-size:.9rem}
+  .lvl.on{background:var(--violet);border-color:var(--violet);color:#0d0a1f}
+
   .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
         padding:22px;margin-bottom:18px}
   .kicker{color:var(--mut);font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
@@ -70,7 +75,9 @@
 <body>
 <div class="wrap">
   <h1>🛂 Aduana de Red</h1>
-  <p class="sub">Discrimina: <b>idioma://máquina:puerta/sala?notas</b> — ¿a qué máquina, qué puerto y qué path?</p>
+  <p class="sub" id="sub"></p>
+
+  <div class="levels" id="levels"></div>
 
   <div class="bar">
     <span class="score" id="score">0</span>
@@ -218,29 +225,114 @@ const CASOS = [
    frase:"/health = ¿estás vivo? (chequeo de pulso)"},
 ];
 
+/* ───────── NIVEL 2 · CAZAR EL ERROR ───────── */
+/* misma materia, pero ahora la URL está rota: detecta qué pieza choca con cuál */
+const CASOS2 = [
+  {cat:"port", prompt:"https://127.0.0.1:5432/docs", q:"¿Qué está mal aquí?",
+   opts:[
+     {x:"127.0.0.1 no es una máquina válida", why:"Sí lo es: es tu loopback, tu propia máquina."},
+     {x:"5432 es Postgres: habla SQL, no HTTP → no puede tener /docs", ok:true, why:"Los paths (/docs) solo existen donde se habla HTTP. Postgres habla SQL: no le pidas rutas web."},
+     {x:"Debería ser http, no https", why:"El esquema no es el problema; el choque real es puerto↔path."}],
+   frase:"Path en puerto de DB = imposible (la DB no habla HTTP)"},
+
+  {cat:"maq", prompt:"En el navegador:  http://0.0.0.0:8000/docs", q:"¿Por qué a veces no abre?",
+   opts:[
+     {x:"0.0.0.0 no es un destino: es cómo el server RECIBE. Para visitar usa 127.0.0.1:8000", ok:true, why:"0.0.0.0 significa «acepto desde cualquier lado», no «ve aquí». No es una dirección a la que viajas."},
+     {x:"El puerto 8000 está mal", why:"8000 es el puerto correcto de uvicorn."},
+     {x:"Le falta https", why:"En local http está bien; el problema es la dirección de destino."}],
+   frase:"0.0.0.0 = cómo recibo · 127.0.0.1 = a dónde voy"},
+
+  {cat:"maq", prompt:"Desde el café:  http://192.168.1.5:8000/pacientes", q:"¿Por qué no carga estando fuera de casa?",
+   opts:[
+     {x:"192.168.x.x es privada (LAN): solo existe dentro de esa red, no sale a internet", ok:true, why:"Las 192.168 nunca viajan por internet. Desde fuera necesitas un dominio o IP pública."},
+     {x:"El path /pacientes no existe", why:"El path puede estar bien; el problema es que la máquina es privada."},
+     {x:"Le falta el puerto", why:"El :8000 está ahí; no es eso."}],
+   frase:"192.168 = solo de casa, no cruza a internet"},
+
+  {cat:"port", prompt:"http://api.clinica.com:443/login", q:"¿Qué incoherencia hay?",
+   opts:[
+     {x:"443 es el puerto cifrado (HTTPS), pero el idioma dice http (sin candado): se contradicen", ok:true, why:"443 va con https y 80 va con http. Aquí el esquema y el puerto no coinciden."},
+     {x:"El dominio está mal escrito", why:"api.clinica.com es un dominio válido."},
+     {x:"/login no debería existir", why:"/login es correcto para autenticarte."}],
+   frase:"443 ⇆ https · 80 ⇆ http (deben coincidir)"},
+
+  {cat:"port", prompt:"https://clinica.com:22/login", q:"¿Qué está mal?",
+   opts:[
+     {x:"22 es SSH (entrar por terminal), no web. La web va por 80/443", ok:true, why:"En el puerto 22 no hay páginas ni /login: es la terminal remota, otro idioma."},
+     {x:"/login no lleva https", why:"https está bien; el error es el puerto 22."},
+     {x:"clinica.com no resuelve", why:"El dominio puede resolver; el puerto es el problema."}],
+   frase:"22 = terminal (SSH), nunca web"},
+
+  {cat:"path", prompt:"Quieres borrar UN paciente:  DELETE /pacientes", q:"¿Qué peligro hay?",
+   opts:[
+     {x:"Sin id apuntas a TODA la colección: borrarías a todos", ok:true, why:"Para uno solo necesitas el id: DELETE /pacientes/42. Sin id = la lista entera."},
+     {x:"DELETE no sirve para borrar", why:"DELETE sí borra; lo que falta es el id."},
+     {x:"Le falta el puerto", why:"Aquí lo decisivo es verbo + path, no el puerto."}],
+   frase:"Sin id = toda la colección (peligrosísimo en DELETE)"},
+
+  {cat:"path", prompt:"Para CREAR uno nuevo:  POST /pacientes/99", q:"¿Qué está raro?",
+   opts:[
+     {x:"Al crear no pones id: POST va a la colección (/pacientes) y el server asigna el id", ok:true, why:"El id lo decide el servidor al crear; tú no lo inventas en la URL."},
+     {x:"Debería ser GET", why:"Crear es POST, eso está bien."},
+     {x:"Le falta /api/v1", why:"Ese prefijo es opcional; no es el error."}],
+   frase:"Crear = POST a la colección, sin id (lo asigna el server)"},
+
+  {cat:"path", prompt:"Quieres la LISTA completa:  GET /pacientes/42", q:"¿Qué obtienes en realidad?",
+   opts:[
+     {x:"Solo el paciente 42: el id apunta a UNO, no a la lista", ok:true, why:"La colección es /pacientes (sin id). Con /42 pides un único recurso."},
+     {x:"Un error 404", why:"Si el 42 existe, te lo devuelve; igual no es la lista."},
+     {x:"Todos los pacientes", why:"Con id nunca devuelve la colección entera."}],
+   frase:"/pacientes = la lista · /pacientes/42 = uno solo"},
+];
+
 /* ───────── MOTOR ───────── */
 const KEY="juegoUrlProgress";
-let state = load();
-function load(){
-  try{ return JSON.parse(localStorage.getItem(KEY)) || fresh(); }
-  catch(e){ return fresh(); }
-}
+const SUBS={
+  1:"Nivel 1 · Discrimina <b>idioma://máquina:puerta/sala</b> — reconoce la pieza correcta.",
+  2:"Nivel 2 · Caza el error: la URL está rota. ¿Qué pieza choca con cuál, y por qué?"};
+
 function fresh(){ return {i:0, score:0, anclas:[]}; }
-function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+function freshDB(){ return {level:1, lvl:{1:fresh(), 2:fresh()}}; }
+function load(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(KEY));
+    if(!raw) return freshDB();
+    if(raw.lvl) return raw;                      // ya es el formato nuevo
+    return {level:1, lvl:{1:raw, 2:fresh()}};    // migrar progreso viejo → nivel 1
+  }catch(e){ return freshDB(); }
+}
+let DB = load();
+let state = DB.lvl[DB.level];
+function save(){ localStorage.setItem(KEY, JSON.stringify(DB)); }
+function CASES(){ return DB.level===1 ? CASOS : CASOS2; }
 
 const $ = id => document.getElementById(id);
 
+function renderLevels(){
+  $("sub").innerHTML = SUBS[DB.level];
+  $("levels").innerHTML =
+    `<button class="lvl ${DB.level===1?'on':''}" data-l="1">① Reconocer</button>
+     <button class="lvl ${DB.level===2?'on':''}" data-l="2">② Cazar el error</button>`;
+  [...$("levels").children].forEach(b=>{
+    b.onclick = ()=>{
+      const l = +b.dataset.l;
+      if(l===DB.level) return;
+      DB.level = l; state = DB.lvl[l]; save(); renderCaso();
+    };
+  });
+}
+
 function renderTabs(){
   const cats = Object.keys(CAT);
-  const cur = CASOS[state.i] ? CASOS[state.i].cat : null;
+  const cur = CASES()[state.i] ? CASES()[state.i].cat : null;
   $("tabs").innerHTML = cats.map(c =>
     `<span class="tab ${c===cur?'on':''}">${CAT[c]}</span>`).join("");
 }
 
 function renderBar(){
   $("score").textContent = state.score;
-  $("count").textContent = Math.min(state.i+1, CASOS.length) + " / " + CASOS.length;
-  $("fill").style.width = (state.score / CASOS.length * 100) + "%";
+  $("count").textContent = Math.min(state.i+1, CASES().length) + " / " + CASES().length;
+  $("fill").style.width = (state.score / CASES().length * 100) + "%";
 }
 
 function renderAnclas(){
@@ -252,9 +344,9 @@ function renderAnclas(){
 }
 
 function renderCaso(){
-  renderTabs(); renderBar(); renderAnclas();
-  if(state.i >= CASOS.length){ return renderDone(); }
-  const c = CASOS[state.i];
+  renderLevels(); renderTabs(); renderBar(); renderAnclas();
+  if(state.i >= CASES().length){ return renderDone(); }
+  const c = CASES()[state.i];
   let answered = false;
   const html = `
     <div class="card">
@@ -304,20 +396,22 @@ function renderCaso(){
 }
 
 function renderDone(){
-  renderBar(); renderAnclas();
+  renderLevels(); renderBar(); renderAnclas();
   $("tabs").innerHTML="";
-  const pct = Math.round(state.score / CASOS.length * 100);
+  const total = CASES().length;
+  const pct = Math.round(state.score / total * 100);
+  const titulo = DB.level===1 ? "🎉 Aduana completa" : "🕵️ Todos los errores cazados";
   $("game").innerHTML = `
     <div class="card done">
-      <h2>🎉 Aduana completa</h2>
-      <p>Acertaste <b>${state.score}</b> de <b>${CASOS.length}</b> (${pct}%).</p>
+      <h2>${titulo}</h2>
+      <p>Acertaste <b>${state.score}</b> de <b>${total}</b> (${pct}%).</p>
       <p class="sub">Desbloqueaste ${state.anclas.length} frases ancla. Repite mañana: la discriminación se graba repitiendo el contraste.</p>
       <button class="next show" id="again">↺ Jugar otra vez</button>
     </div>`;
   $("again").onclick = ()=>{ state.i=0; state.score=0; save(); renderCaso(); };
 }
 
-$("reset").onclick = ()=>{ state=fresh(); save(); renderCaso(); };
+$("reset").onclick = ()=>{ DB.lvl[DB.level]=fresh(); state=DB.lvl[DB.level]; save(); renderCaso(); };
 
 renderCaso();
 </script>

@@ -126,6 +126,7 @@ distinto. El mismo concepto se puede atacar desde varios:
 | Patrón | Cómo funciona | Qué músculo entrena |
 |--------|---------------|---------------------|
 | **Discriminación** (síntoma/dato → causa) | lees algo y eliges entre vecinos confundibles | reconocer, distinguir lo parecido |
+| **Caza del error** (discriminación inversa) | te dan algo *roto* (una URL incoherente) y detectas qué pieza choca con cuál y por qué | producir el juicio, no solo reconocer la respuesta dada |
 | **Recall por tecleo** | lees una situación y escribes el comando de memoria | producir de cero, no solo reconocer |
 | **Predicción causal** (inverso) | dado un cambio en el código, predices el fallo *sin ver* la salida | razonar causa → efecto |
 | **Construcción de representación mental** | armas el stack bloque a bloque y luego recorres el request | tener el mapa completo en la cabeza |
@@ -162,7 +163,7 @@ pero comparten la idea pedagógica y las frases ancla.)*
 
 | Juego | Carpeta | Qué entrena | Patrón |
 |-------|---------|-------------|--------|
-| 🛂 **Aduana de Red** | [`juego-url/`](juego-url/) | Máquinas, puertos y paths de una URL | discriminación |
+| 🛂 **Aduana de Red** | [`juego-url/`](juego-url/) | Máquinas, puertos y paths de una URL · **2 niveles** | discriminación → caza-error |
 | 🧰 **Caja de Herramientas** | [`juego-imports/`](juego-imports/) | Imports útiles de FastAPI y Pydantic | discriminación |
 | 🐍 **¿Qué devuelve?** | [`juego-python/`](juego-python/) | Python básico de una API: qué devuelve cada línea | discriminación |
 | 🐙 **Terminal Git** | [`juego-git/`](juego-git/) | Comandos de git/GitHub, en escenarios | tecleo |

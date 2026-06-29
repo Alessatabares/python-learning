@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐍 ¿Qué devuelve? · Python de una API</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --ink:#e6edf3; --mut:#8b949e;
+    --line:#30363d; --blue:#58a6ff; --green:#3fb950; --amber:#d29922; --red:#f85149;
+    --violet:#a371f7; --mono:'SFMono-Regular',Consolas,'Liberation Mono',monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.5}
+  .wrap{max-width:760px;margin:0 auto;padding:24px 18px 80px}
+  h1{font-size:1.5rem;margin:0 0 4px}
+  .sub{color:var(--mut);font-size:.9rem;margin:0 0 18px}
+
+  .bar{display:flex;align-items:center;gap:14px;background:var(--panel);
+       border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:18px}
+  .bar .score{font-weight:700;font-size:1.1rem}
+  .track{flex:1;height:8px;background:var(--panel2);border-radius:99px;overflow:hidden}
+  .fill{height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--green));transition:width .4s}
+
+  .tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+  .tab{padding:6px 12px;border-radius:99px;border:1px solid var(--line);
+       background:var(--panel);color:var(--mut);font-size:.8rem;cursor:default}
+  .tab.on{background:var(--panel2);color:var(--ink);border-color:var(--blue)}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+        padding:22px;margin-bottom:18px}
+  .kicker{color:var(--mut);font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+  pre.code{font-family:var(--mono);font-size:.95rem;background:#010409;
+           border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:0 0 6px;
+           overflow-x:auto;white-space:pre;line-height:1.45;color:#c9d1d9}
+  .q{margin:16px 0 10px;font-weight:600}
+
+  .opt{display:block;width:100%;text-align:left;background:var(--panel2);
+       border:1px solid var(--line);color:var(--ink);border-radius:10px;
+       padding:13px 15px;margin-bottom:9px;cursor:pointer;font-size:.96rem;transition:.15s;
+       font-family:var(--mono)}
+  .opt:hover:not(:disabled){border-color:var(--blue)}
+  .opt:disabled{cursor:default;opacity:.95}
+  .opt.correct{border-color:var(--green);background:rgba(63,185,80,.12)}
+  .opt.wrong{border-color:var(--red);background:rgba(248,81,73,.12)}
+
+  .fb{border-radius:10px;padding:14px 16px;margin-top:6px;display:none;font-size:.93rem}
+  .fb.show{display:block}
+  .fb.ok{background:rgba(63,185,80,.10);border:1px solid var(--green)}
+  .fb.no{background:rgba(248,81,73,.10);border:1px solid var(--red)}
+  .fb .why{color:var(--mut);margin:6px 0}
+  .fb code{font-family:var(--mono);background:#010409;border:1px solid var(--line);
+           border-radius:5px;padding:1px 5px}
+  .frase{margin-top:10px;font-family:var(--mono);font-size:.88rem;color:var(--violet);
+         border-left:3px solid var(--violet);padding:6px 0 6px 12px;background:rgba(163,113,247,.06)}
+
+  .next{margin-top:14px;background:var(--blue);color:#06121f;border:0;border-radius:10px;
+        padding:11px 20px;font-weight:700;cursor:pointer;font-size:.95rem;display:none}
+  .next.show{display:inline-block}
+
+  .ancla{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .ancla h2{font-size:1rem;margin:0 0 12px}
+  .ancla ul{margin:0;padding-left:18px}
+  .ancla li{font-family:var(--mono);font-size:.84rem;color:var(--mut);margin-bottom:7px}
+  .ancla .empty{color:var(--mut);font-size:.86rem}
+  .done{text-align:center;padding:40px 20px}
+  .done h2{font-size:1.6rem}
+  .reset{background:none;border:1px solid var(--line);color:var(--mut);border-radius:8px;
+         padding:6px 12px;cursor:pointer;font-size:.8rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🐍 ¿Qué devuelve este código?</h1>
+  <p class="sub">El Python básico que arma una API FastAPI. Lee el código y predice el resultado.</p>
+
+  <div class="bar">
+    <span class="score" id="score">0</span>
+    <div class="track"><div class="fill" id="fill"></div></div>
+    <span class="kicker" id="count" style="margin:0"></span>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div id="game"></div>
+
+  <div class="ancla">
+    <h2>🧩 Frases ancla coleccionadas</h2>
+    <ul id="anclaList"></ul>
+    <div class="empty" id="anclaEmpty">Acierta casos para desbloquearlas.</div>
+    <div style="margin-top:14px"><button class="reset" id="reset">↺ Reiniciar progreso</button></div>
+  </div>
+</div>
+
+<script>
+/* ───────── DATOS · lee el código, predice qué devuelve ───────── */
+const CAT = {
+  var:"① Variables & tipos", lista:"② Listas", dict:"③ Diccionarios",
+  cond:"④ Condicionales", func:"⑤ Funciones & return", raise:"⑥ raise (errores)",
+  clase:"⑦ Clases (Pydantic)", deco:"⑧ Decoradores"
+};
+
+const CASOS = [
+  /* ── VARIABLES & TIPOS ── */
+  {cat:"var", code:`edad = 42\nprint(type(edad))`, q:"¿Qué imprime?",
+   opts:[
+     {x:"<class 'int'>", ok:true, why:"42 sin comillas es un entero (int)."},
+     {x:"<class 'str'>", why:"Sería str solo si fuera \"42\" con comillas."},
+     {x:"42", why:"type() da el TIPO, no el valor."}],
+   frase:"Sin comillas = número (int) · Con comillas = texto (str)."},
+
+  {cat:"var", code:`nombre = "Ana"\nedad = 30\nmsg = f"{nombre} tiene {edad}"`, q:"¿Qué vale msg?",
+   opts:[
+     {x:'"Ana tiene 30"', ok:true, why:"La f delante interpola: mete el valor de cada variable."},
+     {x:'"{nombre} tiene {edad}"', why:"Eso pasaría SIN la f delante de la comilla."},
+     {x:"Error", why:"Es una f-string válida."}],
+   frase:'f"..." = plantilla que mete variables dentro del texto.'},
+
+  {cat:"var", code:`x = "5"\ny = 5\nprint(x == y)`, q:"¿Qué imprime?",
+   opts:[
+     {x:"False", ok:true, why:'"5" (texto) NO es igual a 5 (número). Distinto tipo.'},
+     {x:"True", why:"Parecen iguales, pero el tipo difiere."},
+     {x:"Error", why:"Comparar str con int es válido, solo da False."}],
+   frase:'"5" ≠ 5 → en backend los params llegan como texto: ojo al comparar.'},
+
+  /* ── LISTAS ── */
+  {cat:"lista", code:`pacientes = ["Ana", "Luis", "Eva"]\nprint(pacientes[0])`, q:"¿Qué imprime?",
+   opts:[
+     {x:'"Ana"', ok:true, why:"El índice empieza en 0, así que [0] es el primero."},
+     {x:'"Luis"', why:"Ese es [1]."},
+     {x:"Error", why:"[0] es un índice válido."}],
+   frase:"Las listas empiezan en 0 → [0] es el primer elemento."},
+
+  {cat:"lista", code:`sintomas = ["fiebre", "tos"]\nsintomas.append("dolor")\nprint(len(sintomas))`, q:"¿Qué imprime?",
+   opts:[
+     {x:"3", ok:true, why:"append agregó uno al final; len cuenta los elementos."},
+     {x:"2", why:"append ya añadió un tercero."},
+     {x:'["fiebre", "tos", "dolor"]', why:"len() da la cantidad, no la lista."}],
+   frase:"append = agrega al final · len() = cuántos hay."},
+
+  {cat:"lista", code:`datos = [10, 20, 30]\nprint(datos[-1])`, q:"¿Qué imprime?",
+   opts:[
+     {x:"30", ok:true, why:"El índice negativo cuenta desde el final: -1 es el último."},
+     {x:"10", why:"Ese es [0]."},
+     {x:"Error", why:"-1 es válido en Python."}],
+   frase:"[-1] = el último elemento (cuenta desde atrás)."},
+
+  /* ── DICCIONARIOS ── */
+  {cat:"dict", code:`paciente = {"nombre": "Ana", "edad": 30}\nprint(paciente["edad"])`, q:"¿Qué imprime?",
+   opts:[
+     {x:"30", ok:true, why:"dict[clave] devuelve el VALOR de esa clave."},
+     {x:'"edad"', why:"Eso sería la clave, no el valor."},
+     {x:"Error", why:'"edad" sí existe como clave.'}],
+   frase:"dict[clave] = su valor · Un dict ES el JSON que viaja en tu API."},
+
+  {cat:"dict", code:`paciente = {"nombre": "Ana"}\nprint(paciente.get("edad"))`, q:"¿Qué imprime?",
+   opts:[
+     {x:"None", ok:true, why:".get() devuelve None si la clave no existe (no revienta)."},
+     {x:"Error (KeyError)", why:"Eso pasaría con paciente[\"edad\"], no con .get()."},
+     {x:'"edad"', why:"No existe esa clave."}],
+   frase:'.get("x") = None si falta · ["x"] = revienta si falta.'},
+
+  {cat:"dict", code:`p = {"nombre": "Ana"}\np["edad"] = 30\nprint(p)`, q:"¿Qué imprime?",
+   opts:[
+     {x:'{"nombre": "Ana", "edad": 30}', ok:true, why:"Asignar a una clave nueva la añade al dict."},
+     {x:'{"edad": 30}', why:"No reemplaza: agrega; nombre sigue ahí."},
+     {x:"Error", why:"Crear una clave nueva es válido."}],
+   frase:"dict[clave_nueva] = valor → añade un par (así se arma el JSON de respuesta)."},
+
+  /* ── CONDICIONALES ── */
+  {cat:"cond", code:`edad = 17\nif edad >= 18:\n    print("adulto")\nelse:\n    print("menor")`, q:"¿Qué imprime?",
+   opts:[
+     {x:'"menor"', ok:true, why:"17 >= 18 es False → entra al else."},
+     {x:'"adulto"', why:"La condición no se cumple."},
+     {x:"Nada", why:"El else siempre captura el caso contrario."}],
+   frase:"if/else = bifurcación; entra por la rama cuya condición es True."},
+
+  {cat:"cond", code:`rol = "admin"\nif rol == "medico":\n    print(1)\nelif rol == "admin":\n    print(2)\nelse:\n    print(3)`, q:"¿Qué imprime?",
+   opts:[
+     {x:"2", ok:true, why:"La primera condición falla; el elif (admin) se cumple."},
+     {x:"1", why:"rol no es 'medico'."},
+     {x:"3", why:"El else solo corre si ningún if/elif se cumple."}],
+   frase:"elif = 'si no, prueba esto' → entra en la PRIMERA que cumple."},
+
+  /* ── FUNCIONES & RETURN ── */
+  {cat:"func", code:`def saludar(nombre):\n    return f"Hola {nombre}"\n\nprint(saludar("Ana"))`, q:"¿Qué imprime?",
+   opts:[
+     {x:'"Hola Ana"', ok:true, why:'El argumento "Ana" llena el parámetro nombre; return lo entrega.'},
+     {x:'"Hola nombre"', why:"nombre se reemplaza por su valor."},
+     {x:"None", why:"Sí hay return."}],
+   frase:"return = lo que la función entrega · el argumento llena el parámetro."},
+
+  {cat:"func", code:`def doble(x):\n    x * 2\n\nprint(doble(5))`, q:"¿Qué imprime?",
+   opts:[
+     {x:"None", ok:true, why:"Calcula x*2 pero NO lo devuelve: sin return, una función da None."},
+     {x:"10", why:"Faltó 'return x * 2'."},
+     {x:"Error", why:"Es válido; simplemente no retorna nada."}],
+   frase:"Sin return → la función devuelve None (¡aunque calcule algo!)."},
+
+  {cat:"func", code:`def crear(nombre, activo=True):\n    return {"nombre": nombre, "activo": activo}\n\nprint(crear("Ana"))`, q:"¿Qué imprime?",
+   opts:[
+     {x:'{"nombre": "Ana", "activo": True}', ok:true, why:"No pasaste activo, así que usa su valor por defecto True."},
+     {x:"Error (falta activo)", why:"activo tiene default, es opcional."},
+     {x:'{"nombre": "Ana"}', why:"activo igual se incluye con su default."}],
+   frase:"parámetro=valor → default; si no lo pasas, usa ese."},
+
+  {cat:"func", code:`def info(nombre, edad):\n    return f"{nombre}, {edad}"\n\nprint(info(edad=30, nombre="Ana"))`, q:"¿Qué imprime?",
+   opts:[
+     {x:'"Ana, 30"', ok:true, why:"Argumentos por nombre: el orden no importa, cada uno va a su parámetro."},
+     {x:'"30, Ana"', why:"Van por nombre, no por posición."},
+     {x:"Error", why:"Pasar por nombre es válido."}],
+   frase:"Argumentos por nombre (clave=valor) → el orden da igual."},
+
+  /* ── RAISE ── */
+  {cat:"raise", code:`def dividir(a, b):\n    if b == 0:\n        raise ValueError("b no puede ser 0")\n    return a / b\n\nprint(dividir(10, 0))`, q:"¿Qué pasa?",
+   opts:[
+     {x:"Lanza ValueError y corta: no imprime nada", ok:true, why:"raise detiene la función ahí mismo; el return nunca se alcanza."},
+     {x:"Imprime 0", why:"No llega a dividir."},
+     {x:"Imprime None", why:"raise interrumpe; no devuelve."}],
+   frase:"raise = corta la ejecución y lanza el error hacia arriba."},
+
+  {cat:"raise", code:`paciente = buscar(id)   # devuelve None si no existe\n\nif paciente is None:\n    raise HTTPException(status_code=404, detail="no existe")\nreturn paciente`, q:"Si paciente es None, ¿qué responde la API?",
+   opts:[
+     {x:"Un error 404; el return de abajo nunca corre", ok:true, why:"raise corta el flujo: salta el return y manda la respuesta de error."},
+     {x:"Devuelve None con código 200", why:"El raise impide llegar al return."},
+     {x:'Devuelve "no existe" con 200', why:"detail viaja DENTRO del error 404, no como 200."}],
+   frase:"raise HTTPException = responder con error · el código de abajo se salta."},
+
+  /* ── CLASES (Pydantic) ── */
+  {cat:"clase", code:`from pydantic import BaseModel\n\nclass Paciente(BaseModel):\n    nombre: str\n    edad: int\n\np = Paciente(nombre="Ana", edad=30)\nprint(p.edad)`, q:"¿Qué imprime?",
+   opts:[
+     {x:"30", ok:true, why:"p es un objeto; p.edad lee ese atributo."},
+     {x:'"edad"', why:"El punto accede al valor del atributo."},
+     {x:"Error", why:"edad existe en el modelo."}],
+   frase:"objeto.atributo = leer un dato del objeto (p.edad)."},
+
+  {cat:"clase", code:`class Paciente(BaseModel):\n    nombre: str\n    edad: int\n\np = Paciente(nombre="Ana", edad="treinta")`, q:"¿Qué pasa?",
+   opts:[
+     {x:"Error de validación: edad espera int", ok:true, why:'"treinta" es texto, no un entero; Pydantic lo rechaza.'},
+     {x:'Lo acepta y guarda "treinta"', why:"BaseModel NO deja pasar tipos equivocados."},
+     {x:"edad queda en 0", why:"No inventa un valor: lanza error."}],
+   frase:"BaseModel valida tipos: si no cuadran, lanza error (protege tu API)."},
+
+  {cat:"clase", code:`class Paciente(BaseModel):\n    nombre: str\n    activo: bool = True\n\np = Paciente(nombre="Ana")\nprint(p.activo)`, q:"¿Qué imprime?",
+   opts:[
+     {x:"True", ok:true, why:"activo tiene default = True; no hacía falta pasarlo."},
+     {x:"Error (falta activo)", why:"Tiene default, así que es opcional."},
+     {x:"None", why:"El default es True, no None."}],
+   frase:"campo: tipo = valor → default del campo si no lo mandas."},
+
+  /* ── DECORADORES ── */
+  {cat:"deco", code:`@app.get("/pacientes")\ndef listar():\n    return ["Ana", "Luis"]`, q:'¿Qué hace @app.get("/pacientes")?',
+   opts:[
+     {x:"Conecta esta función a las peticiones GET a /pacientes", ok:true, why:"El decorador registra la ruta: FastAPI sabe a quién llamar."},
+     {x:"Ejecuta la función de inmediato", why:"Solo la registra; corre cuando llega la petición."},
+     {x:"Crea una variable llamada app", why:"app ya existe; el decorador solo le cuelga una ruta."}],
+   frase:"@app.get(ruta) = 'cuando llegue GET aquí, llama a esta función'."},
+
+  {cat:"deco", code:`@app.post("/pacientes")\ndef crear(p: Paciente):\n    return p`, q:"¿De dónde sale p?",
+   opts:[
+     {x:"Del body JSON de la petición, validado como Paciente", ok:true, why:"Parámetro tipado con un BaseModel → FastAPI lo arma desde el body."},
+     {x:"De la query string (?p=...)", why:"Un BaseModel se lee del body, no de la query."},
+     {x:"Hay que pasarlo a mano al llamar la función", why:"FastAPI lo inyecta por ti en cada petición."}],
+   frase:"Parámetro tipado con BaseModel = FastAPI lo construye desde el body."},
+
+  {cat:"deco", code:`@app.get("/saludo")\ndef saludo():\n    return {"msg": "hola"}`, q:"¿Qué recibe el cliente?",
+   opts:[
+     {x:'JSON: {"msg": "hola"}', ok:true, why:"FastAPI serializa el dict a JSON automáticamente."},
+     {x:'El texto plano "msg: hola"', why:"Lo convierte a JSON, no a texto suelto."},
+     {x:"Un dict de Python crudo", why:"Viaja por la red como JSON, no como objeto Python."}],
+   frase:"Devuelves un dict → FastAPI lo convierte a JSON solo."},
+];
+
+/* ───────── MOTOR ───────── */
+const KEY="juegoPythonProgress";
+let state = load();
+function load(){
+  try{ return JSON.parse(localStorage.getItem(KEY)) || fresh(); }
+  catch(e){ return fresh(); }
+}
+function fresh(){ return {i:0, score:0, anclas:[]}; }
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+function renderTabs(){
+  const cats = Object.keys(CAT);
+  const cur = CASOS[state.i] ? CASOS[state.i].cat : null;
+  $("tabs").innerHTML = cats.map(c =>
+    `<span class="tab ${c===cur?'on':''}">${CAT[c]}</span>`).join("");
+}
+
+function renderBar(){
+  $("score").textContent = state.score;
+  $("count").textContent = Math.min(state.i+1, CASOS.length) + " / " + CASOS.length;
+  $("fill").style.width = (state.score / CASOS.length * 100) + "%";
+}
+
+function renderAnclas(){
+  const ul = $("anclaList"), empty = $("anclaEmpty");
+  if(state.anclas.length){
+    empty.style.display="none";
+    ul.innerHTML = state.anclas.map(f=>`<li>🧩 ${esc(f)}</li>`).join("");
+  } else { empty.style.display="block"; ul.innerHTML=""; }
+}
+
+function renderCaso(){
+  renderTabs(); renderBar(); renderAnclas();
+  if(state.i >= CASOS.length){ return renderDone(); }
+  const c = CASOS[state.i];
+  let answered = false;
+  $("game").innerHTML = `
+    <div class="card">
+      <div class="kicker">${CAT[c.cat]} · caso ${state.i+1}</div>
+      <pre class="code">${esc(c.code)}</pre>
+      <div class="q">${esc(c.q)}</div>
+      <div id="opts"></div>
+      <div class="fb" id="fb"></div>
+      <button class="next" id="next">Siguiente →</button>
+    </div>`;
+
+  const optsBox = $("opts");
+  c.opts.forEach((o)=>{
+    const b = document.createElement("button");
+    b.className="opt"; b.textContent=o.x;   // textContent: seguro con < >
+    b.onclick = ()=>{
+      if(answered) return; answered=true;
+      const fb=$("fb"), next=$("next");
+      [...optsBox.children].forEach((btn,j)=>{
+        btn.disabled=true;
+        if(c.opts[j].ok) btn.classList.add("correct");
+      });
+      if(o.ok){
+        b.classList.add("correct");
+        state.score++;
+        if(!state.anclas.includes(c.frase)) state.anclas.push(c.frase);
+        fb.className="fb show ok";
+        fb.innerHTML = `🟢 <b>¡Correcto!</b><div class="why">${esc(o.why)}</div>
+          <div class="frase">🧩 ${esc(c.frase)}</div>`;
+      } else {
+        b.classList.add("wrong");
+        const right = c.opts.find(x=>x.ok);
+        fb.className="fb show no";
+        fb.innerHTML = `🔴 <b>No.</b> <div class="why">${esc(o.why)}</div>
+          <div class="why">✅ Lo correcto: <code>${esc(right.x)}</code> — ${esc(right.why)}</div>
+          <div class="frase">🧩 ${esc(c.frase)}</div>`;
+      }
+      next.classList.add("show");
+      renderBar(); renderAnclas(); save();
+    };
+    optsBox.appendChild(b);
+  });
+
+  $("next").onclick = ()=>{ state.i++; save(); renderCaso(); };
+}
+
+function renderDone(){
+  renderBar(); renderAnclas();
+  $("tabs").innerHTML="";
+  const pct = Math.round(state.score / CASOS.length * 100);
+  $("game").innerHTML = `
+    <div class="card done">
+      <h2>🎉 Código dominado</h2>
+      <p>Acertaste <b>${state.score}</b> de <b>${CASOS.length}</b> (${pct}%).</p>
+      <p class="sub">Desbloqueaste ${state.anclas.length} frases ancla. Repite mañana: predecir qué devuelve cada línea es lo que entrena leer código.</p>
+      <button class="next show" id="again">↺ Jugar otra vez</button>
+    </div>`;
+  $("again").onclick = ()=>{ state.i=0; state.score=0; save(); renderCaso(); };
+}
+
+$("reset").onclick = ()=>{ state=fresh(); save(); renderCaso(); };
+
+renderCaso();
+</script>
+</body>
+</html>

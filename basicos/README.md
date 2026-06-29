@@ -4,6 +4,9 @@ Decks de Anki para memorizar los **conceptos e infraestructuras indispensables**
 tres áreas, construidos con la metodología de los *ejes diagnósticos* del repo
 `examen-ecoe-anki`: cada concepto se indexa por **dos ejes complementarios**.
 
+> Además de los decks de Anki, esta carpeta incluye **juegos web interactivos**
+> para aprender lo mismo de otra forma → ver [🎮 Juegos web](#-juegos-web-interactivos) al final.
+
 ## Los dos ejes
 
 | Eje | Dirección de recall | Para qué |
@@ -87,3 +90,76 @@ aporta 15 (4 Eje Clínico + 11 Integrador).
   `graph TD`, nodos/aristas/formas; **Markmap** outline→mindmap colapsable), acceso
   e interacción (click en nodo, colapsar/expandir ramas, `addEventListener`) y
   publicación con **GitHub Pages**. Deck propio: **no se mezcla con Frontend**.
+
+---
+
+# 🎮 Juegos web interactivos
+
+Mini-juegos para aprender los fundamentos detrás de una API (FastAPI + Python +
+git/GitHub + redes). No son quizzes sueltos: cada uno está **diseñado con un método
+de aprendizaje concreto**, no improvisado.
+
+> **Cómo trabajo esto:** yo diseño la pedagogía (qué se aprende y *cómo* se graba);
+> la implementación la hago con ayuda de IA. El criterio de diseño es la parte mía.
+
+## La idea pedagógica
+
+Tres principios guían todos los juegos:
+
+1. **Aprender por discriminación, no por definición.** No memorizas "qué es un puerto";
+   discriminas `8000` (FastAPI, habla HTTP, tiene paths) contra `5432` (Postgres, habla
+   SQL, sin paths). El contraste es lo que graba.
+2. **Pares de contraste deliberados.** Cada concepto se enseña junto a su vecino
+   confundible: `Query` ↔ `Path`, `UploadFile` ↔ `FileResponse`, `git clone` ↔ `git pull`,
+   `["x"]` ↔ `.get("x")`. Si dos cosas se confunden, van juntas.
+3. **Recall activo + frase ancla.** Cada acierto desbloquea una *frase ancla*: el concepto
+   destilado en una línea memorizable. Se coleccionan abajo como resumen.
+
+Feedback siempre graduado (🔴🟡🟢) y con el *porqué*, porque se aprende más en el error
+explicado que en el acierto.
+
+## El patrón técnico
+
+Todos los juegos comparten la misma forma. Es lo que los hace **reciclables** y la base
+de una futura app que los unifique:
+
+```
+        MOTOR  (igual en todos)                 DATOS  (lo único que cambia)
+   render + score + frases ancla         +      CASOS = [ {...}, {...} ]
+   + progreso en localStorage                   + modo (opción múltiple / tecleo)
+   ─────────────────────────────                ────────────────────────────────
+                              ↓
+        un index.html autónomo por juego (HTML + JS vanilla, sin dependencias)
+```
+
+Para un juego nuevo: copiar el motor y reescribir el array `CASOS`. Para unificarlos en
+un solo sitio: un menú que cargue el motor una vez y cada juego como su archivo de datos.
+
+Dos modos de interacción:
+- **Discriminación** (opción múltiple): lees algo y eliges. → `url`, `imports`, `python`
+- **Tecleo** (recall activo): lees una situación y escribes el comando. → `git`
+
+## Catálogo
+
+| Juego | Carpeta | Qué entrena | Modo |
+|-------|---------|-------------|------|
+| 🛂 **Aduana de Red** | [`juego-url/`](juego-url/) | Máquinas, puertos y paths de una URL | discriminación |
+| 🧰 **Caja de Herramientas** | [`juego-imports/`](juego-imports/) | Imports útiles de FastAPI y Pydantic | discriminación |
+| 🐙 **Terminal Git** | [`juego-git/`](juego-git/) | Comandos básicos de git/GitHub, en escenarios | tecleo |
+| 🐍 **¿Qué devuelve?** | [`juego-python/`](juego-python/) | Python básico que arma una API: qué devuelve cada línea | discriminación |
+
+*(También hay juegos previos de la misma familia en esta carpeta: triage de deploy,
+comandos, inverso, data.)*
+
+## Cómo abrirlos
+
+Son archivos estáticos: se abren en el navegador, sin instalar nada.
+
+```bash
+# WSL → navegador de Windows
+wslview basicos/juego-url/index.html
+# o pega la ruta del index.html directo en el navegador
+```
+
+El progreso se guarda solo en tu navegador (`localStorage`); cada juego tiene su botón
+de reiniciar.

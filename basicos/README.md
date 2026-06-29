@@ -118,10 +118,27 @@ Tres principios guían todos los juegos:
 Feedback siempre graduado (🔴🟡🟢) y con el *porqué*, porque se aprende más en el error
 explicado que en el acierto.
 
+## Los patrones de aprendizaje
+
+Sobre los 3 principios, la colección usa **varios formatos**, cada uno entrena un músculo
+distinto. El mismo concepto se puede atacar desde varios:
+
+| Patrón | Cómo funciona | Qué músculo entrena |
+|--------|---------------|---------------------|
+| **Discriminación** (síntoma/dato → causa) | lees algo y eliges entre vecinos confundibles | reconocer, distinguir lo parecido |
+| **Recall por tecleo** | lees una situación y escribes el comando de memoria | producir de cero, no solo reconocer |
+| **Predicción causal** (inverso) | dado un cambio en el código, predices el fallo *sin ver* la salida | razonar causa → efecto |
+| **Construcción de representación mental** | armas el stack bloque a bloque y luego recorres el request | tener el mapa completo en la cabeza |
+| **Simulación con estado vivo** | ejecutas y ves la tabla / el estado transformarse frente a ti | intuición de qué hace cada operación |
+
+Un mismo tema suele tener su versión en 2–3 patrones (ej.: el pipeline del request se
+*diagnostica* en Triage, se *predice* en Inverso y se *teclea* en Comandos). Eso es a
+propósito: ver lo mismo desde ángulos distintos es lo que consolida.
+
 ## El patrón técnico
 
-Todos los juegos comparten la misma forma. Es lo que los hace **reciclables** y la base
-de una futura app que los unifique:
+La familia de quiz/tecleo comparte un mismo molde — y eso es lo que la hace **reciclable**
+y la base de una futura app que los unifique:
 
 ```
         MOTOR  (igual en todos)                 DATOS  (lo único que cambia)
@@ -132,24 +149,42 @@ de una futura app que los unifique:
         un index.html autónomo por juego (HTML + JS vanilla, sin dependencias)
 ```
 
-Para un juego nuevo: copiar el motor y reescribir el array `CASOS`. Para unificarlos en
-un solo sitio: un menú que cargue el motor una vez y cada juego como su archivo de datos.
+Para un juego nuevo de este tipo: copiar el motor y reescribir el array `CASOS`. Para
+unificarlos: un menú que cargue el motor una vez y cada juego como su archivo de datos.
 
-Dos modos de interacción:
-- **Discriminación** (opción múltiple): lees algo y eliges. → `url`, `imports`, `python`
-- **Tecleo** (recall activo): lees una situación y escribes el comando. → `git`
+*(Algunos juegos —`data`, `backend`, `deploy`— son simuladores más a medida: tablas
+vivas, dropdowns y animaciones, no solo opción múltiple. No siguen el molde motor/datos,
+pero comparten la idea pedagógica y las frases ancla.)*
 
 ## Catálogo
 
-| Juego | Carpeta | Qué entrena | Modo |
-|-------|---------|-------------|------|
+**API & backend desde cero**
+
+| Juego | Carpeta | Qué entrena | Patrón |
+|-------|---------|-------------|--------|
 | 🛂 **Aduana de Red** | [`juego-url/`](juego-url/) | Máquinas, puertos y paths de una URL | discriminación |
 | 🧰 **Caja de Herramientas** | [`juego-imports/`](juego-imports/) | Imports útiles de FastAPI y Pydantic | discriminación |
-| 🐙 **Terminal Git** | [`juego-git/`](juego-git/) | Comandos básicos de git/GitHub, en escenarios | tecleo |
-| 🐍 **¿Qué devuelve?** | [`juego-python/`](juego-python/) | Python básico que arma una API: qué devuelve cada línea | discriminación |
+| 🐍 **¿Qué devuelve?** | [`juego-python/`](juego-python/) | Python básico de una API: qué devuelve cada línea | discriminación |
+| 🐙 **Terminal Git** | [`juego-git/`](juego-git/) | Comandos de git/GitHub, en escenarios | tecleo |
 
-*(También hay juegos previos de la misma familia en esta carpeta: triage de deploy,
-comandos, inverso, data.)*
+**Diagnóstico del stack (request + deploy)**
+
+| Juego | Carpeta | Qué entrena | Patrón |
+|-------|---------|-------------|--------|
+| 🚨 **Código Azul en la API** | [`juego-triage/`](juego-triage/) | Dónde colapsa un request (8 estaciones) | discriminación síntoma→causa |
+| 🚢 **Sala de Máquinas** | [`juego-triage-deploy/`](juego-triage-deploy/) | Dónde falló el deploy (ciclo Docker) | discriminación síntoma→causa |
+| 🔧 **Romper y Predecir** | [`juego-inverso/`](juego-inverso/) | Predecir dónde muere y qué síntoma sale | predicción causal |
+| ⌨️ **Manos al Teclado** | [`juego-comandos/`](juego-comandos/) | Teclear los comandos del stack (4 capas) | tecleo |
+| 🚀 **De función dormida a API** | [`juego-deploy/`](juego-deploy/) | La arquitectura mental del stack, bloque a bloque | representación mental |
+| 🏥 **Clínica API · Simulador** | [`juego-backend/`](juego-backend/) | Conceptos backend de HTTP a JWT, aislados → integrados | simulación |
+
+**Datos y análisis (Pandas + estadística)**
+
+| Juego | Carpeta | Qué entrena | Patrón |
+|-------|---------|-------------|--------|
+| 📊 **Pipeline de Datos Clínicos** | [`juego-data/`](juego-data/) | Las 5 estaciones del análisis, con tabla viva | simulación estado vivo |
+| ⌨️ **Manos al Teclado · Pandas** | [`juego-comandos-data/`](juego-comandos-data/) | Teclear comandos de pandas (4 capas) | tecleo |
+| 🔧 **Sala de Simulación · Datos** | [`juego-inverso-data/`](juego-inverso-data/) | Predecir fallos del análisis (fillna, merge…) | predicción causal |
 
 ## Cómo abrirlos
 

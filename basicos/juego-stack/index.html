@@ -4,16 +4,1142 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🏥 Clínica API · de cero a producción</title>
-<meta http-equiv="refresh" content="0; url=construir.html">
 <style>
-  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
-    background:linear-gradient(180deg,#0c111c,#0f1420);color:#e7ecf5;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}
-  a{color:#3b82f6}
+  :root{
+    --bg:#0f1420; --panel:#161d2e; --panel2:#1d2740; --line:#2a3550;
+    --ink:#e7ecf5; --mut:#93a0bd; --blue:#3b82f6; --teal:#0ea5a4;
+    --green:#22c55e; --amber:#f59e0b; --violet:#8b5cf6;
+  }
+  html,body{height:100%}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    background:linear-gradient(180deg,#0c111c,#0f1420);color:#e7ecf5}
+  #menu{position:sticky;top:0;z-index:100;display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+    padding:9px 16px;background:#0c111c;border-bottom:1px solid #2a3550;
+    font-family:system-ui,-apple-system,sans-serif;font-size:13px}
+  #menu .brand{color:#93a0bd;margin-right:4px;font-weight:600}
+  #menu button{cursor:pointer;background:#161d2e;color:#93a0bd;border:1px solid #2a3550;
+    padding:7px 14px;border-radius:9px;font-family:inherit;font-size:13px;font-weight:600;transition:.15s}
+  #menu button:hover{color:#e7ecf5;border-color:#3b82f6}
+  #menu button.on{background:#1d2740;color:#e7ecf5;border-color:#0ea5a4}
 </style>
+<style id="gcss"></style>
 </head>
 <body>
-  <p>Abriendo el sitio… si no avanza, entrá a <a href="construir.html">🏗️ Construir la API</a>.</p>
-  <script>location.replace("construir.html");</script>
+<div id="menu">
+  <span class="brand">🏥 Stack:</span>
+  <button data-g="construir" class="on">🏗️ Construir la API</button>
+  <button data-g="operar">⚙️ Operar el backend</button>
+</div>
+<div id="app"></div>
+
+<script>
+const CSS = {
+  construir: `:root{
+    --bg:#0f1420; --panel:#161d2e; --panel2:#1d2740; --line:#2a3550;
+    --ink:#e7ecf5; --mut:#93a0bd; --blue:#3b82f6; --teal:#0ea5a4;
+    --green:#22c55e; --amber:#f59e0b; --red:#ef4444; --violet:#8b5cf6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    background:linear-gradient(180deg,#0c111c,#0f1420);color:var(--ink);line-height:1.5}
+  header{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  header h1{font-size:18px;margin:0;letter-spacing:.3px}
+  header .sub{color:var(--mut);font-size:13px}
+  .prog{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--mut)}
+  .bar{width:160px;height:8px;background:var(--panel2);border-radius:99px;overflow:hidden}
+  .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--green));transition:width .4s}
+
+  .wrap{display:flex;min-height:calc(100vh - 70px)}
+  nav{width:240px;border-right:1px solid var(--line);padding:14px;flex-shrink:0;overflow-y:auto}
+  nav .acto{font-size:11px;color:var(--teal);text-transform:uppercase;letter-spacing:.8px;margin:14px 4px 6px}
+  nav .acto:first-child{margin-top:0}
+  nav button{display:block;width:100%;text-align:left;margin:0 0 5px;padding:9px 12px;border-radius:10px;
+    background:transparent;border:1px solid transparent;color:var(--ink);cursor:pointer;font-size:13px;transition:.15s}
+  nav button:hover{background:var(--panel)}
+  nav button.active{background:var(--panel2);border-color:var(--line)}
+  nav button.locked{color:var(--mut);cursor:not-allowed;opacity:.5}
+  nav button .done{color:var(--green);float:right}
+
+  main{flex:1;padding:24px;max-width:760px}
+  h2{margin:0 0 4px;font-size:22px}
+  .tag{display:inline-block;font-size:11px;color:var(--teal);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+  .lead{color:var(--mut);margin:0 0 18px}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin:0 0 14px}
+  .sit{background:var(--panel2);border-left:3px solid var(--amber);padding:12px 14px;border-radius:8px;margin:0 0 16px}
+  .reto{font-weight:600;margin:0 0 6px}
+  code,.mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+  pre{background:#0c1322;border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow-x:auto;
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;margin:10px 0}
+  .opts{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+  .opts button{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:11px 14px;
+    border-radius:10px;cursor:pointer;font-size:14px;text-align:left;transition:.15s;font-family:inherit}
+  .opts button:hover{border-color:var(--blue)}
+  .opts button:disabled{cursor:default;opacity:.65}
+  .opts button.pick-ok{border-color:var(--green);background:rgba(34,197,94,.12)}
+  .opts button.pick-bad{border-color:var(--red);background:rgba(239,68,68,.12)}
+
+  .fb{margin-top:14px;padding:12px 14px;border-radius:10px;font-size:14px;display:none}
+  .fb.show{display:block}
+  .fb.good{background:rgba(34,197,94,.12);border:1px solid var(--green);color:#bbf7d0}
+  .fb.bad{background:rgba(239,68,68,.12);border:1px solid var(--red);color:#fecaca}
+  .frase{margin-top:12px;font-style:italic;color:var(--amber);border-top:1px dashed var(--line);padding-top:10px}
+  button.next{background:var(--blue);border:none;color:#fff;padding:10px 20px;border-radius:9px;cursor:pointer;
+    font-size:14px;font-weight:600;margin-top:14px}
+  button.next:hover{filter:brightness(1.1)}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--mut);padding:7px 12px;
+    border-radius:8px;cursor:pointer;font-size:12px}
+  button.ghost:hover{color:var(--ink)}
+
+  /* torre */
+  aside{width:280px;border-left:1px solid var(--line);padding:18px 16px;flex-shrink:0}
+  aside h3{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.7px;margin:0 0 4px}
+  aside .hint{font-size:11px;color:var(--mut);margin:0 0 12px}
+  .tower{display:flex;flex-direction:column;gap:6px}
+  .blk{border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:12px;background:var(--panel);
+    color:var(--mut);transition:.35s;position:relative}
+  .blk .ico{margin-right:6px}
+  .blk.built{color:var(--ink);border-color:var(--teal);background:linear-gradient(90deg,rgba(14,165,164,.14),var(--panel))}
+  .blk.just{box-shadow:0 0 0 3px rgba(34,197,94,.25);border-color:var(--green)}
+  .blk.flow{box-shadow:0 0 0 3px rgba(59,130,246,.4);border-color:var(--blue);background:rgba(59,130,246,.14)}
+  .towedge{text-align:center;font-size:11px;color:var(--mut);margin:6px 0}
+
+  .anclas{padding:16px 24px;border-top:1px solid var(--line)}
+  .anclas h3{font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.8px;margin:0 0 8px}
+  .pill{display:inline-block;font-size:12px;padding:5px 10px;border-radius:99px;margin:3px;
+    background:rgba(245,158,11,.1);border:1px solid var(--amber);color:#fde68a}
+  .footnote{font-size:12px;color:var(--mut)}
+  .win{background:linear-gradient(90deg,rgba(34,197,94,.18),transparent);border:1px solid var(--green);
+    border-radius:12px;padding:16px;margin-top:14px;color:#bbf7d0}`,
+  operar: `:root{
+    --bg:#0f1420; --panel:#161d2e; --panel2:#1d2740; --line:#2a3550;
+    --ink:#e7ecf5; --mut:#93a0bd; --blue:#3b82f6; --teal:#0ea5a4;
+    --green:#22c55e; --amber:#f59e0b; --red:#ef4444; --violet:#8b5cf6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    background:linear-gradient(180deg,#0c111c,#0f1420);color:var(--ink);line-height:1.5}
+  header{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  header h1{font-size:18px;margin:0;letter-spacing:.3px}
+  header .sub{color:var(--mut);font-size:13px}
+  .prog{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--mut)}
+  .bar{width:160px;height:8px;background:var(--panel2);border-radius:99px;overflow:hidden}
+  .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--green));transition:width .4s}
+
+  /* pipeline */
+  .pipe{display:flex;gap:6px;padding:14px 24px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line);background:#0d1320}
+  .stage{font-size:11px;padding:6px 10px;border-radius:8px;background:var(--panel);border:1px solid var(--line);
+    color:var(--mut);white-space:nowrap;transition:all .25s}
+  .stage.on{background:var(--blue);color:#fff;border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.18)}
+  .stage.ok{background:var(--green);color:#06210f;border-color:var(--green)}
+  .stage.err{background:var(--red);color:#fff;border-color:var(--red)}
+  .arrow{color:var(--mut);font-size:11px}
+
+  .wrap{display:flex;min-height:calc(100vh - 145px)}
+  nav{width:230px;border-right:1px solid var(--line);padding:14px;flex-shrink:0}
+  nav button{display:block;width:100%;text-align:left;margin:0 0 6px;padding:10px 12px;border-radius:10px;
+    background:transparent;border:1px solid transparent;color:var(--ink);cursor:pointer;font-size:13px;transition:.15s}
+  nav button:hover{background:var(--panel)}
+  nav button.active{background:var(--panel2);border-color:var(--line)}
+  nav button .done{color:var(--green);float:right}
+  main{flex:1;padding:24px;max-width:880px}
+  h2{margin:0 0 4px;font-size:22px}
+  .tag{display:inline-block;font-size:11px;color:var(--teal);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+  .lead{color:var(--mut);margin:0 0 18px}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin:0 0 14px}
+  .goal{background:var(--panel2);border-left:3px solid var(--teal);padding:12px 14px;border-radius:8px;margin:0 0 14px}
+  label{display:block;font-size:12px;color:var(--mut);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.5px}
+  select,input[type=text],textarea{width:100%;background:#0c1322;border:1px solid var(--line);color:var(--ink);
+    border-radius:8px;padding:9px 11px;font-size:14px;font-family:inherit}
+  textarea{font-family:ui-monospace,Menlo,Consolas,monospace;min-height:80px;resize:vertical}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .row > div{flex:1;min-width:140px}
+  .chk{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink);margin-top:8px;text-transform:none;letter-spacing:0}
+  .chk input{width:auto}
+  button.act{background:var(--blue);border:none;color:#fff;padding:10px 18px;border-radius:9px;cursor:pointer;font-size:14px;font-weight:600;margin-top:14px}
+  button.act:hover{filter:brightness(1.1)}
+  button.ghost{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:13px;margin:4px 6px 0 0}
+  button.ghost:hover{background:var(--line)}
+  .opts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .opts button{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:9px 14px;border-radius:9px;cursor:pointer;font-size:14px}
+  .opts button:hover{border-color:var(--blue)}
+
+  .fb{margin-top:14px;padding:12px 14px;border-radius:10px;font-size:14px;display:none}
+  .fb.show{display:block}
+  .fb.good{background:rgba(34,197,94,.12);border:1px solid var(--green);color:#bbf7d0}
+  .fb.bad{background:rgba(239,68,68,.12);border:1px solid var(--red);color:#fecaca}
+  .fb.info{background:rgba(59,130,246,.12);border:1px solid var(--blue);color:#bfdbfe}
+  .frase{margin-top:10px;font-style:italic;color:var(--amber)}
+  code,.mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+  .pill{display:inline-block;font-size:12px;padding:3px 8px;border-radius:99px;background:var(--panel2);border:1px solid var(--line);margin:2px}
+
+  .tablebox{display:flex;gap:18px;flex-wrap:wrap}
+  table{border-collapse:collapse;font-size:13px;margin-top:6px}
+  th,td{border:1px solid var(--line);padding:6px 12px;text-align:left}
+  th{background:var(--panel2);color:var(--mut);font-weight:600}
+  .col-pk{color:var(--amber);font-weight:700}
+  .col-fk{color:var(--violet);font-weight:700}
+  .box{background:#0c1322;border:1px dashed var(--line);border-radius:10px;padding:12px;min-height:90px;font-size:13px}
+  .box h4{margin:0 0 8px;font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px}
+  .chiprow{display:flex;flex-wrap:wrap;gap:6px}
+  .obj{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px}
+  .obj.staged{border-color:var(--amber)}
+  .obj.saved{border-color:var(--green)}
+  .footnote{font-size:12px;color:var(--mut);margin-top:8px}
+  .ancla-wrap{padding:16px 24px;border-top:1px solid var(--line)}
+  .ancla-wrap h3{font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.8px;margin:0 0 8px}
+  #anclas .pill{background:rgba(245,158,11,.1);border-color:var(--amber);color:#fde68a}
+  .hidden{display:none}
+  .win-banner{background:linear-gradient(90deg,rgba(34,197,94,.15),transparent);border:1px solid var(--green);
+    border-radius:12px;padding:14px;margin-top:14px;color:#bbf7d0}`
+};
+const BODY = {
+  construir: `<header>
+  <div>
+    <h1>🚀 De función dormida a API en producción</h1>
+    <div class="sub">Construís el backend de una clínica capa por capa. De tu laptop a internet.</div>
+  </div>
+  <div class="prog">
+    <span id="progtxt">0 / 15</span>
+    <div class="bar"><i id="progbar"></i></div>
+    <button class="ghost" id="reset">Reiniciar</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav id="nav"></nav>
+  <main id="main"></main>
+  <aside>
+    <h3>🏗️ Tu torre</h3>
+    <p class="hint">La construís de adentro hacia afuera. El request la recorre de afuera hacia adentro.</p>
+    <div class="towedge">▼ entra el request</div>
+    <div class="tower" id="tower"></div>
+    <div class="towedge">▲ datos persistentes</div>
+  </aside>
+</div>
+
+<div class="anclas">
+  <h3>🪝 Frases ancla desbloqueadas</h3>
+  <div id="anclas"><span class="footnote">Aún ninguna. Completá retos para coleccionarlas.</span></div>
+</div>`,
+  operar: `<header>
+  <div>
+    <h1>🏥 Clínica API · Simulador de Backend</h1>
+    <div class="sub">Operás el backend de una clínica. Hacé que los conceptos trabajen juntos.</div>
+  </div>
+  <div class="prog">
+    <span id="progtxt">0 / 8</span>
+    <div class="bar"><i id="progbar"></i></div>
+  </div>
+</header>
+
+<div class="pipe" id="pipe"></div>
+
+<div class="wrap">
+  <nav id="nav"></nav>
+  <main id="main"></main>
+</div>
+
+<div class="ancla-wrap">
+  <h3>🪝 Frases ancla desbloqueadas</h3>
+  <div id="anclas"><span class="footnote">Aún ninguna. Completá misiones para coleccionarlas.</span></div>
+</div>`
+};
+
+function initConstruir(){
+/* ===== torre: bloques en orden request (afuera→adentro) ===== */
+const BLOCKS = [
+  {ico:"🌐", t:"Internet · URL · HTTP"},
+  {ico:"🐳", t:"Deploy · PaaS · Docker · env · logs"},
+  {ico:"🛡️", t:"Uvicorn · ASGI (servidor vivo)"},
+  {ico:"🚪", t:"FastAPI · endpoints"},
+  {ico:"🛂", t:"Middleware · auth / authz"},
+  {ico:"📋", t:"Pydantic · validación"},
+  {ico:"🐍", t:"Lógica Python"},
+  {ico:"🔗", t:"ORM"},
+  {ico:"🗄️", t:"SQL · Base de datos · PK/FK/JOIN"},
+];
+
+/* ===== retos ===== */
+const S = [
+{ id:"fn", acto:"Acto 1 · Despertar (local)", icono:"💤", titulo:"La función dormida", blk:6,
+  sit:`En <code>main.py</code> tenés esto, guardado y quieto:
+  <pre>def hello():
+    return {"message": "Hola"}</pre>
+  Alguien abre <code>http://tu-clinica.com/hola</code>… y no pasa nada.`,
+  reto:"¿Por qué esa función no responde por internet, todavía?",
+  opciones:[
+    {t:"Está dormida: vive en un archivo, pero nadie la sirve dentro de una app que escuche por red.", ok:true},
+    {t:"Le falta un <code>print()</code> para mostrar el mensaje.", ok:false, fb:"No: el problema no es mostrar, es que nadie la expone por la red."},
+    {t:"Tiene un error de sintaxis.", ok:false, fb:"La función está bien escrita. Lo que falta es la infraestructura alrededor."},
+  ],
+  okfb:"Exacto. Para responder necesita: función → dentro de una app → corriendo en un servidor → escuchando por red → accesible por URL.",
+  frase:"Una función en un archivo está dormida; una función dentro de un servidor web puede responder requests." },
+
+{ id:"endpoint", acto:"Acto 1 · Despertar (local)", icono:"🚪", titulo:"Convertirla en endpoint", blk:3,
+  sit:`Querés que la URL <code>GET /patients/{id}</code> lea un paciente por su id.
+  FastAPI te deja declarar la ruta, el método y la función que se ejecuta.`,
+  reto:"¿Qué le agregás a tu función para volverla un endpoint que lee el paciente?",
+  opciones:[
+    {t:`<pre>@app.get("/patients/{id}")
+def get_patient(id: int):
+    return {"id": id}</pre>`, ok:true},
+    {t:`<pre>@app.post("/patients/{id}")
+def get_patient(id: int):
+    return {"id": id}</pre>`, ok:false, fb:"POST declara «crear». Para leer es GET. El método declara la intención."},
+    {t:`<pre>def get_patient(id):
+    print("/patients/" + id)</pre>`, ok:false, fb:"Eso sigue siendo una función suelta sin ruta ni método: nadie la expone."},
+  ],
+  okfb:"Eso es un endpoint: método HTTP + ruta + función. La API es el menú entero; este es un platillo.",
+  frase:"API es todo el menú; endpoint es un platillo específico: método + ruta + función." },
+
+{ id:"uvicorn", acto:"Acto 1 · Despertar (local)", icono:"🛡️", titulo:"Prender el servidor", blk:2,
+  sit:`Ya declaraste el endpoint en FastAPI, pero FastAPI solo <em>define</em> la app.
+  Hace falta un proceso que la ponga a escuchar por red y no termine como un script normal.`,
+  reto:"¿Qué corrés en la terminal para dejar la app viva escuchando?",
+  opciones:[
+    {t:`<code>uvicorn main:app --reload</code>`, ok:true},
+    {t:`<code>python main.py</code> y se cierra solo al terminar.`, ok:false, fb:"Un script corre y termina. Un servidor se queda vivo escuchando. Necesitás Uvicorn."},
+    {t:`<code>pip install fastapi</code>`, ok:false, fb:"Eso instala, no levanta el servidor. Falta ponerlo a escuchar."},
+  ],
+  okfb:"Uvicorn mantiene la app viva escuchando. ASGI es el contrato que deja que Uvicorn y FastAPI se entiendan: cliente → HTTP → Uvicorn → ASGI → FastAPI → función.",
+  frase:"FastAPI sabe qué hacer; Uvicorn escucha; ASGI permite que se entiendan." },
+
+{ id:"url", acto:"Acto 1 · Despertar (local)", icono:"🌐", titulo:"El primer request", blk:0,
+  sit:`Tu servidor está vivo en tu laptop. Tu compañera quiere leer el paciente 5.
+  La dirección es <code>http://127.0.0.1:8000/patients/5</code>.`,
+  reto:"En esa URL, <code>8000</code> es…",
+  opciones:[
+    {t:"El <strong>puerto</strong>: la ventanilla dentro de la máquina por donde entra el request.", ok:true},
+    {t:"El host: la máquina a la que llegás.", ok:false, fb:"El host es <code>127.0.0.1</code>. El puerto es 8000."},
+    {t:"La ruta del recurso.", ok:false, fb:"La ruta es <code>/patients/5</code>. El 8000 es el puerto."},
+  ],
+  okfb:"http=protocolo · 127.0.0.1=host · 8000=puerto · /patients/5=ruta. El request entra y devuelve 200 con el paciente.",
+  frase:"IP es la dirección del edificio; puerto es la ventanilla; ruta es el departamento interno." },
+
+{ id:"metodo", acto:"Acto 2 · Endurecer (datos)", icono:"✍️", titulo:"Declarar la intención", blk:0,
+  sit:`Ahora la clínica quiere <strong>dar de alta</strong> un paciente nuevo desde el formulario.`,
+  reto:"¿Qué método HTTP usás para crear un paciente?",
+  opciones:[
+    {t:"<code>POST /patients</code> — crear.", ok:true},
+    {t:"<code>GET /patients</code> — porque siempre uso GET.", ok:false, fb:"GET es leer. Crear es POST. El método declara la intención, no es decorativo."},
+    {t:"<code>DELETE /patients</code> — para meter datos nuevos.", ok:false, fb:"DELETE borra. Para crear, POST."},
+  ],
+  okfb:"GET=leer · POST=crear · PUT=reemplazar · PATCH=actualizar parcial · DELETE=borrar.",
+  frase:"El método declara la intención: leer, crear, actualizar o borrar." },
+
+{ id:"pydantic", acto:"Acto 2 · Endurecer (datos)", icono:"📋", titulo:"El guardia del body", blk:5,
+  sit:`Definís el esquema esperado:
+  <pre>class PatientCreate(BaseModel):
+    name: str
+    age: int</pre>
+  Llega un POST con el body <code>{ "name": "Ana", "age": "treinta" }</code>.`,
+  reto:"¿Qué status responde tu API?",
+  opciones:[
+    {t:"<code>422 Unprocessable Entity</code> — leí el JSON, pero <code>age</code> no cumple el esquema (no es int).", ok:true},
+    {t:"<code>400 Bad Request</code> — porque el JSON está roto.", ok:false, fb:"400 es «ni pude leer tu JSON». Acá el JSON es válido; lo que falla es el esquema: eso es 422."},
+    {t:"<code>200 OK</code> — Pydantic convierte «treinta» a número.", ok:false, fb:"No adivina. «treinta» no es un int: lo rechaza."},
+  ],
+  okfb:"400 = ni pude leer tu JSON · 422 = lo leí pero no cumple el esquema. Pydantic deserializa (JSON→objeto) y valida antes de tocar tu lógica.",
+  frase:"Pydantic es el guardia de entrada del body: 400 no pude leerlo, 422 lo leí pero no cumple." },
+
+{ id:"persistencia", acto:"Acto 2 · Endurecer (datos)", icono:"🔗", titulo:"Datos que sobreviven", blk:7,
+  sit:`Cargaste 10 pacientes y funcionaba. Reiniciás el servidor… y desaparecieron todos.
+  Estaban en variables, en RAM.`,
+  reto:"¿Qué hacés para que sobrevivan al reinicio?",
+  opciones:[
+    {t:`Guardarlos en una base de datos vía el ORM: <code>session.add(p); session.commit()</code>.`, ok:true},
+    {t:"Subir la RAM de la computadora.", ok:false, fb:"La RAM es temporal por naturaleza: al reiniciar se vacía. Necesitás memoria durable: una base."},
+    {t:"Agregar más <code>print()</code> para no perderlos.", ok:false, fb:"Imprimir no persiste nada. Hace falta una base de datos."},
+  ],
+  okfb:"El ORM traduce objeto Python ↔ fila SQL. <code>add</code> lo prepara, <code>commit</code> lo escribe. Sin commit, el reinicio se lo lleva. Por debajo: INSERT INTO patients...",
+  frase:"RAM es temporal; la base de datos es memoria durable. El ORM deja que Python hable con la base en idioma objeto." },
+
+{ id:"relaciones", acto:"Acto 2 · Endurecer (datos)", icono:"🗄️", titulo:"Uno-a-muchos", blk:8,
+  sit:`Un paciente tiene muchas citas. No querés repetir el nombre «Ana» en cada cita
+  (eso es lo que evita la normalización).`,
+  reto:"¿Cómo conectás cada cita con su paciente?",
+  opciones:[
+    {t:"Una <strong>FK</strong> en la cita: <code>appointments.patient_id → patients.id</code>.", ok:true},
+    {t:"Copiar el nombre del paciente dentro de cada cita.", ok:false, fb:"Eso repite datos (mal). Normalizar es guardar a Ana una vez y que las citas la apunten con una llave."},
+    {t:"Poner la PK de la cita dentro del paciente.", ok:false, fb:"Al revés: el lado «muchos» (la cita) lleva la FK que apunta al «uno» (el paciente)."},
+  ],
+  okfb:"PK identifica una fila; FK apunta a la PK de otra tabla. Un JOIN las combina: <code>... FROM appointments JOIN patients ON appointments.patient_id = patients.id</code>.",
+  frase:"La PK dice quién soy; la FK dice a quién pertenezco." },
+
+{ id:"hash", acto:"Acto 3 · Proteger (identidad)", icono:"🛂", titulo:"La bóveda de contraseñas", blk:4,
+  sit:`Ahora hay usuarios con contraseña. Tenés que guardar la de Ana en la base.`,
+  reto:"¿Cómo la guardás?",
+  opciones:[
+    {t:"<strong>Hasheada</strong>: <code>password → hash irreversible</code>. En login comparo hashes, nunca el texto.", ok:true},
+    {t:"Tal cual, en texto plano, así puedo recuperarla.", ok:false, fb:"Nunca en texto: si filtran la base, regalás todas las contraseñas."},
+    {t:"Encriptada, para des-encriptarla cuando la necesite.", ok:false, fb:"Encriptar es reversible: alguien con la llave la lee. Hashear es one-way, no se deshace. Por eso se hashea."},
+  ],
+  okfb:"El hash es one-way: nadie reconstruye la contraseña, ni vos. En el login hasheás lo que entra y comparás contra el hash guardado.",
+  frase:"Encriptar es reversible; hashear no. Por eso la contraseña se hashea." },
+
+{ id:"jwtauth", acto:"Acto 3 · Proteger (identidad)", icono:"🎫", titulo:"401 vs 403", blk:4,
+  sit:`Tras el login, el servidor entrega un JWT (un pase firmado). El cliente lo manda en cada
+  request protegida: <code>Authorization: Bearer &lt;token&gt;</code>. El middleware lo revisa
+  <em>antes</em> de llegar al endpoint.`,
+  reto:"Ana, ya logueada, intenta borrar la cita de OTRO paciente. ¿Qué responde la API?",
+  opciones:[
+    {t:"<code>403 Forbidden</code> — sé quién sos (token válido), pero no podés tocar ese recurso ajeno.", ok:true},
+    {t:"<code>401 Unauthorized</code> — porque su token no sirve.", ok:false, fb:"401 es «no sé quién sos» (sin token o inválido). Acá Ana SÍ está identificada; lo que falla es el permiso: 403."},
+    {t:"<code>404 Not Found</code> — la cita no existe.", ok:false, fb:"La cita existe, es de otro. El problema es de autorización: 403."},
+  ],
+  okfb:"Autenticación (¿quién sos? → 401 si falla) y autorización (¿qué podés hacer? → 403 si falla) son distintas. El middleware filtra ambas antes del endpoint.",
+  frase:"Middleware es el filtro antes del endpoint: 401 no sé quién sos, 403 sé quién sos pero no podés." },
+
+{ id:"deploy", acto:"Acto 4 · Publicar 🌍", icono:"🚀", titulo:"De localhost al mundo", blk:1,
+  sit:`Todo anda en <code>http://127.0.0.1:8000</code>… pero solo en tu laptop. El mundo no la ve,
+  y si apagás la compu, se apaga la clínica.`,
+  reto:"¿Cómo la publicás sin montar un servidor desde cero?",
+  opciones:[
+    {t:"Deployment en un PaaS (Render/Railway): conectás GitHub, definís build/start commands y obtenés una URL pública.", ok:true},
+    {t:"Le paso mi IP <code>127.0.0.1</code> a la gente para que entre.", ok:false, fb:"127.0.0.1 es «esta misma máquina»: para cada quien apunta a SU compu, no a la tuya. Necesitás una URL pública."},
+    {t:"Dejo la laptop prendida para siempre.", ok:false, fb:"Frágil e inseguro. Un PaaS corre tu app en la nube con URL pública y logs."},
+  ],
+  okfb:"Deployment = pasar de local a producción: de 127.0.0.1:8000 a https://tu-clinica.com, corriendo en la nube.",
+  frase:"Deployment es publicar la app: de 127.0.0.1 a una URL pública." },
+
+{ id:"envvars", acto:"Acto 4 · Publicar 🌍", icono:"🔑", titulo:"No filtres secretos", blk:1,
+  sit:`En el código tenés <code>JWT_SECRET = "dev-secret"</code> escrito a mano. Y estás por subir
+  todo a GitHub público.`,
+  reto:"¿Qué hacés con ese secreto?",
+  opciones:[
+    {t:`Sacarlo del código a variables de entorno: <code>os.getenv("JWT_SECRET")</code>, valor en <code>.env</code> local y <code>.env</code> en <code>.gitignore</code>.`, ok:true},
+    {t:"Dejarlo en el código; total es solo un string.", ok:false, fb:"Si lo subís, cualquiera firma tokens como vos. Los secretos viven en el entorno, no en el repo."},
+    {t:"Subirlo igual pero en un comentario para «esconderlo».", ok:false, fb:"Un comentario en GitHub es público igual. Tiene que salir del código."},
+  ],
+  okfb:"El código usa nombres (os.getenv(\"JWT_SECRET\")); el entorno guarda los valores. En el PaaS cargás esas variables aparte. .env nunca se sube.",
+  frase:"El código usa nombres; el entorno guarda los valores secretos." },
+
+{ id:"docker", acto:"Acto 4 · Publicar 🌍", icono:"🐳", titulo:"«En mi compu sí funciona»", blk:1,
+  sit:`Funciona en tu laptop, pero en el servidor truena: otra versión de Python, faltan librerías,
+  distinta configuración.`,
+  reto:"¿Qué evita ese «en mi compu sí funciona»?",
+  opciones:[
+    {t:"Docker: empaqueta app + versión de Python + librerías + comando de arranque en un contenedor que corre igual en todos lados.", ok:true},
+    {t:"Mandar un instructivo para que cada quien instale a mano.", ok:false, fb:"Cada instalación manual diverge. Docker congela el entorno entero en una imagen reproducible."},
+    {t:"Subir la RAM del servidor.", ok:false, fb:"No es memoria: es el entorno (versiones, deps). Eso lo fija Docker."},
+  ],
+  okfb:"Docker empaqueta el entorno completo: la misma imagen corre idéntica en tu laptop, en el PaaS y en la nube.",
+  frase:"Docker evita el «en mi compu sí funciona»." },
+
+{ id:"logs", acto:"Acto 4 · Publicar 🌍", icono:"📜", titulo:"La caja negra", blk:1,
+  sit:`Ya en producción, usuarios reportan que no pueden entrar. Vos no estás viendo tu terminal local.
+  En los logs aparece: <pre>POST /login 401
+POST /login 401
+ERROR: database connection failed</pre>`,
+  reto:"¿Qué te dicen esos logs?",
+  opciones:[
+    {t:"Hay logins fallando (401) y, peor, la app no se conecta a la base: por eso nadie entra.", ok:true},
+    {t:"Que todo va bien, son mensajes normales.", ok:false, fb:"401 = login rechazado y ERROR de conexión a la base no son normales: son la pista del problema."},
+    {t:"Nada útil; para diagnosticar tendría que estar en su compu.", ok:false, fb:"Justo para eso existen los logs: son tu visión cuando ya no ves la terminal local."},
+  ],
+  okfb:"Los logs son la caja negra de producción: cada request, error y arranque queda registrado. Son tu rastro cuando no estás mirando en vivo.",
+  frase:"Los logs son los rastros de vida del servidor." },
+
+{ id:"pelicula", acto:"🎬 Final", icono:"🎬", titulo:"La película completa", blk:-1, final:true,
+  sit:`La torre está completa: la construiste de adentro hacia afuera, función primero, deploy al final.
+  Ahora un usuario real, desde internet, pide <code>GET /patients/5</code> con su token.
+  Mirá cómo el request recorre <strong>de afuera hacia adentro</strong> todo lo que armaste.`,
+  reto:"Corré el request y ve la película.",
+  frase:"Una API en producción es una función Python convertida en endpoint, servida por un proceso vivo, llamada por HTTP, protegida por auth, validada con esquemas, conectada a una base persistente, observada con logs y desplegada en un entorno reproducible." },
+];
+
+/* ===== estado ===== */
+const KEY = "juego-deploy-prog";
+let done = new Set(JSON.parse(localStorage.getItem(KEY) || "[]"));
+let cur = firstUnsolved();
+
+function firstUnsolved(){
+  for(let i=0;i<S.length;i++) if(!done.has(S[i].id)) return i;
+  return S.length-1;
+}
+function unlocked(i){ return i===0 || done.has(S[i-1].id); }
+function save(){ localStorage.setItem(KEY, JSON.stringify([...done])); }
+
+/* ===== render torre ===== */
+const towerEl = document.getElementById("tower");
+function builtBlocks(){
+  const set = new Set();
+  S.forEach(s=>{ if(done.has(s.id) && s.blk>=0) set.add(s.blk); });
+  return set;
+}
+function renderTower(justBlk){
+  const built = builtBlocks();
+  towerEl.innerHTML = "";
+  BLOCKS.forEach((b,i)=>{
+    const d = document.createElement("div");
+    d.className = "blk" + (built.has(i)?" built":"") + (i===justBlk?" just":"");
+    d.id = "blk"+i;
+    d.innerHTML = `<span class="ico">${b.ico}</span>${b.t}`;
+    towerEl.appendChild(d);
+  });
+}
+
+/* ===== render nav ===== */
+const navEl = document.getElementById("nav");
+function renderNav(){
+  navEl.innerHTML = "";
+  let lastActo = "";
+  S.forEach((s,i)=>{
+    if(s.acto!==lastActo){
+      const h = document.createElement("div");
+      h.className = "acto"; h.textContent = s.acto;
+      navEl.appendChild(h); lastActo = s.acto;
+    }
+    const b = document.createElement("button");
+    const open = unlocked(i);
+    b.className = (i===cur?"active ":"") + (open?"":"locked");
+    b.innerHTML = `${s.icono} ${s.titulo}` + (done.has(s.id)?`<span class="done">✓</span>`:(open?"":`<span class="done">🔒</span>`));
+    if(open) b.onclick = ()=>{ cur=i; render(); };
+    navEl.appendChild(b);
+  });
+}
+
+/* ===== render progreso + anclas ===== */
+function renderProg(){
+  document.getElementById("progtxt").textContent = `${done.size} / ${S.length}`;
+  document.getElementById("progbar").style.width = (done.size/S.length*100)+"%";
+}
+function renderAnclas(){
+  const el = document.getElementById("anclas");
+  const got = S.filter(s=>done.has(s.id));
+  if(!got.length){ el.innerHTML = `<span class="footnote">Aún ninguna. Completá retos para coleccionarlas.</span>`; return; }
+  el.innerHTML = got.map(s=>`<span class="pill">${s.frase}</span>`).join("");
+}
+
+/* ===== render main ===== */
+const mainEl = document.getElementById("main");
+function render(){
+  renderNav(); renderProg(); renderAnclas(); renderTower();
+  const s = S[cur];
+  let html = `<div class="tag">${s.acto}</div><h2>${s.icono} ${s.titulo}</h2>`;
+  html += `<div class="card"><div class="sit">${s.sit}</div>`;
+  html += `<p class="reto">${s.reto}</p>`;
+
+  if(s.final){
+    html += `<button class="next" id="play">▶ Correr el request</button>`;
+    html += `<div class="fb" id="fb"></div></div>`;
+    mainEl.innerHTML = html;
+    document.getElementById("play").onclick = playMovie;
+    return;
+  }
+
+  html += `<div class="opts" id="opts">`;
+  s.opciones.forEach((o,idx)=> html += `<button data-i="${idx}">${o.t}</button>`);
+  html += `</div><div class="fb" id="fb"></div></div>`;
+  mainEl.innerHTML = html;
+
+  const fb = document.getElementById("fb");
+  const opts = document.getElementById("opts");
+  const alreadyDone = done.has(s.id);
+
+  opts.querySelectorAll("button").forEach(btn=>{
+    btn.onclick = ()=>{
+      const o = s.opciones[+btn.dataset.i];
+      if(o.ok){
+        btn.classList.add("pick-ok");
+        opts.querySelectorAll("button").forEach(b=>b.disabled=true);
+        const wasNew = !done.has(s.id);
+        done.add(s.id); save();
+        renderTower(s.blk);
+        const justEl = document.getElementById("blk"+s.blk);
+        if(justEl){ justEl.classList.add("just"); setTimeout(()=>justEl.classList.remove("just"),1400); }
+        fb.className = "fb good show";
+        fb.innerHTML = `✅ ${s.okfb}<div class="frase">🪝 ${s.frase}</div>`;
+        const nx = nextIndex();
+        if(nx!==null) fb.innerHTML += `<button class="next" id="go">Siguiente →</button>`;
+        else fb.innerHTML += `<div class="frase">¡Listo! Tocá <strong>🎬 La película completa</strong> en el menú.</div>`;
+        const go = document.getElementById("go");
+        if(go) go.onclick = ()=>{ cur=nx; render(); };
+        renderNav(); renderProg(); renderAnclas();
+      } else {
+        btn.classList.add("pick-bad"); btn.disabled = true;
+        fb.className = "fb bad show";
+        fb.innerHTML = `❌ ${o.fb}`;
+      }
+    };
+  });
+  if(alreadyDone){
+    fb.className = "fb good show";
+    fb.innerHTML = `✅ Ya lo resolviste. ${s.okfb}<div class="frase">🪝 ${s.frase}</div>`;
+  }
+}
+function nextIndex(){ return cur < S.length-1 ? cur+1 : null; }
+
+/* ===== película final ===== */
+function playMovie(){
+  const fb = document.getElementById("fb");
+  const s = S[cur];
+  const steps = [
+    {b:0, txt:"🌐 El request entra por internet a tu URL pública: GET /patients/5"},
+    {b:1, txt:"🐳 Llega al contenedor en el PaaS (env vars cargadas, logs registrando)"},
+    {b:2, txt:"🛡️ Uvicorn lo recibe y vía ASGI se lo pasa a FastAPI"},
+    {b:3, txt:"🚪 FastAPI elige el endpoint GET /patients/{id}"},
+    {b:4, txt:"🛂 Middleware valida el JWT: 401 si no sabe quién, 403 si no puede. Ana pasa."},
+    {b:5, txt:"📋 Pydantic valida los datos de entrada"},
+    {b:6, txt:"🐍 Corre tu lógica Python con objetos vivos"},
+    {b:7, txt:"🔗 El ORM traduce a SQL"},
+    {b:8, txt:"🗄️ La base devuelve la fila del paciente 5 (PK = 5)"},
+  ];
+  document.getElementById("play").disabled = true;
+  fb.className = "fb info show"; fb.style.background="rgba(59,130,246,.1)";
+  fb.style.border="1px solid var(--blue)"; fb.style.color="#bfdbfe";
+  let log = "";
+  let i = 0;
+  function step(){
+    BLOCKS.forEach((_,k)=>{ const e=document.getElementById("blk"+k); if(e) e.classList.remove("flow"); });
+    if(i<steps.length){
+      const e = document.getElementById("blk"+steps[i].b);
+      if(e) e.classList.add("flow");
+      log += `<div>${steps[i].txt}</div>`;
+      fb.innerHTML = log;
+      i++; setTimeout(step, 900);
+    } else {
+      log += `<div style="margin-top:8px;color:#bbf7d0"><strong>⬅️ Response 200 OK</strong> sube de vuelta con el JSON del paciente. Logs lo registran.</div>`;
+      fb.className = "fb good show";
+      fb.innerHTML = log +
+        `<div class="frase">🪝 ${s.frase}</div>` +
+        `<div class="win">🏆 Construiste una API de cero a producción. La armaste de adentro hacia afuera; el request la recorrió de afuera hacia adentro. Esa inversión <em>es</em> el stack.</div>`;
+      done.add(s.id); save();
+      renderNav(); renderProg(); renderAnclas();
+    }
+  }
+  step();
+}
+
+/* ===== reset ===== */
+document.getElementById("reset").onclick = ()=>{
+  if(confirm("¿Borrar tu progreso y empezar de cero?")){
+    done = new Set(); save(); cur = 0; render();
+  }
+};
+
+render();
+}
+
+function initOperar(){
+/* ============ infraestructura ============ */
+const PIPE = ["Frontend","Request","Auth","Authz","Validación","ORM","SQL","Response"];
+const pipeEl = document.getElementById("pipe");
+PIPE.forEach((s,i)=>{
+  if(i) pipeEl.insertAdjacentHTML("beforeend",'<span class="arrow">→</span>');
+  pipeEl.insertAdjacentHTML("beforeend",`<span class="stage" data-s="${s}">${s}</span>`);
+});
+function pipe(active=[], errStage=null, okStage=null){
+  document.querySelectorAll(".stage").forEach(el=>{
+    el.className="stage";
+    const s=el.dataset.s;
+    if(active.includes(s)) el.classList.add("on");
+    if(s===okStage) el.classList.add("ok");
+    if(s===errStage) el.classList.add("err");
+  });
+}
+
+const STORE_KEY="clinicaApiProgress";
+let done = new Set(JSON.parse(localStorage.getItem(STORE_KEY)||"[]"));
+let anclas = {};
+function save(){ localStorage.setItem(STORE_KEY, JSON.stringify([...done])); }
+function markDone(id, frase){
+  done.add(id); save(); renderProgress(); renderNav();
+  if(frase){ anclas[id]=frase; renderAnclas(); }
+}
+function renderProgress(){
+  document.getElementById("progtxt").textContent = `${done.size} / ${MISSIONS.length}`;
+  document.getElementById("progbar").style.width = (done.size/MISSIONS.length*100)+"%";
+}
+function renderAnclas(){
+  const c=document.getElementById("anclas");
+  const items=Object.values(anclas);
+  c.innerHTML = items.length ? items.map(f=>`<span class="pill">${f}</span>`).join("")
+    : '<span class="footnote">Aún ninguna. Completá misiones para coleccionarlas.</span>';
+}
+function feedback(root, type, html){
+  const fb=root.querySelector(".fb");
+  fb.className="fb show "+type; fb.innerHTML=html;
+}
+function winBanner(root, frase){
+  const fb=root.querySelector(".fb");
+  fb.className="fb show good";
+  fb.innerHTML=`✅ <b>Misión superada.</b><div class="frase">🪝 «${frase}»</div>`;
+}
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+/* ============ misiones ============ */
+const MISSIONS = [];
+function mission(o){ MISSIONS.push(o); }
+
+/* ---- M1: armar la request ---- */
+mission({
+  id:"m1", emoji:"📨", title:"Habla HTTP",
+  tag:"HTTP · request",
+  lead:"Una request es método + ruta + headers + body. El método declara la intención; la ruta, el recurso. El body solo viaja en POST/PUT/PATCH. Y como HTTP es <b>stateless</b>, cada request protegida debe traer su token.",
+  mount(root){
+    pipe(["Frontend","Request"]);
+    const goals=[
+      {desc:"Crea un paciente nuevo: Ana, 32 años.", method:"POST", route:"/patients", body:true, keys:["name"], ok:201},
+      {desc:"Lee el paciente con id 5.", method:"GET", route:"/patients/5", body:false, ok:200},
+      {desc:"Actualiza parcialmente el email del paciente 5.", method:"PATCH", route:"/patients/5", body:true, keys:["email"], ok:200},
+      {desc:"Borra la cita con id 12.", method:"DELETE", route:"/appointments/12", body:false, ok:204},
+    ];
+    let idx=0;
+    function render(){
+      const g=goals[idx];
+      root.innerHTML=`
+        <div class="goal">🎯 Meta ${idx+1}/${goals.length}: <b>${g.desc}</b></div>
+        <div class="card">
+          <div class="row">
+            <div><label>Método</label>
+              <select id="m1-method">
+                <option></option><option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option>
+              </select>
+            </div>
+            <div><label>Ruta / recurso</label><input id="m1-route" type="text" placeholder="/..."></div>
+          </div>
+          <label class="chk"><input type="checkbox" id="m1-auth"> Header <code>Authorization: Bearer &lt;token&gt;</code></label>
+          <label class="chk"><input type="checkbox" id="m1-ct"> Header <code>Content-Type: application/json</code></label>
+          <label>Body (JSON, opcional)</label>
+          <textarea id="m1-body" placeholder='{ "name": "Ana", "age": 32 }'></textarea>
+          <button class="act" id="m1-send">Enviar request →</button>
+        </div>
+        <div class="fb"></div>`;
+      root.querySelector("#m1-send").onclick=()=>send(g);
+    }
+    function send(g){
+      const method=root.querySelector("#m1-method").value;
+      const route=(root.querySelector("#m1-route").value||"").trim().toLowerCase().replace(/\/+$/,"");
+      const auth=root.querySelector("#m1-auth").checked;
+      const ct=root.querySelector("#m1-ct").checked;
+      const bodyRaw=root.querySelector("#m1-body").value.trim();
+      // stateless: sin token -> 401
+      if(!auth){ pipe(["Request","Auth"],"Auth"); return feedback(root,"bad",
+        "<b>401 Unauthorized.</b> HTTP no recuerda tu login anterior (es <i>stateless</i>): sin el header <code>Authorization</code>, el servidor no sabe quién sos. Agregá el token."); }
+      if(!method){ return feedback(root,"info","Elegí un método: declara la intención (leer/crear/actualizar/borrar)."); }
+      if(method!==g.method){ pipe(["Request"],"Request"); return feedback(root,"bad",
+        `El método <code>${method}</code> no coincide con la intención. Para «${g.desc}» se usa <code>${g.method}</code>.<br><span class="footnote">GET=leer · POST=crear · PUT=reemplazar · PATCH=modificar parcial · DELETE=borrar</span>`); }
+      if(route!==g.route){ pipe(["Request"],"Request"); return feedback(root,"bad",
+        `<b>404 Not Found.</b> La ruta <code>${esc(route||"(vacía)")}</code> no apunta al recurso correcto. Esperaba algo como <code>${g.route}</code>.`); }
+      const needsBody=["POST","PUT","PATCH"].includes(method);
+      if(g.body){
+        if(!ct) return feedback(root,"bad","Vas a mandar datos pero falta <code>Content-Type: application/json</code>: el servidor no sabe en qué formato viene el body.");
+        if(!bodyRaw) return feedback(root,"bad","<b>422.</b> Este método crea/actualiza datos: necesita un <b>body</b> con la información.");
+        let parsed; try{ parsed=JSON.parse(bodyRaw); }catch(e){ pipe(["Request","Validación"],"Validación"); return feedback(root,"bad","<b>400 Bad Request.</b> El JSON del body está mal formado."); }
+        for(const k of g.keys){ if(!(k in parsed)){ pipe(["Request","Validación"],"Validación"); return feedback(root,"bad",`<b>422.</b> El body es válido como JSON pero le falta el campo <code>${k}</code>.`); } }
+      } else {
+        if(bodyRaw) return feedback(root,"info",`Un <code>${method}</code> normalmente <b>no lleva body</b>: la info ya está en la ruta. Vaciá el body.`);
+      }
+      // éxito
+      pipe(["Request","Auth","Validación","Response"],null,"Response");
+      idx++;
+      if(idx<goals.length){
+        feedback(root,"good",`✅ <b>${g.ok}</b> — request correcta. Siguiente meta…`);
+        setTimeout(render,900);
+      } else {
+        markDone("m1","el método declara la intención; la ruta, el recurso; sin token no hay identidad (stateless)");
+        pipe(["Frontend","Request","Auth","Validación","Response"],null,"Response");
+        winBanner(root,"el método declara la intención; la ruta, el recurso; sin token no hay identidad (stateless)");
+      }
+    }
+    render();
+  }
+});
+
+/* ---- M2: status codes ---- */
+mission({
+  id:"m2", emoji:"🩺", title:"Sala de diagnóstico",
+  tag:"Status codes",
+  lead:"El status code es el diagnóstico de la respuesta. El <b>primer dígito</b> te dice dónde buscar la falla: 2xx salió bien · 3xx redirige · 4xx culpa del request/cliente · 5xx culpa del servidor.",
+  mount(root){
+    pipe(["Response"]);
+    const sc=[200,201,204,400,401,403,404,422,500];
+    const cases=[
+      {t:"GET /patients/5 exitoso: devuelve el paciente.", a:200, e:"Lectura OK."},
+      {t:"POST /patients creó un paciente nuevo.", a:201, e:"Created: se creó un recurso."},
+      {t:"DELETE /appointments/12 borró la cita; no hay nada que devolver.", a:204, e:"No Content: éxito sin cuerpo."},
+      {t:"POST /patients con { \"age\": -5 }: dato entendible pero inválido.", a:422, e:"Unprocessable Entity: JSON válido, datos inválidos."},
+      {t:"GET /profile sin token.", a:401, e:"Unauthorized: falta identidad."},
+      {t:"Ana (logueada, NO admin) hace DELETE /admin/users/5.", a:403, e:"Forbidden: autenticada, pero sin permiso."},
+      {t:"GET /pacientess (ruta con typo): no existe.", a:404, e:"Not Found: ruta/recurso inexistente."},
+      {t:"El backend lanzó una excepción no controlada al guardar.", a:500, e:"Internal Server Error: falló el servidor."},
+      {t:"El cliente mandó un JSON mal formado (falta una llave).", a:400, e:"Bad Request: petición mal formada."},
+    ];
+    let i=0, hits=0;
+    function render(){
+      const c=cases[i];
+      root.innerHTML=`
+        <div class="goal">Escenario ${i+1}/${cases.length}: <b>${esc(c.t)}</b></div>
+        <div class="card"><label>¿Qué status code devuelve el servidor?</label>
+          <div class="opts">${sc.map(s=>`<button data-c="${s}">${s}</button>`).join("")}</div>
+        </div><div class="fb"></div>`;
+      root.querySelectorAll(".opts button").forEach(b=>b.onclick=()=>{
+        const pick=+b.dataset.c, c=cases[i];
+        const fam = s=> s<300?"2xx":s<400?"3xx":s<500?"4xx":"5xx";
+        if(pick===c.a){
+          hits++; pipe(["Response"],null,"Response");
+          feedback(root,"good",`✅ <b>${c.a}</b> (${fam(c.a)}). ${c.e}`);
+          i++;
+          if(i<cases.length) setTimeout(render,800);
+          else { markDone("m2","el primer dígito te dice dónde buscar la falla: 4xx culpa del cliente, 5xx del servidor"); winBanner(root,"el primer dígito te dice dónde buscar la falla: 4xx culpa del cliente, 5xx del servidor"); }
+        } else {
+          pipe(["Response"],"Response");
+          feedback(root,"bad",`No. Elegiste ${pick} (${fam(pick)}); la respuesta es <b>${c.a}</b> (${fam(c.a)}). ${c.e}`);
+        }
+      });
+    }
+    render();
+  }
+});
+
+/* ---- M3: RAM vs persistencia (ORM) ---- */
+mission({
+  id:"m3", emoji:"💾", title:"RAM vs Base de datos",
+  tag:"Persistencia · ORM",
+  lead:"Crear un objeto solo lo pone en RAM (vida temporal). <code>session.add()</code> lo prepara, <code>session.commit()</code> lo confirma en la base (durable). Probalo: hacé que <b>Ana sobreviva a un reinicio</b>.",
+  mount(root){
+    pipe(["ORM"]);
+    let ram=[], staged=[], db=[];
+    function render(){
+      root.innerHTML=`
+        <div class="card">
+          <button class="ghost" id="b-create">Patient(name="Ana")</button>
+          <button class="ghost" id="b-add">session.add(ana)</button>
+          <button class="ghost" id="b-commit">session.commit()</button>
+          <button class="ghost" id="b-restart">🔌 Reiniciar servidor</button>
+          <div class="row" style="margin-top:14px">
+            <div class="box"><h4>RAM (temporal)</h4><div class="chiprow" id="ram-box"></div></div>
+            <div class="box"><h4>Pendiente (staged)</h4><div class="chiprow" id="st-box"></div></div>
+            <div class="box"><h4>Base de datos (durable)</h4><div class="chiprow" id="db-box"></div></div>
+          </div>
+          <div class="footnote">Traducción del ORM: clase Patient ↔ tabla, objeto ↔ fila, atributo ↔ columna.</div>
+        </div><div class="fb"></div>`;
+      paint();
+      root.querySelector("#b-create").onclick=()=>{ ram.push("Ana"); pipe(["ORM"]); paint(); feedback(root,"info","Objeto creado <b>solo en RAM</b>. Todavía no está guardado."); };
+      root.querySelector("#b-add").onclick=()=>{
+        if(!ram.length) return feedback(root,"bad","Primero creá el objeto Patient(name=\"Ana\").");
+        staged.push(ram.pop()); pipe(["ORM"]); paint(); feedback(root,"info","<code>add</code> lo <b>prepara</b> (staged), pero aún no persiste."); };
+      root.querySelector("#b-commit").onclick=()=>{
+        if(!staged.length) return feedback(root,"bad","No hay nada en staged: usá <code>session.add()</code> primero.");
+        db.push(...staged); staged=[]; pipe(["ORM","SQL"],null,"SQL"); paint(); feedback(root,"good","<code>commit</code> <b>escribe en SQL</b>. Ahora es durable."); };
+      root.querySelector("#b-restart").onclick=()=>{
+        const lostRam=ram.length, lostStaged=staged.length; ram=[]; staged=[]; paint();
+        if(db.includes("Ana")){ markDone("m3","session.add prepara; session.commit confirma; sin commit, el reinicio se lo lleva"); winBanner(root,"session.add prepara; session.commit confirma; sin commit, el reinicio se lo lleva"); }
+        else feedback(root,"bad",`🔌 Reinicio: RAM y staged se borraron (${lostRam+lostStaged} objeto/s perdido/s). La base sigue vacía → no hiciste <code>commit</code>. La RAM es vida temporal.`);
+      };
+    }
+    function paint(){
+      root.querySelector("#ram-box").innerHTML=ram.map(x=>`<span class="obj">${x}</span>`).join("")||'<span class="footnote">vacío</span>';
+      root.querySelector("#st-box").innerHTML=staged.map(x=>`<span class="obj staged">${x}</span>`).join("")||'<span class="footnote">vacío</span>';
+      root.querySelector("#db-box").innerHTML=db.map(x=>`<span class="obj saved">${x}</span>`).join("")||'<span class="footnote">vacío</span>';
+    }
+    render();
+  }
+});
+
+/* ---- M4: PK / FK / JOIN ---- */
+mission({
+  id:"m4", emoji:"🗂️", title:"El plano de la base",
+  tag:"SQL · PK · FK · JOIN",
+  lead:"La <b>PK</b> identifica cada fila (única, no nula). La <b>FK</b> es un puntero a la PK de otra tabla. El <b>JOIN</b> combina tablas cuando una FK apunta a una PK.",
+  mount(root){
+    pipe(["SQL"]);
+    root.innerHTML=`
+      <div class="card">
+        <div class="tablebox">
+          <div><b>users</b>
+            <table><tr><th>id</th><th>name</th></tr><tr><td>1</td><td>Ana</td></tr><tr><td>2</td><td>Luis</td></tr></table>
+          </div>
+          <div><b>orders</b>
+            <table><tr><th>id</th><th>product</th><th>user_id</th></tr>
+              <tr><td>10</td><td>Laptop</td><td>1</td></tr><tr><td>11</td><td>Mouse</td><td>1</td></tr><tr><td>12</td><td>Keyboard</td><td>2</td></tr></table>
+          </div>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <div><label>¿Cuál es la PK de <code>users</code>?</label>
+            <select id="m4-pk"><option></option><option>users.id</option><option>users.name</option></select></div>
+          <div><label>¿Qué columna de <code>orders</code> es la FK?</label>
+            <select id="m4-fk"><option></option><option>orders.id</option><option>orders.product</option><option>orders.user_id</option></select></div>
+          <div><label>…y apunta a:</label>
+            <select id="m4-tgt"><option></option><option>users.id</option><option>users.name</option><option>orders.id</option></select></div>
+        </div>
+        <button class="act" id="m4-go">Ejecutar JOIN</button>
+        <div id="m4-res"></div>
+      </div><div class="fb"></div>`;
+    root.querySelector("#m4-go").onclick=()=>{
+      const pk=root.querySelector("#m4-pk").value, fk=root.querySelector("#m4-fk").value, tgt=root.querySelector("#m4-tgt").value;
+      if(pk!=="users.id") return feedback(root,"bad","La PK de <code>users</code> es <code>users.id</code>: identifica única e inequívocamente cada usuario (name podría repetirse).");
+      if(fk!=="orders.user_id") return feedback(root,"bad","La FK es <code>orders.user_id</code>: es la columna que <i>apunta hacia otra tabla</i>.");
+      if(tgt!=="users.id") return feedback(root,"bad","Una FK apunta a la <b>PK</b> de la otra tabla: <code>orders.user_id → users.id</code>.");
+      pipe(["SQL"],null,"SQL");
+      root.querySelector("#m4-res").innerHTML=`
+        <div class="footnote" style="margin-top:14px">SELECT users.name, orders.product FROM users JOIN orders ON users.id = orders.user_id;</div>
+        <table style="margin-top:8px"><tr><th>name</th><th>product</th></tr>
+        <tr><td>Ana</td><td>Laptop</td></tr><tr><td>Ana</td><td>Mouse</td></tr><tr><td>Luis</td><td>Keyboard</td></tr></table>`;
+      markDone("m4","la PK es quién soy yo; la FK es a quién apunto; el join une cuando la FK alcanza a la PK");
+      winBanner(root,"la PK es quién soy yo; la FK es a quién apunto; el join une cuando la FK alcanza a la PK");
+    };
+  }
+});
+
+/* ---- M5: hashing + salt ---- */
+mission({
+  id:"m5", emoji:"🔐", title:"Bóveda de contraseñas",
+  tag:"Hashing · Salt",
+  lead:"Hashear es <b>irreversible</b> (one-way): nunca guardás la contraseña original. El <b>salt</b> hace que dos contraseñas iguales no se vean iguales. En login no se desencripta nada: se re-hashea y se compara.",
+  mount(root){
+    pipe(["Auth"]);
+    function h(str){let x=2166136261>>>0;for(let i=0;i<str.length;i++){x^=str.charCodeAt(i);x=Math.imul(x,16777619)>>>0;}return ("0000000"+x.toString(16)).slice(-8).repeat(4);}
+    const saltA="x7q2", saltB="m9k1";
+    let useSalt=false, store=null; // {hashA,hashB,salt}
+    function render(){
+      root.innerHTML=`
+        <div class="card">
+          <label class="chk"><input type="checkbox" id="m5-salt"> Usar <b>salt</b> al hashear</label>
+          <p class="footnote">Ana y Luis se registran con la MISMA contraseña: <code>password123</code>.</p>
+          <button class="ghost" id="m5-reg">Registrar a Ana y a Luis</button>
+          <div id="m5-store" style="margin-top:12px"></div>
+          <hr style="border-color:var(--line);margin:16px 0">
+          <label>Login de Ana — escribí su contraseña</label>
+          <input id="m5-pass" type="text" placeholder="password123">
+          <button class="act" id="m5-login">Entrar</button>
+          <button class="ghost" id="m5-peek" style="margin-left:8px">¿Puedo ver la contraseña guardada?</button>
+        </div><div class="fb"></div>`;
+      root.querySelector("#m5-salt").checked=useSalt;
+      root.querySelector("#m5-salt").onchange=e=>{useSalt=e.target.checked; store=null; root.querySelector("#m5-store").innerHTML=""; };
+      root.querySelector("#m5-reg").onclick=()=>{
+        const ha=h("password123"+(useSalt?saltA:""));
+        const hb=h("password123"+(useSalt?saltB:""));
+        store={ha,hb,salt:saltA};
+        const same=ha===hb;
+        root.querySelector("#m5-store").innerHTML=`
+          <div class="box"><h4>Lo que guarda la base</h4>
+          <div class="mono" style="font-size:12px">Ana&nbsp; → ${ha}${useSalt?` &nbsp;<span class="footnote">salt:${saltA}</span>`:""}<br>
+          Luis → ${hb}${useSalt?` &nbsp;<span class="footnote">salt:${saltB}</span>`:""}</div></div>`;
+        feedback(root, same?"bad":"good", same
+          ? "⚠️ Sin salt, dos contraseñas iguales dan el <b>mismo hash</b>: si se filtra la base, se ve quién comparte clave. Activá el salt."
+          : "✅ Con salt, la misma contraseña produce <b>hashes distintos</b>. Ahora probá el login.");
+      };
+      root.querySelector("#m5-login").onclick=()=>{
+        if(!store) return feedback(root,"bad","Registralos primero.");
+        const intento=root.querySelector("#m5-pass").value;
+        const rehash=h(intento+(useSalt?store.salt:""));
+        if(rehash===store.ha){
+          pipe(["Auth"],null,"Auth");
+          if(useSalt){ markDone("m5","encriptar es reversible; hashear no: se guarda la huella, y el salt hace únicas las iguales"); winBanner(root,"encriptar es reversible; hashear no: se guarda la huella, y el salt hace únicas las iguales"); }
+          else feedback(root,"good","Login correcto (re-hash coincide). Pero activá el <b>salt</b> para cerrar la fuga y completar la misión.");
+        } else feedback(root,"bad","Contraseña incorrecta: el re-hash no coincide con el guardado. (Nunca se compara texto plano.)");
+      };
+      root.querySelector("#m5-peek").onclick=()=>feedback(root,"info","<b>No se puede.</b> El hash es <i>one-way</i>: no existe función para volver del hash a la contraseña. Solo se puede re-hashear un intento y comparar.");
+    }
+    render();
+  }
+});
+
+/* ---- M6: auth vs authz ---- */
+mission({
+  id:"m6", emoji:"🛂", title:"¿Quién y qué?",
+  tag:"Autenticación vs Autorización",
+  lead:"Primero <b>autenticación</b> (¿quién sos? → 401 si falla) y luego <b>autorización</b> (¿qué podés hacer? → 403 si no te alcanza el permiso).",
+  mount(root){
+    pipe(["Auth","Authz"]);
+    const cases=[
+      {t:"Request a una ruta protegida SIN token.", a:"401", e:"No sabemos quién sos → falla la autenticación."},
+      {t:"Token válido, pero el rol 'enfermería' intenta borrar un expediente (solo médicos).", a:"403", e:"Sabemos quién sos, pero no tenés permiso → autorización."},
+      {t:"El token ya venció.", a:"401", e:"Sin identidad válida → autenticación."},
+      {t:"Médico logueado lee su propio paciente.", a:"200", e:"Identidad OK y permiso OK."},
+      {t:"Usuario común logueado intenta entrar a /admin.", a:"403", e:"Autenticado, pero sin permiso de admin."},
+    ];
+    let i=0;
+    function render(){
+      const c=cases[i];
+      root.innerHTML=`
+        <div class="goal">Caso ${i+1}/${cases.length}: <b>${esc(c.t)}</b></div>
+        <div class="card"><div class="opts">
+          <button data-a="401">Falla autenticación · 401</button>
+          <button data-a="403">Falla autorización · 403</button>
+          <button data-a="200">Todo OK · 200</button>
+        </div></div><div class="fb"></div>`;
+      root.querySelectorAll(".opts button").forEach(b=>b.onclick=()=>{
+        const c=cases[i];
+        if(b.dataset.a===c.a){
+          pipe(c.a==="401"?["Auth"]:c.a==="403"?["Auth","Authz"]:["Auth","Authz","Response"], null, c.a==="200"?"Response":null);
+          if(c.a!=="200") pipe(["Auth","Authz"], c.a==="401"?"Auth":"Authz");
+          feedback(root,"good",`✅ ${c.a}. ${c.e}`);
+          i++;
+          if(i<cases.length) setTimeout(render,800);
+          else { markDone("m6","autenticar = quién sos (401); autorizar = qué podés (403). Primero quién, después qué"); winBanner(root,"autenticar = quién sos (401); autorizar = qué podés (403). Primero quién, después qué"); }
+        } else feedback(root,"bad",`No. La respuesta es <b>${c.a}</b>: ${c.e}`);
+      });
+    }
+    render();
+  }
+});
+
+/* ---- M7: JWT ---- */
+mission({
+  id:"m7", emoji:"🎫", title:"Anatomía del JWT",
+  tag:"Token · JWT",
+  lead:"Un JWT es <code>HEADER.PAYLOAD.SIGNATURE</code>: un pase <b>firmado</b> que el servidor valida sin recordar sesión (stateless). Firmar ≠ encriptar: el payload se lee, así que <b>no metas secretos</b>. Si alguien lo altera, la firma se rompe.",
+  mount(root){
+    pipe(["Auth","Authz"]);
+    function h(str){let x=2166136261>>>0;for(let i=0;i<str.length;i++){x^=str.charCodeAt(i);x=Math.imul(x,16777619)>>>0;}return ("0000000"+x.toString(16)).slice(-6);}
+    const SECRET="clinica-secret";
+    let built=null;
+    root.innerHTML=`
+      <div class="card">
+        <label>Elegí qué claims poner en el payload</label>
+        <label class="chk"><input type="checkbox" class="claim" value="user_id" checked> user_id</label>
+        <label class="chk"><input type="checkbox" class="claim" value="role" checked> role: doctor</label>
+        <label class="chk"><input type="checkbox" class="claim" value="exp" checked> exp (expiración)</label>
+        <label class="chk"><input type="checkbox" class="claim" value="password"> password ⚠️</label>
+        <label class="chk"><input type="checkbox" class="claim" value="num_tarjeta"> num_tarjeta ⚠️</label>
+        <button class="act" id="m7-build">Firmar y emitir token</button>
+        <div id="m7-out"></div>
+      </div><div class="fb"></div>`;
+    root.querySelector("#m7-build").onclick=()=>{
+      const claims=[...root.querySelectorAll(".claim:checked")].map(c=>c.value);
+      const unsafe=claims.filter(c=>["password","num_tarjeta"].includes(c));
+      if(unsafe.length) return feedback(root,"bad",`⚠️ Sacá <code>${unsafe.join(", ")}</code>. El payload del JWT <b>no es secreto</b> (cualquiera lo decodifica): firmar protege contra <i>alteración</i>, no contra <i>lectura</i>.`);
+      const payload=`{${claims.map(c=>c==="role"?'"role":"doctor"':`"${c}":...`).join(",")}}`;
+      const sig=h("HEADER."+payload+"."+SECRET);
+      built={payload,sig};
+      root.querySelector("#m7-out").innerHTML=`
+        <div class="box" style="margin-top:12px"><h4>Token emitido</h4>
+          <span class="pill">HEADER</span>.<span class="pill">${esc(payload)}</span>.<span class="pill">${sig}</span></div>
+        <p class="footnote">Viaja en <code>Authorization: Bearer &lt;token&gt;</code> en cada request.</p>
+        <button class="ghost" id="m7-tamper">😈 Un atacante cambia role a "admin"</button>
+        <button class="ghost" id="m7-valid">Servidor valida el token original</button>`;
+      feedback(root,"good","Token firmado con claims seguros. Probá qué pasa si lo alteran.");
+      root.querySelector("#m7-tamper").onclick=()=>{
+        const tampered=built.payload.replace('"role":"doctor"','"role":"admin"');
+        const recompute=h("HEADER."+tampered+"."+SECRET);
+        pipe(["Auth"],"Auth");
+        feedback(root,"bad",`Firma del token: <code>${built.sig}</code> · firma recalculada del payload alterado: <code>${recompute}</code>. <b>No coinciden → token rechazado.</b> El servidor detecta la alteración con la firma.`);
+      };
+      root.querySelector("#m7-valid").onclick=()=>{
+        pipe(["Auth","Authz"],null,"Authz");
+        markDone("m7","el JWT es un pase firmado: el servidor valida el sello sin recordar sesión; el payload se lee, no es secreto");
+        winBanner(root,"el JWT es un pase firmado: el servidor valida el sello sin recordar sesión; el payload se lee, no es secreto");
+      };
+    };
+  }
+});
+
+/* ---- M8: la película completa ---- */
+mission({
+  id:"m8", emoji:"🎬", title:"La película completa",
+  tag:"Pipeline integrado",
+  lead:"Una request atraviesa las compuertas en orden: autenticar → autorizar → validar → ORM → SQL → responder. Vos decidís en cada una y mirás el pipeline encenderse.",
+  mount(root){
+    const scenarios=[
+      { title:"Una <b>enfermera</b> (token válido) hace <code>DELETE /patients/123</code>. Borrar pacientes es solo de médicos.",
+        steps:[
+          {stage:"Auth", q:"¿El token es válido?", opts:[["Sí, pasa","ok"],["No, 401","stop401"]], correct:"ok", why:"El token es válido: la identidad está confirmada."},
+          {stage:"Authz", q:"¿Una enfermera puede borrar un paciente?", opts:[["Sí, continúa","ok"],["No → 403","stop403"]], correct:"stop403", why:"Autenticada sí, pero sin permiso para esta acción → 403 y se detiene."},
+        ], end:"403 Forbidden" },
+      { title:"Un <b>médico</b> (token válido) hace <code>POST /patients</code> con <code>{ name:\"Ana\", age:32 }</code>.",
+        steps:[
+          {stage:"Auth", q:"¿Token válido?", opts:[["Sí, pasa","ok"],["No, 401","stop401"]], correct:"ok", why:"Identidad confirmada."},
+          {stage:"Authz", q:"¿Un médico puede crear pacientes?", opts:[["Sí, continúa","ok"],["No, 403","stop403"]], correct:"ok", why:"Tiene permiso."},
+          {stage:"Validación", q:"¿Los datos son válidos (name y age correctos)?", opts:[["Sí, válidos","ok"],["No, 422","stop422"]], correct:"ok", why:"name y age son correctos."},
+          {stage:"ORM", q:"¿Cómo persiste el backend al paciente?", opts:[["session.add + commit","ok"],["solo crear el objeto","stopram"]], correct:"ok", why:"El ORM traduce el objeto a SQL y commit lo guarda."},
+          {stage:"SQL", q:"¿Dónde queda Ana?", opts:[["Fila nueva en la tabla patients","ok"],["En RAM nada más","stopram"]], correct:"ok", why:"Insertada como fila persistente."},
+        ], end:"201 Created" },
+    ];
+    let si=0;
+    function render(){
+      const sc=scenarios[si];
+      let step=0, doneStage=[];
+      function show(){
+        const all=PIPE.filter(s=>["Auth","Authz","Validación","ORM","SQL","Response"].includes(s));
+        pipe(["Request",...doneStage]);
+        if(step>=sc.steps.length){
+          pipe(["Request",...doneStage,"Response"],null,"Response");
+          root.querySelector("#m8-body").innerHTML=`<div class="win-banner">🎬 Respuesta final: <b>${sc.end}</b>. La request recorrió todas las compuertas correctamente.</div>`;
+          if(si<scenarios.length-1){ root.querySelector("#m8-body").innerHTML+=`<button class="act" id="m8-next">Siguiente escenario →</button>`; root.querySelector("#m8-next").onclick=()=>{si++;render();}; }
+          else { markDone("m8","el backend autentica, autoriza, valida, traduce con el ORM y persiste en SQL antes de responder con un status code"); winBanner(root,"el backend autentica, autoriza, valida, traduce con el ORM y persiste en SQL antes de responder con un status code"); }
+          return;
+        }
+        const st=sc.steps[step];
+        root.querySelector("#m8-body").innerHTML=`
+          <div class="card"><div class="tag">Compuerta: ${st.stage}</div>
+          <p><b>${st.q}</b></p>
+          <div class="opts">${st.opts.map((o,k)=>`<button data-k="${k}" data-v="${o[1]}">${o[0]}</button>`).join("")}</div></div>`;
+        pipe(["Request",...doneStage,st.stage]);
+        root.querySelectorAll("#m8-body .opts button").forEach(b=>b.onclick=()=>{
+          const v=b.dataset.v;
+          if(v!==st.correct){
+            const codes={stop401:"401 Unauthorized",stop403:"403 Forbidden",stop422:"422 Unprocessable Entity",stopram:"datos perdidos (RAM)"};
+            pipe(["Request",...doneStage,st.stage],st.stage);
+            feedback(root,"bad",`No. ${st.why}`);
+            return;
+          }
+          // correcto
+          if(["stop401","stop403","stop422"].includes(st.correct)){
+            // este escenario corta acá legítimamente (caso enfermera)
+            doneStage.push(st.stage);
+            pipe(["Request",...doneStage],st.stage);
+            root.querySelector("#m8-body").innerHTML=`<div class="win-banner" style="border-color:var(--amber);background:linear-gradient(90deg,rgba(245,158,11,.15),transparent);color:#fde68a">⛔ Se detiene en <b>${st.stage}</b> → respuesta <b>${sc.end}</b>. ${st.why}</div>`;
+            if(si<scenarios.length-1){ root.querySelector("#m8-body").innerHTML+=`<button class="act" id="m8-next">Siguiente escenario →</button>`; root.querySelector("#m8-next").onclick=()=>{si++;render();}; }
+            else { markDone("m8","el backend autentica, autoriza, valida, traduce con el ORM y persiste en SQL antes de responder con un status code"); winBanner(root,"el backend autentica, autoriza, valida, traduce con el ORM y persiste en SQL antes de responder con un status code"); }
+            return;
+          }
+          doneStage.push(st.stage); feedback(root,"good",`✅ ${st.why}`); step++; setTimeout(show,650);
+        });
+      }
+      root.innerHTML=`<div class="goal">${sc.title}</div><div id="m8-body"></div><div class="fb"></div>`;
+      show();
+    }
+    render();
+  }
+});
+
+/* ============ navegación ============ */
+const nav=document.getElementById("nav"), mainEl=document.getElementById("main");
+function renderNav(){
+  nav.innerHTML=MISSIONS.map((m,i)=>`<button data-i="${i}">${m.emoji} ${m.title}${done.has(m.id)?'<span class="done">✓</span>':''}</button>`).join("");
+  nav.querySelectorAll("button").forEach(b=>b.onclick=()=>load(+b.dataset.i));
+}
+let curr=-1;
+function load(i){
+  curr=i;
+  nav.querySelectorAll("button").forEach((b,k)=>b.classList.toggle("active",k===i));
+  const m=MISSIONS[i];
+  mainEl.innerHTML=`<div class="tag">${m.tag}</div><h2>${m.emoji} ${m.title}</h2><p class="lead">${m.lead}</p><div id="mroot"></div>`;
+  m.mount(document.getElementById("mroot"));
+}
+renderNav(); renderProgress(); renderAnclas();
+mainEl.innerHTML=`
+  <div class="tag">Inicio</div>
+  <h2>Operá el backend de una clínica 🏥</h2>
+  <p class="lead">Cada misión te hace <b>usar</b> un concepto del flujo backend y verlo encenderse en el pipeline de arriba. Empezá por «Habla HTTP» y bajá hasta «La película completa», donde todo se coordina.</p>
+  <div class="card">
+    <b>Cómo leer el pipeline (arriba):</b>
+    <p class="footnote" style="margin-top:8px">Frontend → Request → Auth → Authz → Validación → ORM → SQL → Response. Se ilumina <span class="pill" style="background:var(--blue);color:#fff">azul</span> en la etapa activa, <span class="pill" style="background:var(--green);color:#06210f">verde</span> si salió bien y <span class="pill" style="background:var(--red);color:#fff">rojo</span> donde falla.</p>
+  </div>
+  <button class="act" onclick="load(0)">Empezar misión 1 →</button>`;
+}
+
+const INIT = { construir: initConstruir, operar: initOperar };
+const _app = document.getElementById("app");
+const _gcss = document.getElementById("gcss");
+const _KEY = "juegoStackTrack";
+function showTrack(g){
+  _gcss.textContent = CSS[g];
+  _app.innerHTML = BODY[g];
+  document.querySelectorAll("#menu button").forEach(function(b){ b.classList.toggle("on", b.dataset.g===g); });
+  try{ localStorage.setItem(_KEY, g); }catch(e){}
+  INIT[g]();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll("#menu button").forEach(function(b){ b.onclick = function(){ showTrack(b.dataset.g); }; });
+let _start = "construir";
+try{ _start = localStorage.getItem(_KEY) || _start; }catch(e){}
+showTrack(_start);
+</script>
 </body>
 </html>

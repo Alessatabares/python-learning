@@ -1,11 +1,11 @@
 # 🏥 Clínica API · de cero a producción
 
-Un solo sitio que unifica los dos juegos del stack backend. Abrí **`index.html`** y usá el conmutador de arriba para pasar entre las dos vistas.
+Un solo archivo (**`index.html`**) con un menú arriba. Hacés clic y cambiás entre las dos vistas del stack sin salir de la página:
 
-| Pestaña | Archivo | Qué entrena |
-|---------|---------|-------------|
-| 🏗️ **Construir la API** | [`construir.html`](construir.html) | De función dormida a producción: la torre del stack, bloque a bloque (función → endpoint → servidor → deploy). Discriminación + representación mental. |
-| ⚙️ **Operar el backend** | [`operar.html`](operar.html) | El pipeline de un request, de HTTP a JWT: 8 conceptos aislados que terminan integrados. Simulación. |
+| Menú | Qué entrena |
+|------|-------------|
+| 🏗️ **Construir la API** | De función dormida a producción: la torre del stack, bloque a bloque (función → endpoint → servidor → deploy). |
+| ⚙️ **Operar el backend** | El pipeline de un request, de HTTP a JWT: 8 conceptos aislados que terminan integrados. |
 
 ## La idea
 
@@ -16,4 +16,6 @@ Las dos pestañas son la misma clínica vista al derecho y al revés:
 
 Esa inversión *es* el stack.
 
-> Antes esto eran dos juegos sueltos (`juego-deploy/` y `juego-backend/`). Se fusionaron aquí; cada uno conserva su motor y su progreso por separado.
+> Antes esto eran dos juegos sueltos (`juego-deploy` y `juego-backend`) y luego dos archivos
+> separados. Ahora todo vive en un único `index.html`; cada vista conserva su progreso por
+> separado (en `localStorage`).

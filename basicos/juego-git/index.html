@@ -268,11 +268,12 @@ const CASOS = [
 /* ───────── MOTOR ───────── */
 const KEY="juegoGitProgress";
 let state = load();
+if(!Array.isArray(state.solved)) state.solved = [];
 function load(){
   try{ return JSON.parse(localStorage.getItem(KEY)) || fresh(); }
   catch(e){ return fresh(); }
 }
-function fresh(){ return {i:0, score:0, anclas:[]}; }
+function fresh(){ return {i:0, score:0, anclas:[], solved:[]}; }
 function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
 
 const $ = id => document.getElementById(id);
@@ -315,7 +316,11 @@ function renderCaso(){
   let solved = false, revealed = false;
   $("game").innerHTML = `
     <div class="card">
-      <div class="kicker">${CAT[c.cat]} · caso ${state.i+1}</div>
+      <div class="kicker">${CAT[c.cat]} · caso ${state.i+1} / ${CASOS.length}${state.solved.includes(state.i)?' · <span style="color:var(--green)">✓ resuelto</span>':''}</div>
+      <div class="row" style="margin-bottom:10px">
+        <button class="btn ghost" id="prev" ${state.i===0?'disabled':''}>← Anterior</button>
+        <button class="btn ghost" id="navnext">Siguiente →</button>
+      </div>
       <div class="intent">Quiero que suceda: <b>${c.intent}</b></div>
       <div class="term">
         <span class="ps1">alessa@ubuntu:~$</span>
@@ -331,6 +336,9 @@ function renderCaso(){
 
   const input = $("cmd");
   input.focus();
+
+  $("prev").onclick = ()=>{ if(state.i>0){ state.i--; save(); renderCaso(); } };
+  $("navnext").onclick = ()=>{ state.i = Math.min(state.i+1, CASOS.length); save(); renderCaso(); };
 
   function showReveal(){
     revealed = true;
@@ -355,8 +363,11 @@ function renderCaso(){
     if(solved) return;
     if(esCorrecto(c, input.value)){
       solved = true;
-      state.score++;
-      if(!state.anclas.includes(c.frase)) state.anclas.push(c.frase);
+      if(!state.solved.includes(state.i)){
+        state.solved.push(state.i);
+        state.score++;
+        if(!state.anclas.includes(c.frase)) state.anclas.push(c.frase);
+      }
       input.disabled = true;
       $("check").disabled = true; $("showans").style.display = "none";
       const fb = $("fb");
@@ -393,7 +404,7 @@ function renderDone(){
       <p class="sub">Desbloqueaste ${state.anclas.length} frases ancla. Repite mañana: teclear el comando de memoria es lo que lo graba.</p>
       <button class="btn" id="again">↺ Jugar otra vez</button>
     </div>`;
-  $("again").onclick = ()=>{ state.i=0; state.score=0; save(); renderCaso(); };
+  $("again").onclick = ()=>{ state.i=0; state.score=0; state.solved=[]; state.anclas=[]; save(); renderCaso(); };
 }
 
 $("reset").onclick = ()=>{ state=fresh(); save(); renderCaso(); };

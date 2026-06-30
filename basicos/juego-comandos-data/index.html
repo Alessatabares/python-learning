@@ -406,7 +406,7 @@ function capCard(cap){
   }
   h+=`<div class="btns"><button class="act" onclick="checkItem('${id}')">Comprobar ▶</button>`;
   if(cap.kind==="fix") h+=`<button class="ghost" onclick="verMal('${id}')">¿qué estaba mal?</button>`;
-  h+=`<button class="ghost" onclick="verSol('${id}')">ver solución</button>`
+  h+=`<button class="ghost" id="sb_${id}" onclick="verSol('${id}')">👁 ver solución</button>`
     +`<span class="attempts" id="at_${id}">${solved?'✓ dominado':'intentos: '+(attempts[id]||0)}</span></div>`
     +`<div class="fb" id="fb_${id}"></div>`;
   return `<div class="capcard ${solved?'capdone':''}" id="card_${id}">${h}</div>`;
@@ -502,8 +502,17 @@ function winItem(cap){
 function verSol(id){
   const cap=capById(id);
   const fb=document.getElementById("fb_"+id);
+  const btn=document.getElementById("sb_"+id);
+  if(fb.dataset.sol==="1"){            // ya visible → ocultar y volver a teclear
+    fb.dataset.sol=""; fb.className="fb"; fb.innerHTML="";
+    if(btn) btn.textContent="👁 ver solución";
+    const first=document.getElementById("in_"+id+"_0"); if(first && !first.disabled) first.focus();
+    return;
+  }
+  fb.dataset.sol="1";
   fb.className="fb show info";
   fb.innerHTML=`👀 Solución (no cuenta como dominado — ahora tecléala tú):<div class="sol">${esc(solText(cap))}</div>`;
+  if(btn) btn.textContent="🙈 ocultar solución";
 }
 function verMal(id){
   const cap=capById(id);

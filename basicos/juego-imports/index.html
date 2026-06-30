@@ -66,12 +66,52 @@
   .done h2{font-size:1.6rem}
   .reset{background:none;border:1px solid var(--line);color:var(--mut);border-radius:8px;
          padding:6px 12px;cursor:pointer;font-size:.8rem}
+
+  /* ── selector de nivel ── */
+  .levels{display:flex;gap:10px;margin:0 0 16px}
+  .lvl{flex:1;padding:11px 14px;border-radius:11px;border:1px solid var(--line);
+       background:var(--panel);color:var(--mut);cursor:pointer;text-align:left;font-size:.8rem;transition:.15s}
+  .lvl:hover{border-color:var(--blue)}
+  .lvl.on{border-color:var(--blue);background:var(--panel2);color:var(--ink)}
+  .lvl b{display:block;color:var(--ink);font-size:.95rem;margin-bottom:3px}
+
+  /* ── nivel 2: terminal / documento ── */
+  .situ{background:rgba(210,153,34,.08);border:1px solid var(--amber);border-left:3px solid var(--amber);
+        border-radius:10px;padding:13px 15px;margin-bottom:14px;font-size:.94rem}
+  .situ b{color:var(--amber)}
+  .editor{background:#0b0f14;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:12px}
+  .editor .fname{background:var(--panel2);padding:6px 12px;font-family:var(--mono);font-size:.76rem;
+                 color:var(--mut);border-bottom:1px solid var(--line)}
+  .code{font-family:var(--mono);font-size:.88rem;padding:14px;white-space:pre;overflow-x:auto;
+        color:#c9d1d9;line-height:1.75}
+  .code .gap{color:var(--amber);font-style:italic}
+  .term{display:flex;align-items:flex-start;gap:8px;padding:0 14px 14px}
+  .term .ps{color:var(--green);font-family:var(--mono);padding-top:11px;font-weight:700}
+  textarea.type{flex:1;background:#0b0f14;border:1px solid var(--line);border-radius:8px;color:var(--ink);
+                font-family:var(--mono);font-size:.9rem;padding:9px 11px;resize:vertical;min-height:44px}
+  textarea.type:focus{outline:none;border-color:var(--blue)}
+  .l2btns{display:flex;gap:8px;flex-wrap:wrap}
+  .btn{border:0;border-radius:9px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:.9rem}
+  .btn.check{background:var(--green);color:#06210f}
+  .btn.showb{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+  .btn.nextl2{background:var(--blue);color:#06121f}
+  .hint{margin-top:12px;border:1px solid var(--amber);border-radius:10px;background:rgba(210,153,34,.08);
+        padding:12px 14px;font-size:.9rem;display:none}
+  .hint.on{display:block}
+  .reveal{margin-top:12px;border:1px solid var(--green);border-radius:10px;background:rgba(63,185,80,.08);
+          padding:14px;display:none}
+  .reveal.on{display:block}
+  .reveal pre{margin:8px 0 0;font-family:var(--mono);font-size:.88rem;background:#0b0f14;border:1px solid var(--line);
+              border-radius:8px;padding:12px;overflow-x:auto;color:#c9d1d9;white-space:pre-wrap}
+  .reveal .why{color:var(--mut);margin:8px 0 0;font-size:.9rem}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>🧰 Caja de Herramientas del Backend</h1>
   <p class="sub">Cada <b>import</b> es un instrumento. Aprende <b>cuándo</b> lo sacas, <b>de dónde</b> viene y <b>para qué</b>.</p>
+
+  <div class="levels" id="levels"></div>
 
   <div class="bar">
     <span class="score" id="score">0</span>
@@ -332,9 +372,281 @@ function renderDone(){
   $("again").onclick = ()=>{ state.i=0; state.score=0; save(); renderCaso(); };
 }
 
-$("reset").onclick = ()=>{ state=fresh(); save(); renderCaso(); };
+/* ═════════════════ NIVEL 2 · resuelve el problema (active recall) ═════════════════ */
+const LEVEL2 = [
+  /* ── NÚCLEO ── */
+  {cat:"nucleo", file:"main.py", tool:"from fastapi import FastAPI",
+   situacion:"Proyecto recién creado. Importaste FastAPI pero no existe el objeto <b>app</b>: sin él no puedes registrar ni una ruta ni arrancar el server.",
+   before:"from fastapi import FastAPI", indent:"",
+   after:"@app.get(\"/\")\ndef home():\n    return {\"ok\": True}",
+   solucion:"app = FastAPI()", accept:["app = FastAPI()"],
+   explica:"El objeto raíz del que cuelgan rutas, middleware y routers. Se crea una sola vez por proyecto.",
+   frase:"FastAPI() = la app raíz; se crea una sola vez."},
 
-renderCaso();
+  {cat:"nucleo", file:"pacientes.py", tool:"from fastapi import APIRouter",
+   situacion:"El proyecto creció. Mueves las rutas de pacientes a su propio archivo para luego unirlas con <code>app.include_router()</code>. Falta crear el router del módulo.",
+   before:"from fastapi import APIRouter", indent:"",
+   after:"@router.get(\"/pacientes\")\ndef listar():\n    ...",
+   solucion:"router = APIRouter()", accept:["router = APIRouter()"],
+   explica:"Cada archivo (pacientes.py, auth.py) tiene su router; main.py los une con include_router.",
+   frase:"APIRouter = mini-app de rutas; ordena el proyecto en módulos."},
+
+  /* ── DATOS (Pydantic) ── */
+  {cat:"datos", file:"schemas.py", tool:"from pydantic import BaseModel",
+   situacion:"Necesitas recibir un JSON en el body con <code>nombre</code> y <code>edad</code>, y que se validen los tipos solos. Falta declarar de qué hereda tu modelo.",
+   before:"from pydantic import BaseModel", indent:"",
+   after:"    nombre: str\n    edad: int",
+   solucion:"class Paciente(BaseModel):", accept:["class Paciente(BaseModel):"],
+   explica:"El body estructurado se modela con un BaseModel; FastAPI lo valida y lo documenta solo.",
+   frase:"BaseModel = el contrato/forma de tus datos (valida solo)."},
+
+  {cat:"datos", file:"schemas.py", tool:"from pydantic import Field",
+   situacion:"La edad no puede ser negativa ni absurda: debe ser <b>mayor que 0</b> y <b>≤ 120</b>. Falta la regla en el campo <code>edad</code>.",
+   before:"class Paciente(BaseModel):\n    nombre: str", indent:"    ",
+   after:"",
+   solucion:"edad: int = Field(gt=0, le=120)", accept:["edad: int = Field(gt=0, le=120)"],
+   explica:"Field añade reglas finas a UN campo: rangos, longitud, default, descripción.",
+   frase:"Field = reglas extra para UN campo (gt, le, default)."},
+
+  /* ── PARÁMETROS ── */
+  {cat:"param", file:"pacientes.py", tool:"from fastapi import Query",
+   situacion:"<code>GET /pacientes?orden=fecha</code>. Quieres leer ese <code>?orden</code> y que por defecto valga <code>\"fecha\"</code>.",
+   before:"@app.get(\"/pacientes\")\ndef listar(", indent:"    ",
+   after:"):\n    ...",
+   solucion:"orden: str = Query(\"fecha\")", accept:["orden: str = Query(\"fecha\")","orden: str = Query(default=\"fecha\")"],
+   explica:"Query declara y valida lo que va después del ? en la URL (default, min/max, regex).",
+   frase:"Query = lo de ?clave=valor (la query string)."},
+
+  {cat:"param", file:"pacientes.py", tool:"from fastapi import Path",
+   situacion:"<code>GET /pacientes/{id}</code>. El id va EN la ruta y debe ser <b>mayor que 0</b> (no existe el paciente 0).",
+   before:"@app.get(\"/pacientes/{id}\")\ndef ver(", indent:"    ",
+   after:"):\n    ...",
+   solucion:"id: int = Path(gt=0)", accept:["id: int = Path(gt=0)"],
+   explica:"Path valida el parámetro incrustado en la ruta: el {id} del path.",
+   frase:"Path = validar el {id} dentro de la ruta · Query = el ?…"},
+
+  {cat:"param", file:"perfil.py", tool:"from fastapi import Header",
+   situacion:"Necesitas leer el encabezado HTTP <code>Authorization</code> que manda el cliente en la petición.",
+   before:"@app.get(\"/perfil\")\ndef perfil(", indent:"    ",
+   after:"):\n    ...",
+   solucion:"authorization: str = Header()", accept:["authorization: str = Header()","authorization: str = Header(None)"],
+   explica:"Header lee los metadatos que viajan en la cabecera (User-Agent, Authorization).",
+   frase:"Header = leer encabezados de la petición."},
+
+  {cat:"param", file:"archivos.py", tool:"from fastapi import UploadFile",
+   situacion:"El cliente <b>sube una radiografía</b> (imagen). Quieres recibirla por streaming, sin cargarla entera en memoria de golpe.",
+   before:"@app.post(\"/subir\")\ndef subir(", indent:"    ",
+   after:"):\n    ...",
+   solucion:"archivo: UploadFile", accept:["archivo: UploadFile"],
+   explica:"UploadFile recibe lo que sube el cliente por streaming. Lo opuesto es FileResponse (enviar).",
+   frase:"UploadFile = recibir lo que suben · FileResponse = enviar."},
+
+  /* ── FLUJO & ERRORES ── */
+  {cat:"flujo", file:"pacientes.py", tool:"from fastapi import Depends",
+   situacion:"Veinte rutas necesitan la <b>sesión de base de datos</b>. No quieres repetir abrir/cerrar en cada una: la inyectas con la función <code>get_db</code>.",
+   before:"@app.get(\"/pacientes\")\ndef listar(", indent:"    ",
+   after:"):\n    ...",
+   solucion:"db = Depends(get_db)", accept:["db = Depends(get_db)"],
+   explica:"Depends inyecta lógica reutilizable (sesión de DB, usuario autenticado) sin repetir código.",
+   frase:"Depends = inyectar lo que la ruta necesita (DB, usuario)."},
+
+  {cat:"flujo", file:"pacientes.py", tool:"from fastapi import HTTPException",
+   situacion:"<code>GET /pacientes/999</code> pero no existe. <code>db.buscar(id)</code> devolvió <code>None</code>: si sigues, lees sobre la nada y revientas con un <b>500</b>. Córtalo con un <b>404</b> y mensaje <code>\"No encontrado\"</code>.",
+   before:"@app.get(\"/pacientes/{id}\")\ndef ver(id: int):\n    paciente = db.buscar(id)\n    if paciente is None:", indent:"        ",
+   after:"    return paciente",
+   solucion:"raise HTTPException(status_code=404, detail=\"No encontrado\")",
+   accept:["raise HTTPException(status_code=404, detail=\"No encontrado\")","raise HTTPException(404, \"No encontrado\")","raise HTTPException(404, detail=\"No encontrado\")"],
+   explica:"404, no 500: «no existe» es culpa del cliente (4xx), no un crash tuyo (5xx). Cortas la petición a tiempo.",
+   frase:"HTTPException = corto la petición YO, con el código correcto, antes de que explote."},
+
+  {cat:"flujo", file:"pacientes.py", tool:"from fastapi import status",
+   situacion:"Creas un paciente con <code>POST</code> y quieres devolver <b>201</b> pero de forma <b>legible</b>, no el número crudo <code>201</code>.",
+   before:"from fastapi import status", indent:"",
+   after:"def crear():\n    ...",
+   solucion:"@app.post(\"/pacientes\", status_code=status.HTTP_201_CREATED)",
+   accept:["@app.post(\"/pacientes\", status_code=status.HTTP_201_CREATED)"],
+   explica:"status da nombres legibles a los códigos: status.HTTP_201_CREATED en vez de 201. Menos errores.",
+   frase:"status = nombres legibles para los códigos HTTP."},
+
+  {cat:"flujo", file:"pacientes.py", tool:"from fastapi import BackgroundTasks",
+   situacion:"Tras crear el paciente quieres <b>enviar un email de bienvenida</b>, pero sin que el cliente espere a que el correo salga. Lánzalo después de responder.",
+   before:"@app.post(\"/pacientes\")\ndef crear(tareas: BackgroundTasks):\n    paciente = guardar()", indent:"    ",
+   after:"    return paciente",
+   solucion:"tareas.add_task(enviar_email, paciente)", accept:["tareas.add_task(enviar_email, paciente)"],
+   explica:"Respondes ya; la tarea corre en segundo plano justo tras la respuesta. El cliente no espera.",
+   frase:"BackgroundTasks = hazlo después de responder (no bloquea al cliente)."},
+
+  {cat:"flujo", file:"main.py", tool:"from fastapi import Request",
+   situacion:"Para un log de auditoría necesitas la <b>IP cruda</b> del cliente, algo de bajo nivel que FastAPI no te da ya masticado.",
+   before:"@app.get(\"/\")\ndef home(req: Request):", indent:"    ",
+   after:"    return {\"ok\": True}",
+   solucion:"ip = req.client.host", accept:["ip = req.client.host"],
+   explica:"Request te da la petición cruda: IP, headers completos, body sin parsear. Bajo nivel.",
+   frase:"Request = la petición cruda (lo de bajo nivel)."},
+
+  /* ── RESPUESTAS & SEGURIDAD ── */
+  {cat:"resp", file:"informes.py", tool:"from fastapi.responses import FileResponse",
+   situacion:"El médico pulsa <b>Descargar informe</b>. Debes ENVIARLE el archivo <code>informe.pdf</code> que está en el servidor.",
+   before:"@app.get(\"/informe\")\ndef informe():", indent:"    ",
+   after:"",
+   solucion:"return FileResponse(\"informe.pdf\")", accept:["return FileResponse(\"informe.pdf\")"],
+   explica:"FileResponse devuelve un archivo del servidor al cliente (descargas, imágenes). Opuesto de UploadFile.",
+   frase:"FileResponse = enviar archivo · UploadFile = recibir."},
+
+  {cat:"resp", file:"auth.py", tool:"from fastapi.responses import RedirectResponse",
+   situacion:"Tras un <b>login correcto</b> quieres mandar al cliente a la página principal <code>/</code>.",
+   before:"@app.post(\"/login\")\ndef login():\n    # ...credenciales ok...", indent:"    ",
+   after:"",
+   solucion:"return RedirectResponse(\"/\")", accept:["return RedirectResponse(\"/\")","return RedirectResponse(url=\"/\")"],
+   explica:"RedirectResponse manda al cliente a otra URL (302/307): tras login, o si algo cambió de sitio.",
+   frase:"RedirectResponse = mandar al cliente a otra URL."},
+
+  {cat:"resp", file:"auth.py", tool:"from fastapi.security import OAuth2PasswordBearer",
+   situacion:"Para proteger rutas con token necesitas el extractor que saca el <b>Bearer</b> del header <code>Authorization</code>; apunta a la ruta de login.",
+   before:"from fastapi.security import OAuth2PasswordBearer", indent:"",
+   after:"# luego: usuario = Depends(oauth2)",
+   solucion:"oauth2 = OAuth2PasswordBearer(tokenUrl=\"login\")",
+   accept:["oauth2 = OAuth2PasswordBearer(tokenUrl=\"login\")"],
+   explica:"Extrae el token del header Authorization y, con Depends, protege rutas. Para auth con JWT/tokens.",
+   frase:"OAuth2PasswordBearer = saca el token del header para proteger rutas."},
+];
+
+const KEY2 = "juegoImportsL2";
+const MODEKEY = "juegoImportsMode";
+let mode = localStorage.getItem(MODEKEY) || "n1";
+let s2 = loadL2();
+function loadL2(){ try{ return JSON.parse(localStorage.getItem(KEY2)) || fresh2(); }catch(e){ return fresh2(); } }
+function fresh2(){ return {i:0, score:0, anclas:[], solved:[]}; }
+function saveL2(){ localStorage.setItem(KEY2, JSON.stringify(s2)); }
+
+function escapeHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function norm(s){
+  return String(s).trim().toLowerCase()
+    .replace(/['"]/g,"\"")
+    .replace(/\s*([(),=:])\s*/g,"$1")
+    .replace(/\s+/g," ").trim();
+}
+function renderCodeBlock(c, revealed){
+  const before = c.before ? escapeHtml(c.before)+"\n" : "";
+  const after  = c.after  ? "\n"+escapeHtml(c.after) : "";
+  const gap = revealed
+    ? '<span style="color:var(--green);font-weight:600">'+escapeHtml(c.indent+c.solucion)+'</span>'
+    : '<span class="gap">'+escapeHtml(c.indent)+'# 👉 escribe aquí la línea que resuelve el problema</span>';
+  return before + gap + after;
+}
+
+function tabsFor(cat){
+  const cats = Object.keys(CAT);
+  $("tabs").innerHTML = cats.map(c => `<span class="tab ${c===cat?'on':''}">${CAT[c]}</span>`).join("");
+}
+function renderBar2(){
+  $("score").textContent = s2.score;
+  $("count").textContent = Math.min(s2.i+1, LEVEL2.length) + " / " + LEVEL2.length;
+  $("fill").style.width = (s2.score / LEVEL2.length * 100) + "%";
+}
+function renderAnclas2(){
+  const ul = $("anclaList"), empty = $("anclaEmpty");
+  if(s2.anclas.length){
+    empty.style.display="none";
+    ul.innerHTML = s2.anclas.map(f=>`<li>🧩 ${f}</li>`).join("");
+  } else { empty.style.display="block"; ul.innerHTML=""; }
+}
+
+function renderL2(){
+  renderBar2(); renderAnclas2();
+  if(s2.i >= LEVEL2.length){ return renderDone2(); }
+  const c = LEVEL2[s2.i];
+  tabsFor(c.cat);
+  $("game").innerHTML = `
+    <div class="card">
+      <div class="kicker">${CAT[c.cat]} · caso ${s2.i+1} · <span style="color:var(--blue)">${c.tool}</span></div>
+      <div class="situ">🩺 <b>Situación.</b> ${c.situacion}</div>
+      <div class="editor">
+        <div class="fname">📄 ${c.file}</div>
+        <div class="code" id="codeblock">${renderCodeBlock(c,false)}</div>
+        <div class="term">
+          <span class="ps">›</span>
+          <textarea class="type" id="typed" spellcheck="false" autocapitalize="off" placeholder="teclea aquí la línea que resuelve el problema…"></textarea>
+        </div>
+      </div>
+      <div class="l2btns">
+        <button class="btn check" id="check">Comprobar</button>
+        <button class="btn showb" id="showans">👁 Mostrar respuesta</button>
+        <button class="btn nextl2" id="nextl2" style="display:none">Siguiente →</button>
+      </div>
+      <div class="hint" id="hint"></div>
+      <div class="reveal" id="reveal"></div>
+    </div>`;
+
+  const reveal = (ok)=>{
+    $("codeblock").innerHTML = renderCodeBlock(c, true);
+    const r = $("reveal");
+    r.className = "reveal on";
+    r.innerHTML =
+      (ok ? "🟢 <b>¡Eso es! La línea coincide.</b>" : "👁 <b>Respuesta exacta</b>")
+      + `<pre>${escapeHtml(c.indent + c.solucion)}</pre>`
+      + `<div class="why">${c.explica}</div>`
+      + `<div class="frase">🧩 ${c.frase}</div>`;
+    $("nextl2").style.display = "inline-block";
+  };
+
+  $("check").onclick = ()=>{
+    const typed = $("typed").value;
+    if(!typed.trim()){ return; }
+    const ok = c.accept.some(a => norm(a) === norm(typed));
+    if(ok){
+      if(!s2.solved.includes(s2.i)){
+        s2.solved.push(s2.i); s2.score++;
+        if(!s2.anclas.includes(c.frase)) s2.anclas.push(c.frase);
+        saveL2(); renderBar2(); renderAnclas2();
+      }
+      $("hint").className = "hint";
+      reveal(true);
+    } else {
+      const h = $("hint");
+      h.className = "hint on";
+      h.innerHTML = "🟡 Todavía no coincide. Revisa nombre, paréntesis y comillas — o pulsa <b>👁 Mostrar respuesta</b> para verla y teclearla.";
+    }
+  };
+  $("showans").onclick = ()=>{ $("hint").className="hint"; reveal(false); };
+  $("nextl2").onclick = ()=>{ s2.i++; saveL2(); renderL2(); };
+  $("typed").addEventListener("keydown", e=>{
+    if(e.key==="Enter" && (e.ctrlKey||e.metaKey)){ e.preventDefault(); $("check").click(); }
+  });
+}
+
+function renderDone2(){
+  tabsFor(null);
+  const pct = Math.round(s2.score / LEVEL2.length * 100);
+  $("game").innerHTML = `
+    <div class="card done">
+      <h2>🛠️ Nivel 2 dominado</h2>
+      <p>Resolviste <b>${s2.score}</b> de <b>${LEVEL2.length}</b> problemas (${pct}%).</p>
+      <p class="sub">Mañana hazlo otra vez SIN mirar la respuesta: primero recuperas la línea de memoria, y solo entonces compruebas.</p>
+      <button class="next show" id="again2">↺ Empezar de nuevo</button>
+    </div>`;
+  $("again2").onclick = ()=>{ s2 = fresh2(); saveL2(); renderL2(); };
+}
+
+/* ── selector de nivel ── */
+function renderLevels(){
+  $("levels").innerHTML = `
+    <button class="lvl ${mode==='n1'?'on':''}" data-m="n1"><b>Nivel 1 · ¿Para qué sirve?</b>Discrimina el uso de cada import</button>
+    <button class="lvl ${mode==='n2'?'on':''}" data-m="n2"><b>Nivel 2 · Resuelve el problema</b>Teclea la línea que lo arregla</button>`;
+  $("levels").querySelectorAll(".lvl").forEach(b => b.onclick = ()=>setMode(b.dataset.m));
+}
+function setMode(m){ mode = m; localStorage.setItem(MODEKEY, m); renderActive(); }
+function renderActive(){
+  renderLevels();
+  if(mode === "n2"){ renderL2(); } else { renderCaso(); }
+}
+
+$("reset").onclick = ()=>{
+  if(mode === "n2"){ s2 = fresh2(); saveL2(); renderL2(); }
+  else { state = fresh(); save(); renderCaso(); }
+};
+
+renderActive();
 </script>
 </body>
 </html>

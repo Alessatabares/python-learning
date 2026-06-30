@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏥 Clínica API · Juegos para aprender el stack</title>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#161d2e; --panel2:#1d2740; --line:#2a3550;
+    --ink:#e7ecf5; --mut:#93a0bd; --blue:#3b82f6; --teal:#0ea5a4;
+    --green:#22c55e; --amber:#f59e0b; --violet:#8b5cf6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    background:linear-gradient(180deg,#0c111c,#0f1420);color:var(--ink);line-height:1.5}
+  .wrap{max-width:1000px;margin:0 auto;padding:40px 22px 80px}
+  header h1{font-size:26px;margin:0 0 6px}
+  header p{color:var(--mut);margin:0;max-width:680px}
+
+  section{margin-top:36px}
+  .acto{font-size:12px;color:var(--teal);text-transform:uppercase;letter-spacing:.1em;
+    margin:0 0 14px;font-weight:700}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+  a.card{display:flex;flex-direction:column;text-decoration:none;color:var(--ink);
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;
+    transition:.15s}
+  a.card:hover{border-color:var(--blue);transform:translateY(-2px);
+    box-shadow:0 8px 24px rgba(0,0,0,.3)}
+  .card .emoji{font-size:26px;margin-bottom:8px}
+  .card h3{margin:0 0 6px;font-size:16px}
+  .card p{margin:0 0 12px;color:var(--mut);font-size:13px;flex:1}
+  .pill{align-self:flex-start;font-size:11px;padding:4px 10px;border-radius:99px;
+    background:var(--panel2);border:1px solid var(--line);color:var(--mut)}
+  .badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:99px;margin-left:6px;
+    background:rgba(34,197,94,.14);border:1px solid var(--green);color:#bbf7d0;vertical-align:middle}
+
+  footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);
+    color:var(--mut);font-size:13px}
+  footer a{color:var(--blue)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🏥 Clínica API · juegos para aprender el stack</h1>
+    <p>Once mini-juegos para entrenar backend, git y análisis de datos, todos con el hilo de
+       una clínica. El progreso se guarda solo en tu navegador. Elegí uno y arrancá.</p>
+  </header>
+
+  <section>
+    <div class="acto">① API &amp; backend desde cero</div>
+    <div class="grid">
+      <a class="card" href="basicos/juego-url/index.html">
+        <span class="emoji">🛂</span>
+        <h3>Aduana de Red <span class="badge">2 niveles</span></h3>
+        <p>Máquinas, puertos y paths de una URL: qué es cada parte y dónde falla.</p>
+        <span class="pill">discriminación → caza-error</span></a>
+      <a class="card" href="basicos/juego-imports/index.html">
+        <span class="emoji">🧰</span>
+        <h3>Caja de Herramientas <span class="badge">2 niveles</span></h3>
+        <p>Imports de FastAPI y Pydantic: para qué sirve cada uno y teclear la línea que resuelve el problema.</p>
+        <span class="pill">discriminación → tecleo</span></a>
+      <a class="card" href="basicos/juego-python/index.html">
+        <span class="emoji">🐍</span>
+        <h3>¿Qué devuelve?</h3>
+        <p>Python básico de una API: predecir qué devuelve cada línea.</p>
+        <span class="pill">discriminación</span></a>
+      <a class="card" href="basicos/juego-git/index.html">
+        <span class="emoji">🐙</span>
+        <h3>Terminal Git</h3>
+        <p>Comandos de git y GitHub en escenarios reales. Teclealos de memoria.</p>
+        <span class="pill">tecleo</span></a>
+    </div>
+  </section>
+
+  <section>
+    <div class="acto">② Diagnóstico del stack (request + deploy)</div>
+    <div class="grid">
+      <a class="card" href="basicos/juego-stack/index.html">
+        <span class="emoji">🏥</span>
+        <h3>Clínica API · de cero a producción</h3>
+        <p>Dos vistas del stack con conmutador: construir la torre (deploy) y operar el request (HTTP→JWT).</p>
+        <span class="pill">representación mental + simulación</span></a>
+      <a class="card" href="basicos/juego-triage-360/index.html">
+        <span class="emoji">🩺</span>
+        <h3>Doble Triage</h3>
+        <p>Request + deploy en un tablero: 22 casos, de síntoma a causa.</p>
+        <span class="pill">discriminación síntoma→causa</span></a>
+      <a class="card" href="basicos/juego-inverso/index.html">
+        <span class="emoji">🔧</span>
+        <h3>Romper y Predecir</h3>
+        <p>Predecir dónde muere el request y qué síntoma sale.</p>
+        <span class="pill">predicción causal</span></a>
+      <a class="card" href="basicos/juego-comandos/index.html">
+        <span class="emoji">⌨️</span>
+        <h3>Manos al Teclado</h3>
+        <p>Teclear los comandos del stack, capa por capa.</p>
+        <span class="pill">tecleo</span></a>
+    </div>
+  </section>
+
+  <section>
+    <div class="acto">③ Datos y análisis (Pandas + estadística)</div>
+    <div class="grid">
+      <a class="card" href="basicos/juego-data/index.html">
+        <span class="emoji">📊</span>
+        <h3>Pipeline de Datos Clínicos</h3>
+        <p>Las 5 estaciones del análisis, con tabla viva.</p>
+        <span class="pill">simulación estado vivo</span></a>
+      <a class="card" href="basicos/juego-comandos-data/index.html">
+        <span class="emoji">⌨️</span>
+        <h3>Manos al Teclado · Pandas</h3>
+        <p>Teclear comandos de pandas, capa por capa.</p>
+        <span class="pill">tecleo</span></a>
+      <a class="card" href="basicos/juego-inverso-data/index.html">
+        <span class="emoji">🔧</span>
+        <h3>Sala de Simulación · Datos</h3>
+        <p>Predecir fallos del análisis (fillna, merge…).</p>
+        <span class="pill">predicción causal</span></a>
+    </div>
+  </section>
+
+  <footer>
+    Archivos estáticos, sin instalar nada. El progreso se guarda en tu navegador (cada juego tiene su botón de reiniciar).
+    Código en <a href="https://github.com/Alessatabares/python-learning">GitHub</a>.
+  </footer>
+</div>
+</body>
+</html>

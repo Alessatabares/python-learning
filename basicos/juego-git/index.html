@@ -312,7 +312,7 @@ function renderCaso(){
   renderTabs(); renderBar(); renderAnclas();
   if(state.i >= CASOS.length){ return renderDone(); }
   const c = CASOS[state.i];
-  let answered = false;
+  let solved = false, revealed = false;
   $("game").innerHTML = `
     <div class="card">
       <div class="kicker">${CAT[c.cat]} · caso ${state.i+1}</div>
@@ -324,7 +324,7 @@ function renderCaso(){
       </div>
       <div class="row">
         <button class="btn" id="check">Comprobar (Enter)</button>
-        <button class="btn ghost" id="skip">No sé, muéstrame</button>
+        <button class="btn ghost" id="showans">👁 Mostrar respuesta</button>
       </div>
       <div class="fb" id="fb"></div>
     </div>`;
@@ -332,35 +332,54 @@ function renderCaso(){
   const input = $("cmd");
   input.focus();
 
-  function resolver(revelar){
-    if(answered) return; answered=true;
-    const fb=$("fb");
-    const ok = !revelar && esCorrecto(c, input.value);
-    input.disabled = true;
-    $("check").disabled = true; $("skip").disabled = true;
-    if(ok){
+  function showReveal(){
+    revealed = true;
+    const fb = $("fb");
+    fb.className = "fb show no";
+    fb.innerHTML = `👀 <b>Respuesta:</b>
+      <div class="why">Comando: <span class="sol">${c.sol}</span></div>
+      <div class="why">${c.why}</div>
+      <div class="frase">🧩 ${c.frase}</div>
+      <div class="row"><button class="btn ghost" id="skip">Saltar sin contar →</button></div>`;
+    $("showans").textContent = "🙈 Ocultar y teclear";
+    $("skip").onclick = ()=>{ state.i++; save(); renderCaso(); };
+  }
+  function hideReveal(){
+    revealed = false;
+    $("fb").className = "fb"; $("fb").innerHTML = "";
+    $("showans").textContent = "👁 Mostrar respuesta";
+    input.focus();
+  }
+
+  function comprobar(){
+    if(solved) return;
+    if(esCorrecto(c, input.value)){
+      solved = true;
       state.score++;
       if(!state.anclas.includes(c.frase)) state.anclas.push(c.frase);
-      fb.className="fb show ok";
+      input.disabled = true;
+      $("check").disabled = true; $("showans").style.display = "none";
+      const fb = $("fb");
+      fb.className = "fb show ok";
       fb.innerHTML = `🟢 <b>¡Correcto!</b><div class="why">${c.why}</div>
         <div class="frase">🧩 ${c.frase}</div>
         <button class="btn" id="next">Siguiente →</button>`;
-    } else {
-      fb.className="fb show no";
-      const tuyo = input.value.trim() ? `<div class="why">Escribiste: <span class="sol">${input.value.trim()}</span></div>` : "";
-      fb.innerHTML = `${revelar?"👀 <b>Mira:</b>":"🔴 <b>Casi.</b>"} ${tuyo}
-        <div class="why">Comando: <span class="sol">${c.sol}</span></div>
-        <div class="why">${c.why}</div>
-        <div class="frase">🧩 ${c.frase}</div>
-        <button class="btn" id="next">Siguiente →</button>`;
+      $("next").onclick = ()=>{ state.i++; save(); renderCaso(); };
+      renderBar(); renderAnclas(); save();
+    } else if(!revealed){
+      // fallo: no bloquea, deja seguir tecleando
+      const fb = $("fb");
+      const tuyo = input.value.trim() ? ` Escribiste <span class="sol">${input.value.trim()}</span>.` : "";
+      fb.className = "fb show no";
+      fb.innerHTML = `🔴 <b>Casi.</b>${tuyo}
+        <div class="why">Revisa e inténtalo otra vez, o pulsa <b>👁 Mostrar respuesta</b>.</div>`;
     }
-    $("next").onclick = ()=>{ state.i++; save(); renderCaso(); };
-    renderBar(); renderAnclas(); save();
+    // si está revelada y fallas, se mantiene la respuesta a la vista para copiarla
   }
 
-  $("check").onclick = ()=>resolver(false);
-  $("skip").onclick  = ()=>resolver(true);
-  input.addEventListener("keydown", e=>{ if(e.key==="Enter") resolver(false); });
+  $("check").onclick = comprobar;
+  $("showans").onclick = ()=>{ if(solved) return; revealed ? hideReveal() : showReveal(); };
+  input.addEventListener("keydown", e=>{ if(e.key==="Enter") comprobar(); });
 }
 
 function renderDone(){

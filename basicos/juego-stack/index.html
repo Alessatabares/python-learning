@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏥 Clínica API · de cero a producción</title>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#161d2e; --panel2:#1d2740; --line:#2a3550;
+    --ink:#e7ecf5; --mut:#93a0bd; --blue:#3b82f6; --teal:#0ea5a4;
+    --green:#22c55e; --amber:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;display:flex;flex-direction:column;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    background:linear-gradient(180deg,#0c111c,#0f1420);color:var(--ink);line-height:1.5}
+
+  header{padding:14px 22px 0;border-bottom:1px solid var(--line);flex-shrink:0}
+  header h1{font-size:18px;margin:0;letter-spacing:.3px}
+  header .sub{color:var(--mut);font-size:13px;margin:4px 0 12px;max-width:760px}
+  header .sub b{color:var(--ink)}
+
+  .switch{display:flex;gap:10px;flex-wrap:wrap}
+  .switch button{flex:1;min-width:230px;text-align:left;cursor:pointer;
+    background:var(--panel);border:1px solid var(--line);border-bottom:none;
+    border-radius:12px 12px 0 0;color:var(--mut);padding:11px 16px;
+    font-family:inherit;font-size:14px;font-weight:600;transition:.15s;position:relative;top:1px}
+  .switch button:hover{color:var(--ink);border-color:var(--blue)}
+  .switch button small{display:block;font-weight:400;font-size:11px;color:var(--mut);margin-top:2px}
+  .switch button.on{background:var(--panel2);color:var(--ink);border-color:var(--line);border-bottom:1px solid var(--panel2)}
+  .switch button.on small{color:var(--teal)}
+
+  iframe{flex:1;width:100%;border:0;background:var(--bg)}
+</style>
+</head>
+<body>
+<header>
+  <h1>🏥 Clínica API · de cero a producción</h1>
+  <p class="sub">Dos vistas del mismo stack. Primero <b>construís</b> la torre de adentro hacia afuera (la función primero, el deploy al final); después <b>operás</b> el request que la recorre de afuera hacia adentro. Esa inversión <b>es</b> el stack.</p>
+  <div class="switch">
+    <button data-src="construir.html" class="on">🏗️ Construir la API
+      <small>de función dormida a producción · la torre, bloque a bloque</small></button>
+    <button data-src="operar.html">⚙️ Operar el backend
+      <small>el pipeline del request · HTTP → auth → ORM → JWT</small></button>
+  </div>
+</header>
+
+<iframe id="frame" title="Sitio del stack"></iframe>
+
+<script>
+  const KEY = "juegoStackTrack";
+  const btns = [...document.querySelectorAll(".switch button")];
+  const frame = document.getElementById("frame");
+  function set(src){
+    frame.src = src;
+    btns.forEach(b => b.classList.toggle("on", b.dataset.src === src));
+    try{ localStorage.setItem(KEY, src); }catch(e){}
+  }
+  btns.forEach(b => b.onclick = () => set(b.dataset.src));
+  let start = "construir.html";
+  try{ start = localStorage.getItem(KEY) || start; }catch(e){}
+  set(start);
+</script>
+</body>
+</html>

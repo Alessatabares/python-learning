@@ -153,7 +153,7 @@ y la base de una futura app que los unifique:
 Para un juego nuevo de este tipo: copiar el motor y reescribir el array `CASOS`. Para
 unificarlos: un menú que cargue el motor una vez y cada juego como su archivo de datos.
 
-*(Algunos juegos —`data`, `backend`, `deploy`— son simuladores más a medida: tablas
+*(Algunos juegos —`data`, `stack` (construir/operar)— son simuladores más a medida: tablas
 vivas, dropdowns y animaciones, no solo opción múltiple. No siguen el molde motor/datos,
 pero comparten la idea pedagógica y las frases ancla.)*
 
@@ -175,8 +175,7 @@ pero comparten la idea pedagógica y las frases ancla.)*
 | 🩺 **Doble Triage** · request + deploy en un tablero | [`juego-triage-360/`](juego-triage-360/) | Request + deploy unificados (22 casos, nav por sitio) | discriminación síntoma→causa |
 | 🔧 **Romper y Predecir** | [`juego-inverso/`](juego-inverso/) | Predecir dónde muere y qué síntoma sale | predicción causal |
 | ⌨️ **Manos al Teclado** | [`juego-comandos/`](juego-comandos/) | Teclear los comandos del stack (4 capas) | tecleo |
-| 🚀 **De función dormida a API** | [`juego-deploy/`](juego-deploy/) | La arquitectura mental del stack, bloque a bloque | representación mental |
-| 🏥 **Clínica API · Simulador** | [`juego-backend/`](juego-backend/) | Conceptos backend de HTTP a JWT, aislados → integrados | simulación |
+| 🏥 **Clínica API · de cero a producción** | [`juego-stack/`](juego-stack/) | Dos vistas del stack: construir la torre (deploy) + operar el request (HTTP→JWT), con conmutador | representación mental + simulación |
 
 **Datos y análisis (Pandas + estadística)**
 

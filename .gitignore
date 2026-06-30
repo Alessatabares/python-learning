@@ -19,5 +19,10 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# Configuración local de VS Code 
+# Configuración local de VS Code
 .vscode/
+
+# Juegos de triage sueltos: reemplazados por juego-triage-360 (Doble Triage).
+# Se conservan en local pero no se suben a GitHub.
+basicos/juego-triage/
+basicos/juego-triage-deploy/

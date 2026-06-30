@@ -172,9 +172,7 @@ pero comparten la idea pedagógica y las frases ancla.)*
 
 | Juego | Carpeta | Qué entrena | Patrón |
 |-------|---------|-------------|--------|
-| 🩺 **Doble Triage** · los dos en un tablero | [`juego-triage-360/`](juego-triage-360/) | Request + deploy unificados (22 casos, nav por sitio) | discriminación síntoma→causa |
-| 🚨 **Código Azul en la API** | [`juego-triage/`](juego-triage/) | Dónde colapsa un request (8 estaciones) | discriminación síntoma→causa |
-| 🚢 **Sala de Máquinas** | [`juego-triage-deploy/`](juego-triage-deploy/) | Dónde falló el deploy (ciclo Docker) | discriminación síntoma→causa |
+| 🩺 **Doble Triage** · request + deploy en un tablero | [`juego-triage-360/`](juego-triage-360/) | Request + deploy unificados (22 casos, nav por sitio) | discriminación síntoma→causa |
 | 🔧 **Romper y Predecir** | [`juego-inverso/`](juego-inverso/) | Predecir dónde muere y qué síntoma sale | predicción causal |
 | ⌨️ **Manos al Teclado** | [`juego-comandos/`](juego-comandos/) | Teclear los comandos del stack (4 capas) | tecleo |
 | 🚀 **De función dormida a API** | [`juego-deploy/`](juego-deploy/) | La arquitectura mental del stack, bloque a bloque | representación mental |

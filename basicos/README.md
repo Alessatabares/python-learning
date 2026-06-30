@@ -164,7 +164,7 @@ pero comparten la idea pedagógica y las frases ancla.)*
 | Juego | Carpeta | Qué entrena | Patrón |
 |-------|---------|-------------|--------|
 | 🛂 **Aduana de Red** | [`juego-url/`](juego-url/) | Máquinas, puertos y paths de una URL · **2 niveles** | discriminación → caza-error |
-| 🧰 **Caja de Herramientas** | [`juego-imports/`](juego-imports/) | Imports útiles de FastAPI y Pydantic | discriminación |
+| 🧰 **Caja de Herramientas** | [`juego-imports/`](juego-imports/) | Imports útiles de FastAPI y Pydantic · **2 niveles** | discriminación → tecleo la solución |
 | 🐍 **¿Qué devuelve?** | [`juego-python/`](juego-python/) | Python básico de una API: qué devuelve cada línea | discriminación |
 | 🐙 **Terminal Git** | [`juego-git/`](juego-git/) | Comandos de git/GitHub, en escenarios | tecleo |
 

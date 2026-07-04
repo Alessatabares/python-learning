@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏗️ Construir la Capa · Capas 1 y 2 desde cero</title>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#161d2e; --panel2:#1d2740; --line:#2a3550;
+    --ink:#e7ecf5; --mut:#93a0bd; --blue:#3b82f6; --teal:#0ea5a4;
+    --green:#22c55e; --amber:#f59e0b; --red:#ef4444; --violet:#8b5cf6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    background:linear-gradient(180deg,#0c111c,#0f1420);color:var(--ink);line-height:1.5}
+  header{padding:16px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  header h1{font-size:18px;margin:0;letter-spacing:.3px}
+  header .sub{color:var(--mut);font-size:13px}
+  .prog{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--mut)}
+  .bar{width:150px;height:8px;background:var(--panel2);border-radius:99px;overflow:hidden}
+  .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--green));transition:width .4s}
+
+  .wrap{display:flex;min-height:calc(100vh - 62px)}
+  nav{width:250px;border-right:1px solid var(--line);padding:14px;flex-shrink:0;overflow-y:auto;max-height:calc(100vh - 62px)}
+  nav .grp{font-size:10px;color:var(--teal);text-transform:uppercase;letter-spacing:.8px;margin:16px 4px 7px}
+  nav .grp:first-child{margin-top:0}
+  nav .file{font-size:11px;color:var(--violet);margin:10px 6px 4px;font-family:ui-monospace,monospace}
+  nav button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;margin:0 0 4px;padding:7px 10px;border-radius:8px;
+    background:transparent;border:1px solid transparent;color:var(--ink);cursor:pointer;font-size:12.5px;transition:.12s}
+  nav button:hover{background:var(--panel)}
+  nav button.active{background:var(--panel2);border-color:var(--line)}
+  nav button .dot{font-size:12px;width:14px;flex-shrink:0;color:var(--mut)}
+  nav button .dot.done{color:var(--green)}
+
+  main{flex:1;padding:22px 26px;max-width:640px}
+  .filebadge{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.4px;padding:3px 10px;border-radius:99px;
+    background:rgba(139,92,246,.14);border:1px solid var(--violet);color:#ddd6fe;margin-bottom:14px;font-family:ui-monospace,monospace}
+  .stepno{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+  .quiero{background:rgba(59,130,246,.10);border:1px solid var(--blue);border-radius:10px;padding:12px 15px;margin:0 0 14px;font-size:14.5px}
+  .quiero b{color:#bfdbfe}
+  .quiero .lead{display:block;font-size:11px;color:var(--teal);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px}
+
+  .hint{background:var(--panel);border:1px dashed var(--line);border-radius:10px;padding:11px 14px;margin:0 0 14px;font-size:13.5px;color:var(--mut);display:none}
+  .hint.show{display:block}
+  .hint b{color:var(--amber)}
+
+  textarea.code-in{width:100%;min-height:70px;background:#0a1020;border:1px solid var(--line);color:#bfdbfe;
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13.5px;padding:12px 13px;border-radius:10px;outline:none;resize:vertical;line-height:1.55}
+  textarea.code-in:focus{border-color:var(--blue)}
+
+  .btns{display:flex;align-items:center;gap:9px;margin-top:12px;flex-wrap:wrap}
+  button.act{background:var(--blue);border:none;color:#fff;padding:9px 18px;border-radius:9px;cursor:pointer;font-size:13.5px;font-weight:600}
+  button.act:hover{filter:brightness(1.1)}
+  button.ghost{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:8px 13px;border-radius:8px;cursor:pointer;font-size:12.5px}
+  button.ghost:hover{background:var(--line)}
+  .spacer{flex:1}
+
+  .fb{margin-top:14px;padding:13px 15px;border-radius:10px;font-size:13.5px;display:none}
+  .fb.show{display:block}
+  .fb.good{background:rgba(34,197,94,.12);border:1px solid var(--green);color:#bbf7d0}
+  .fb.bad{background:rgba(239,68,68,.12);border:1px solid var(--red);color:#fecaca}
+  .fb .sol{margin-top:9px;font-family:ui-monospace,monospace;font-size:13px;color:#bfdbfe;background:#0a1020;padding:10px 12px;border-radius:8px;white-space:pre-wrap}
+  .fb .why{margin-top:10px;color:var(--ink);font-size:13px;border-top:1px solid rgba(255,255,255,.08);padding-top:9px}
+  .fb .why b{color:#bbf7d0}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:12.5px}
+
+  /* archivo vivo */
+  aside{width:340px;border-left:1px solid var(--line);padding:18px 16px;flex-shrink:0;overflow-y:auto;max-height:calc(100vh - 62px)}
+  aside h3{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.7px;margin:0 0 10px}
+  aside h3 span{color:var(--violet);font-family:ui-monospace,monospace;text-transform:none;letter-spacing:0}
+  .livefile{background:#0a1020;border:1px solid var(--line);border-radius:10px;padding:12px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;white-space:pre-wrap;word-break:break-word;line-height:1.6;min-height:120px}
+  .lf-done{color:#9fe6c6}
+  .lf-cur{color:#fde68a;background:rgba(245,158,11,.10);border-radius:4px}
+  .lf-todo{color:#3f4a63}
+  .tip{font-size:11.5px;color:var(--mut);margin-top:12px;line-height:1.5}
+
+  @media(max-width:1000px){ aside{display:none} }
+  @media(max-width:720px){ nav{display:none} main{max-width:100%} }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🏗️ Construir la Capa · de cero, con tus manos</h1>
+    <div class="sub">Teclea las Capas 1 y 2 paso a paso, como si las escribieras de nuevo. Situación → pista → tú tecleas.</div>
+  </div>
+  <div class="prog">
+    <button class="ghost" id="reset" title="Borrar progreso">reiniciar</button>
+    <span id="progtxt">0 / 0</span>
+    <div class="bar"><i id="progbar"></i></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav id="nav"></nav>
+  <main id="main"></main>
+  <aside>
+    <h3>📄 Archivo vivo · <span id="livename">main.py</span></h3>
+    <div class="livefile" id="livefile"></div>
+    <div class="tip">Las líneas verdes ya las tecleaste (o viste). La amarilla es el paso actual. Las grises faltan. Así ves el archivo crecer.</div>
+  </aside>
+</div>
+
+<script>
+/* ============================================================
+   Cada PASO reconstruye una pieza real de lo que hicimos.
+   quiero = la situación/necesidad · hint = fórmula general
+   sol = el código · why = el porqué (imagen mental)
+   accept = variantes válidas (comparación indulgente)
+   ============================================================ */
+const STEPS = [];
+function st(o){ STEPS.push(o); }
+
+/* ---------------- CAPA 1 · main.py (CRUD en RAM) ---------------- */
+const C1="Capa 1 · CRUD en RAM", F1="main.py";
+st({grp:C1, file:F1,
+  quiero:"Necesito el <b>framework</b> para crear la API, y además poder <b>lanzar errores HTTP</b> (como un 404).",
+  hint:"<b>from</b> el paquete del framework <b>import</b> la clase de la app y la de errores.",
+  sol:"from fastapi import FastAPI, HTTPException",
+  why:"FastAPI crea la app; HTTPException te deja cortar con un status code (ej. 404). Dos herramientas del mismo paquete → una línea con coma.",
+  accept:["from fastapi import FastAPI, HTTPException","from fastapi import HTTPException, FastAPI"]});
+st({grp:C1, file:F1,
+  quiero:"Necesito <b>validar</b> los datos que entran por HTTP (que traigan los campos correctos).",
+  hint:"<b>from</b> pydantic <b>import</b> la clase base de la que heredan los modelos de entrada.",
+  sol:"from pydantic import BaseModel",
+  why:"BaseModel es el portero: define qué campos y tipos deben entrar. Si no calzan → 422 automático.",
+  accept:["from pydantic import BaseModel"]});
+st({grp:C1, file:F1,
+  quiero:"Necesito <b>crear la aplicación</b> (el objeto al que le cuelgo las rutas y que uvicorn busca).",
+  hint:"variable = Clase(). La variable se llama <code>app</code> por convención.",
+  sol:"app = FastAPI()",
+  why:"'app' es el corazón: uvicorn la busca como main:app. resultado = fábrica().",
+  accept:["app = FastAPI()"]});
+st({grp:C1, file:F1,
+  quiero:"Necesito un lugar en <b>memoria</b> para ir guardando los registros (provisional, capa 1).",
+  hint:"una lista vacía guardada en una variable.",
+  sol:"registros = []",
+  why:"Lista en RAM: simple pero se borra al reiniciar (memoria de pez). En la capa 2 la reemplaza la base.",
+  accept:["registros = []"]});
+st({grp:C1, file:F1,
+  quiero:"Necesito un <b>número</b> que le dé un id único a cada registro nuevo.",
+  hint:"una variable numérica que arranca en 1.",
+  sol:"contador = 1",
+  why:"Imita a mano una PK autoincremental. En la capa 2 esto lo hará la base sola.",
+  accept:["contador = 1"]});
+st({grp:C1, file:F1, multi:true,
+  quiero:"Necesito definir el <b>contrato</b> de lo que entra: los campos y sus tipos (paciente, protocolo, fecha, hora, doctor: todos texto).",
+  hint:"class NombreIn(BaseModel): y debajo, indentados, campo: tipo.",
+  sol:"class RegistroIn(BaseModel):\n    paciente: str\n    protocolo: str\n    fecha: str\n    hora: str\n    doctor: str",
+  why:"Hereda de BaseModel para que FastAPI valide el body. No lleva 'id' porque ese lo pone el servidor.",
+  accept:["class RegistroIn(BaseModel):\npaciente: str\nprotocolo: str\nfecha: str\nhora: str\ndoctor: str"]});
+st({grp:C1, file:F1,
+  quiero:"Necesito una ruta <b>POST</b> a <code>/registros</code> que, al crear, devuelva el status <b>201</b>.",
+  hint:"@app.post(\"ruta\", status_code=201) — el decorador que conecta el POST con la función de abajo.",
+  sol:'@app.post("/registros", status_code=201)',
+  why:"POST = crear; 201 = 'Created', el código correcto al crear algo. El decorador cuelga la función a esa ruta+método.",
+  accept:['@app.post("/registros", status_code=201)',"@app.post('/registros', status_code=201)"]});
+st({grp:C1, file:F1,
+  quiero:"La <b>función</b> del endpoint, que recibe el dato ya validado como <code>RegistroIn</code>.",
+  hint:"def nombre(param: TipoDelSchema):",
+  sol:"def crear(reg: RegistroIn):",
+  why:"'reg: RegistroIn' le dice a FastAPI: leé el body y validámelo como RegistroIn. 'reg' llega limpio.",
+  accept:["def crear(reg: RegistroIn):"]});
+st({grp:C1, file:F1,
+  quiero:"Dentro de <code>crear</code>, necesito poder <b>modificar</b> la variable <code>contador</code> definida afuera.",
+  hint:"la palabra clave que permite tocar una variable global dentro de una función.",
+  sol:"global contador",
+  why:"Sin 'global', Python trataría 'contador' como una variable local nueva y 'contador += 1' fallaría.",
+  accept:["global contador"]});
+st({grp:C1, file:F1, multi:true,
+  quiero:"Armar el <b>registro completo</b> como diccionario, ahora sí con su <code>id</code> (tomado del contador) y los datos de <code>reg</code>.",
+  hint:"nuevo = { \"id\": contador, \"campo\": reg.campo, ... }",
+  sol:'nuevo = {\n    "id": contador,\n    "paciente": reg.paciente,\n    "protocolo": reg.protocolo,\n    "fecha": reg.fecha,\n    "hora": reg.hora,\n    "doctor": reg.doctor,\n}',
+  why:"El id lo pone el servidor (contador), no el cliente. Cada valor sale del 'reg' validado.",
+  accept:['nuevo = {\n"id": contador,\n"paciente": reg.paciente,\n"protocolo": reg.protocolo,\n"fecha": reg.fecha,\n"hora": reg.hora,\n"doctor": reg.doctor,\n}']});
+st({grp:C1, file:F1,
+  quiero:"Guardar el registro nuevo en la lista.",
+  hint:"lista.append(elemento)",
+  sol:"registros.append(nuevo)",
+  why:"append lo agrega al final de la lista (en RAM, por ahora).",
+  accept:["registros.append(nuevo)"]});
+st({grp:C1, file:F1,
+  quiero:"Avanzar el contador para que el próximo registro tenga otro id.",
+  hint:"suma 1 a la variable (operador +=).",
+  sol:"contador += 1",
+  why:"Mantiene ids únicos. En la capa 2 desaparece: la base numera sola.",
+  accept:["contador += 1","contador = contador + 1"]});
+st({grp:C1, file:F1,
+  quiero:"Devolver el registro creado (ya con id) como respuesta.",
+  hint:"return de la variable que armaste.",
+  sol:"return nuevo",
+  why:"Es lo que 'sale' del endpoint hacia el cliente.",
+  accept:["return nuevo"]});
+st({grp:C1, file:F1, multi:true,
+  quiero:"Una ruta <b>GET</b> a <code>/registros</code> que <b>liste</b> todos (devuelve la lista entera).",
+  hint:"@app.get(\"ruta\") + def listar(): return la lista.",
+  sol:'@app.get("/registros")\ndef listar():\n    return registros',
+  why:"GET = leer. Sin parámetros: devuelve la colección completa.",
+  accept:['@app.get("/registros")\ndef listar():\nreturn registros']});
+st({grp:C1, file:F1, multi:true,
+  quiero:"Una ruta GET para <b>un</b> registro por id (<code>/registros/{id}</code>): buscarlo en la lista y, si no está, devolver <b>404</b>.",
+  hint:"path param {id} · def obtener(id: int): · for + if r['id']==id: return r · si no, raise HTTPException(404).",
+  sol:'@app.get("/registros/{id}")\ndef obtener(id: int):\n    for r in registros:\n        if r["id"] == id:\n            return r\n    raise HTTPException(status_code=404, detail="registro no encontrado")',
+  why:"{id} es parte variable de la ruta. Se usa 'raise' (no return) para cortar y mandar el 404 correcto.",
+  accept:['@app.get("/registros/{id}")\ndef obtener(id: int):\nfor r in registros:\nif r["id"] == id:\nreturn r\nraise HTTPException(status_code=404, detail="registro no encontrado")']});
+
+/* ---------------- CAPA 2 · database.py ---------------- */
+const C2="Capa 2 · Base de datos", FD="database.py";
+st({grp:C2, file:FD,
+  quiero:"Necesito la función que <b>fabrica el engine</b> (el cable a la base).",
+  hint:"from sqlalchemy import la función que crea el motor.",
+  sol:"from sqlalchemy import create_engine",
+  why:"create_engine vive en el Core de SQLAlchemy (nivel de arriba). Es la herramienta que abre la conexión.",
+  accept:["from sqlalchemy import create_engine"]});
+st({grp:C2, file:FD,
+  quiero:"Necesito la <b>fábrica de sesiones</b> y el <b>cuaderno</b> del que heredan los modelos.",
+  hint:"from sqlalchemy.orm import las dos herramientas (del submódulo .orm).",
+  sol:"from sqlalchemy.orm import sessionmaker, declarative_base",
+  why:"Son de la capa ORM (.orm), no del Core: por eso van aparte de create_engine. El punto = 'lo que está dentro de'.",
+  accept:["from sqlalchemy.orm import sessionmaker, declarative_base","from sqlalchemy.orm import declarative_base, sessionmaker"]});
+st({grp:C2, file:FD,
+  quiero:"Crear el <b>engine</b> (el enchufe) hacia un archivo SQLite <code>registro_estudios.db</code>, y que imprima el SQL que genera.",
+  hint:"engine = create_engine('sqlite:///archivo.db', echo=True)",
+  sol:"engine = create_engine('sqlite:///registro_estudios.db', echo=True)",
+  why:"'sqlite:///archivo.db' = tipo + ruta (SQLite es un archivo, sin servidor). echo=True = espejo del SQL para aprender.",
+  accept:["engine = create_engine('sqlite:///registro_estudios.db', echo=True)"]});
+st({grp:C2, file:FD,
+  quiero:"Crear la <b>fábrica de sesiones</b>, amarrada al engine.",
+  hint:"SessionLocal = sessionmaker(bind=engine)",
+  sol:"SessionLocal = sessionmaker(bind=engine)",
+  why:"No es una sesión: es el molde que fabrica una conversación nueva cada vez. bind = a qué base habla.",
+  accept:["SessionLocal = sessionmaker(bind=engine)"]});
+st({grp:C2, file:FD,
+  quiero:"Crear el <b>cuaderno</b> (base declarativa) donde se registran las tablas.",
+  hint:"Base = declarative_base()",
+  sol:"Base = declarative_base()",
+  why:"Cada modelo hereda de Base y queda apuntado. Luego una orden crea todas las tablas registradas.",
+  accept:["Base = declarative_base()"]});
+
+/* ---------------- CAPA 2 · models.py ---------------- */
+const FM="models.py";
+st({grp:C2, file:FM,
+  quiero:"Necesito las herramientas para <b>declarar columnas</b> y sus tipos (columna, entero, texto).",
+  hint:"from sqlalchemy import Column, Integer, String",
+  sol:"from sqlalchemy import Column, Integer, String",
+  why:"Column = 'esto es una columna'; Integer = número entero; String = texto (VARCHAR en SQL).",
+  accept:["from sqlalchemy import Column, Integer, String"]});
+st({grp:C2, file:FM,
+  quiero:"Necesito el <b>cuaderno Base</b>, pero está en mi archivo <code>database.py</code>. Traerlo.",
+  hint:"from TU_ARCHIVO import Base (nombre del módulo, sin el .py).",
+  sol:"from database import Base",
+  why:"Lo que vos creaste sale de tu archivo (database), no de una librería. Nunca 'database.py': el módulo es 'database'.",
+  accept:["from database import Base"]});
+st({grp:C2, file:FM,
+  quiero:"Definir el <b>modelo</b> (la clase que describe la tabla), que hereda del cuaderno.",
+  hint:"class Registro(Base):",
+  sol:"class Registro(Base):",
+  why:"Hereda de Base (no de BaseModel) para quedar registrada. Es el gemelo de RegistroIn, pero describe la TABLA.",
+  accept:["class Registro(Base):"]});
+st({grp:C2, file:FM,
+  quiero:"Decir <b>cómo se llamará la tabla</b> dentro de la base.",
+  hint:"__tablename__ = \"nombre_en_plural\" (indentado, dentro de la clase).",
+  sol:'    __tablename__ = "registros"',
+  why:"Nombre mágico fijo que SQLAlchemy busca. La clase es Registro (singular); la tabla, registros (plural).",
+  accept:['__tablename__ = "registros"']});
+st({grp:C2, file:FM,
+  quiero:"La columna <b>id</b>: clave primaria que la base genera sola (autoincremental).",
+  hint:"id = Column(Integer, primary_key=True)",
+  sol:"    id = Column(Integer, primary_key=True)",
+  why:"primary_key=True hace que la BASE numere. Jubila el 'contador' de la capa 1. PK = único, nunca vacío.",
+  accept:["id = Column(Integer, primary_key=True)"]});
+st({grp:C2, file:FM, multi:true,
+  quiero:"Las <b>columnas de texto</b>: paciente, protocolo, fecha, hora, doctor (todas String).",
+  hint:"campo = Column(String) — una por línea, indentadas.",
+  sol:"    paciente = Column(String)\n    protocolo = Column(String)\n    fecha = Column(String)\n    hora = Column(String)\n    doctor = Column(String)",
+  why:"Fecha y hora van como String (texto '2026-07-04'), no Integer: no son números puros.",
+  accept:["paciente = Column(String)\nprotocolo = Column(String)\nfecha = Column(String)\nhora = Column(String)\ndoctor = Column(String)"]});
+
+/* ---------------- CAPA 2 · crear_db.py ---------------- */
+const FC="crear_db.py";
+st({grp:C2, file:FC,
+  quiero:"Necesito el <b>engine</b> y el <b>cuaderno Base</b>, ambos de mi <code>database.py</code>.",
+  hint:"from database import las dos cosas (mismo origen → una línea con coma).",
+  sol:"from database import engine, Base",
+  why:"Junto lo necesario para construir la tabla: a qué base (engine) y qué tablas (Base).",
+  accept:["from database import engine, Base","from database import Base, engine"]});
+st({grp:C2, file:FC,
+  quiero:"Necesito que Python <b>lea el modelo</b> para que la tabla quede registrada en Base.",
+  hint:"import el archivo entero (sin 'from', sin nombrar nada).",
+  sol:"import models",
+  why:"Al leer models, Python encuentra 'class Registro' y la REGISTRA en Base. Sin esto, el .db nacería vacío.",
+  accept:["import models"]});
+st({grp:C2, file:FC,
+  quiero:"Dar la <b>orden</b> que construye en disco todas las tablas registradas.",
+  hint:"Base.metadata.create_all(bind=engine) — objeto.acción(), sin '='.",
+  sol:"Base.metadata.create_all(bind=engine)",
+  why:"Lee el plano y levanta la casa (crea el .db). No lleva '=' porque es una acción, no fabrica nada. Seguro de repetir.",
+  accept:["Base.metadata.create_all(bind=engine)"]});
+
+/* ---------------- CAPA 2 · main.py migrado ---------------- */
+const C2M="Capa 2 · main.py con base", FMM="main.py";
+st({grp:C2M, file:FMM,
+  quiero:"En main.py necesito la <b>fábrica de sesiones</b> para hablar con la base.",
+  hint:"from database import SessionLocal",
+  sol:"from database import SessionLocal",
+  why:"Para que los endpoints puedan abrir conversaciones con la base.",
+  accept:["from database import SessionLocal"]});
+st({grp:C2M, file:FMM,
+  quiero:"También necesito el <b>modelo</b> para crear y consultar registros.",
+  hint:"from models import Registro",
+  sol:"from models import Registro",
+  why:"Registro es la tabla: se usa para crear objetos (al guardar) y consultarlos (al leer).",
+  accept:["from models import Registro"]});
+st({grp:C2M, file:FMM,
+  quiero:"Dentro de <code>crear</code>, <b>abrir una sesión</b> nueva (una conversación con la base).",
+  hint:"db = SessionLocal()",
+  sol:"db = SessionLocal()",
+  why:"Va dentro del endpoint: cada petición fabrica la suya y no se cruzan. La fábrica vive en database; la sesión nace aquí.",
+  accept:["db = SessionLocal()"]});
+st({grp:C2M, file:FMM, multi:true,
+  quiero:"Crear un <b>objeto Registro</b> (ya no un dict) con los datos que llegaron. Ojo: <b>sin id</b>.",
+  hint:"nuevo = Registro(campo=reg.campo, ...) — sin id, lo pone la base.",
+  sol:"nuevo = Registro(\n    paciente=reg.paciente,\n    protocolo=reg.protocolo,\n    fecha=reg.fecha,\n    hora=reg.hora,\n    doctor=reg.doctor,\n)",
+  why:"Izquierda del = es la columna; derecha, el dato de la request. Sin id: lo genera la base.",
+  accept:["nuevo = Registro(\npaciente=reg.paciente,\nprotocolo=reg.protocolo,\nfecha=reg.fecha,\nhora=reg.hora,\ndoctor=reg.doctor,\n)"]});
+st({grp:C2M, file:FMM,
+  quiero:"<b>Apuntar</b> el objeto en la bandeja de la sesión (aún no en disco).",
+  hint:"db.add(objeto)",
+  sol:"db.add(nuevo)",
+  why:"add lo deja pendiente, como 'git add'. Todavía no está guardado de verdad.",
+  accept:["db.add(nuevo)"]});
+st({grp:C2M, file:FMM,
+  quiero:"<b>Guardar de verdad</b> en el disco lo que estaba pendiente.",
+  hint:"db.commit()",
+  sol:"db.commit()",
+  why:"El botón 'guardar definitivo'. Flujo: add (apuntar) → commit (guardar).",
+  accept:["db.commit()"]});
+st({grp:C2M, file:FMM,
+  quiero:"<b>Traer el id</b> que la base le acaba de generar al registro.",
+  hint:"db.refresh(objeto)",
+  sol:"db.refresh(nuevo)",
+  why:"El objeto se creó sin id; refresh lo recarga desde la base con su número. Como preguntar '¿qué ficha me tocó?'.",
+  accept:["db.refresh(nuevo)"]});
+st({grp:C2M, file:FMM,
+  quiero:"<b>Cerrar</b> la conversación con la base.",
+  hint:"db.close()",
+  sol:"db.close()",
+  why:"Colgás el teléfono al terminar de usar la sesión.",
+  accept:["db.close()"]});
+st({grp:C2M, file:FMM,
+  quiero:"En <code>listar</code>, <b>leer TODAS</b> las filas de la tabla.",
+  hint:"db.query(Modelo).all()",
+  sol:"db.query(Registro).all()",
+  why:"query = el verbo de leer (la otra mitad de la sesión). .all() trae la lista completa. Reemplaza 'return registros'.",
+  accept:["db.query(Registro).all()"]});
+st({grp:C2M, file:FMM,
+  quiero:"En <code>obtener</code>, <b>buscar UNA</b> fila por su id.",
+  hint:"db.query(Modelo).filter(Modelo.id == id).first()",
+  sol:"db.query(Registro).filter(Registro.id == id).first()",
+  why:"filter = el 'dónde' (== es comparación); first() = trae el primero, o None. Reemplaza el bucle 'for' manual.",
+  accept:["db.query(Registro).filter(Registro.id == id).first()"]});
+st({grp:C2M, file:FMM, multi:true,
+  quiero:"Si la búsqueda no encontró nada, cortar con un <b>404</b>.",
+  hint:"if registro is None: raise HTTPException(status_code=404, detail=...)",
+  sol:'if registro is None:\n    raise HTTPException(status_code=404, detail="registro no encontrado")',
+  why:"first() devuelve None si no hay. 'raise' corta y manda el status de error correcto.",
+  accept:['if registro is None:\nraise HTTPException(status_code=404, detail="registro no encontrado")']});
+
+/* ============================================================
+   MOTOR DEL JUEGO
+   ============================================================ */
+const KEY="construir-capas-v1";
+let done = load();
+let cur = firstUnsolved();
+
+function load(){ try{ return JSON.parse(localStorage.getItem(KEY)) || {}; }catch(e){ return {}; } }
+function save(){ localStorage.setItem(KEY, JSON.stringify(done)); }
+function firstUnsolved(){ for(let i=0;i<STEPS.length;i++){ if(!done[i]) return i; } return 0; }
+
+function norm(s){
+  return (s||"")
+    .replace(/\r/g,"")
+    .split("\n").map(l=>l.trim().replace(/\s+/g," ")).filter(l=>l.length).join("\n")
+    .replace(/"/g,"'")            // comillas dobles = simples
+    .replace(/\s*,\s*/g,", ")     // espacios alrededor de comas
+    .replace(/\s*=\s*/g," = ")    // deja respirar el =  (pero...)
+    .replace(/ = = /g," == ")     // ...no rompas ==
+    .replace(/\s*\(\s*/g,"(").replace(/\s*\)\s*/g,")")
+    .trim().toLowerCase();
+}
+function matches(input, step){
+  const n = norm(input);
+  const cands = [step.sol, ...(step.accept||[])];
+  return cands.some(c => norm(c) === n);
+}
+
+const nav = document.getElementById("nav");
+const main = document.getElementById("main");
+
+function renderNav(){
+  nav.innerHTML="";
+  let lastGrp="", lastFile="";
+  STEPS.forEach((s,i)=>{
+    if(s.grp!==lastGrp){ const g=document.createElement("div"); g.className="grp"; g.textContent=s.grp; nav.appendChild(g); lastGrp=s.grp; lastFile=""; }
+    if(s.file!==lastFile){ const f=document.createElement("div"); f.className="file"; f.textContent=s.file; nav.appendChild(f); lastFile=s.file; }
+    const b=document.createElement("button");
+    if(i===cur) b.className="active";
+    b.innerHTML=`<span class="dot ${done[i]?'done':''}">${done[i]?'✓':'○'}</span> Paso ${i+1}`;
+    b.onclick=()=>{ cur=i; render(); };
+    nav.appendChild(b);
+  });
+}
+
+function renderLive(){
+  const step=STEPS[cur];
+  const file=step.file;
+  document.getElementById("livename").textContent=file;
+  const box=document.getElementById("livefile");
+  box.innerHTML="";
+  STEPS.forEach((s,i)=>{
+    if(s.file!==file) return;
+    const div=document.createElement("div");
+    if(i===cur){ div.className="lf-cur"; div.textContent=done[i]? s.sol : "▍ (aquí va este paso)"; }
+    else if(done[i]){ div.className="lf-done"; div.textContent=s.sol; }
+    else { div.className="lf-todo"; div.textContent="· · ·"; }
+    box.appendChild(div);
+  });
+}
+
+function render(){
+  const s=STEPS[cur];
+  const solvedNow=!!done[cur];
+  main.innerHTML=`
+    <div class="filebadge">${s.file}</div>
+    <div class="stepno">Paso ${cur+1} de ${STEPS.length} · ${s.grp}</div>
+    <div class="quiero"><span class="lead">necesito</span>${s.quiero}</div>
+    <div class="hint" id="hint"><b>Pista:</b> ${s.hint}</div>
+    <textarea class="code-in" id="inp" spellcheck="false" placeholder="Teclea aquí tu línea de código...">${solvedNow? s.sol.replace(/</g,"&lt;") : ""}</textarea>
+    <div class="btns">
+      <button class="act" id="check">Comprobar</button>
+      <button class="ghost" id="hintbtn">💡 Pista</button>
+      <button class="ghost" id="solbtn">👁 Ver solución</button>
+      <div class="spacer"></div>
+      <button class="ghost" id="prev">← Anterior</button>
+      <button class="ghost" id="next">Siguiente →</button>
+    </div>
+    <div class="fb" id="fb"></div>
+  `;
+  const inp=document.getElementById("inp");
+  const fb=document.getElementById("fb");
+  document.getElementById("hintbtn").onclick=()=>document.getElementById("hint").classList.toggle("show");
+  document.getElementById("prev").onclick=()=>{ if(cur>0){cur--; render();} };
+  document.getElementById("next").onclick=()=>{ if(cur<STEPS.length-1){cur++; render();} };
+
+  function showSolved(ok){
+    fb.className="fb show "+(ok?"good":"bad");
+    fb.innerHTML=(ok?"✅ ¡Correcto!":"👁 Solución")+
+      `<div class="sol">${s.sol.replace(/</g,"&lt;")}</div>`+
+      `<div class="why"><b>Por qué:</b> ${s.why}</div>`;
+  }
+  document.getElementById("check").onclick=()=>{
+    if(matches(inp.value, s)){
+      done[cur]=true; save(); showSolved(true); renderNav(); renderLive(); updateProg();
+    }else{
+      fb.className="fb show bad";
+      fb.innerHTML="❌ Todavía no calza. Revisa la <b>fórmula</b> (usa 💡 Pista) o mira 👁 Ver solución. "+
+        "Ojo a comillas, guiones bajos y los dos puntos <code>:</code>.";
+    }
+  };
+  document.getElementById("solbtn").onclick=()=>{
+    inp.value=s.sol; done[cur]=true; save(); showSolved(false); renderNav(); renderLive(); updateProg();
+  };
+  if(s.multi){ inp.style.minHeight="130px"; }
+  if(solvedNow) showSolved(true);
+  renderNav(); renderLive();
+  inp.focus();
+}
+
+function updateProg(){
+  const n=Object.values(done).filter(Boolean).length;
+  document.getElementById("progtxt").textContent=`${n} / ${STEPS.length}`;
+  document.getElementById("progbar").style.width=(100*n/STEPS.length)+"%";
+}
+
+document.getElementById("reset").onclick=()=>{
+  if(confirm("¿Borrar tu progreso de este juego?")){ done={}; save(); cur=0; render(); updateProg(); }
+};
+
+render(); updateProg();
+</script>
+</body>
+</html>

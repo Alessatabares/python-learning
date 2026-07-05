@@ -435,7 +435,7 @@ function render(){
     <div class="stepno">Paso ${cur+1} de ${STEPS.length} · ${s.grp}</div>
     <div class="quiero"><span class="lead">necesito</span>${s.quiero}</div>
     <div class="hint" id="hint"><b>Pista:</b> ${s.hint}</div>
-    <textarea class="code-in" id="inp" spellcheck="false" placeholder="Teclea aquí tu línea de código...">${solvedNow? s.sol.replace(/</g,"&lt;") : ""}</textarea>
+    <textarea class="code-in" id="inp" spellcheck="false" placeholder="Teclea aquí tu línea de código..."></textarea>
     <div class="btns">
       <button class="act" id="check">Comprobar</button>
       <button class="ghost" id="hintbtn">💡 Pista</button>
@@ -452,11 +452,17 @@ function render(){
   document.getElementById("prev").onclick=()=>{ if(cur>0){cur--; render();} };
   document.getElementById("next").onclick=()=>{ if(cur<STEPS.length-1){cur++; render();} };
 
+  const solbtn=document.getElementById("solbtn");
+  let revealed=false;
   function showSolved(ok){
     fb.className="fb show "+(ok?"good":"bad");
     fb.innerHTML=(ok?"✅ ¡Correcto!":"👁 Solución")+
       `<div class="sol">${s.sol.replace(/</g,"&lt;")}</div>`+
       `<div class="why"><b>Por qué:</b> ${s.why}</div>`;
+    revealed=true; solbtn.textContent="🙈 Ocultar solución";
+  }
+  function hideSolved(){
+    fb.classList.remove("show"); revealed=false; solbtn.textContent="👁 Ver solución";
   }
   document.getElementById("check").onclick=()=>{
     if(matches(inp.value, s)){
@@ -467,11 +473,11 @@ function render(){
         "Ojo a comillas, guiones bajos y los dos puntos <code>:</code>.";
     }
   };
-  document.getElementById("solbtn").onclick=()=>{
-    inp.value=s.sol; done[cur]=true; save(); showSolved(false); renderNav(); renderLive(); updateProg();
+  solbtn.onclick=()=>{
+    if(revealed){ hideSolved(); inp.focus(); }
+    else { done[cur]=true; save(); showSolved(false); renderNav(); renderLive(); updateProg(); }
   };
   if(s.multi){ inp.style.minHeight="130px"; }
-  if(solvedNow) showSolved(true);
   renderNav(); renderLive();
   inp.focus();
 }

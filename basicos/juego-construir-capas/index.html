@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🏗️ Construir la Capa · Capas 1 y 2 desde cero</title>
+<title>🏗️ Construir la Capa · Capas 1, 2 y 3 desde cero</title>
 <style>
   :root{
     --bg:#0f1420; --panel:#161d2e; --panel2:#1d2740; --line:#2a3550;
@@ -82,7 +82,7 @@
 <header>
   <div>
     <h1>🏗️ Construir la Capa · de cero, con tus manos</h1>
-    <div class="sub">Teclea las Capas 1 y 2 paso a paso, como si las escribieras de nuevo. Situación → pista → tú tecleas.</div>
+    <div class="sub">Teclea las Capas 1, 2 y 3 paso a paso, como si las escribieras de nuevo. Situación → pista → tú tecleas.</div>
   </div>
   <div class="prog">
     <button class="ghost" id="reset" title="Borrar progreso">reiniciar</button>
@@ -366,6 +366,119 @@ st({grp:C2M, file:FMM, multi:true,
   why:"first() devuelve None si no hay. 'raise' corta y manda el status de error correcto.",
   accept:['if registro is None:\nraise HTTPException(status_code=404, detail="registro no encontrado")']});
 
+/* ---------------- CAPA 3 · models.py (modelo Usuario) ---------------- */
+const C3="Capa 3 · Usuarios + hashing";
+st({grp:C3, file:FM,
+  quiero:"Aparece un actor nuevo: el <b>pasante</b>. Necesito un <b>modelo</b> para su tabla, que herede del cuaderno Base (igual que Registro).",
+  hint:"class Usuario(Base):",
+  sol:"class Usuario(Base):",
+  why:"Al heredar de Base, la clase 'firma la lista de invitados': crear_db la verá y construirá la tabla. No importás nada nuevo: Column, Integer y String ya vienen de la capa 2.",
+  accept:["class Usuario(Base):"]});
+st({grp:C3, file:FM,
+  quiero:"Decir cómo se llamará la <b>tabla</b> de usuarios dentro de la base.",
+  hint:"__tablename__ = \"usuarios\" (indentado, dentro de la clase).",
+  sol:'    __tablename__ = "usuarios"',
+  why:"Clase Usuario (singular); tabla usuarios (plural). Mismo patrón que Registro/registros.",
+  accept:['__tablename__ = "usuarios"']});
+st({grp:C3, file:FM,
+  quiero:"La columna <b>id</b>: clave primaria que la base numera sola.",
+  hint:"id = Column(Integer, primary_key=True)",
+  sol:"    id = Column(Integer, primary_key=True)",
+  why:"Idéntica a la de Registro: toda tabla necesita su manija única. El id identifica UNA fila; no conecta tablas (eso es la FK, capa 5).",
+  accept:["id = Column(Integer, primary_key=True)"]});
+st({grp:C3, file:FM,
+  quiero:"La columna <b>usuario</b> (el nombre con que entra el pasante). Ojo: no puede haber dos pasantes con el mismo nombre.",
+  hint:"usuario = Column(String, unique=True)",
+  sol:"    usuario = Column(String, unique=True)",
+  why:"unique=True es la idea nueva de la capa: si hubiera dos 'alessa', el login (capa 4) no sabría a quién dejar entrar. El id único NO cubre esto: vigila la columna id, no la columna usuario.",
+  accept:["usuario = Column(String, unique=True)"]});
+st({grp:C3, file:FM,
+  quiero:"La columna donde vive la contraseña... pero <b>triturada</b>, nunca en texto plano. El nombre debe decir la verdad.",
+  hint:"hash_contrasena = Column(String) — solo un texto; la tabla no tritura nada.",
+  sol:"    hash_contrasena = Column(String)",
+  why:"Se llama hash_contrasena (no 'contrasena') porque ahí va el hash, no la clave. Es solo un String: triturar es una ACCIÓN, y las acciones viven en main.py, no en el modelo.",
+  accept:["hash_contrasena = Column(String)"]});
+
+/* ---------------- CAPA 3 · main.py (registro con hashing) ---------------- */
+st({grp:C3, file:FMM,
+  quiero:"Necesito la <b>trituradora</b> real de contraseñas (la librería de hashing).",
+  hint:"import bcrypt",
+  sol:"import bcrypt",
+  why:"bcrypt te da tres verbos: gensalt() (la sal), hashpw() (triturar) y checkpw() (verificar, capa 4). Se instala aparte: pip install bcrypt.",
+  accept:["import bcrypt"]});
+st({grp:C3, file:FMM,
+  quiero:"Traer el <b>modelo Usuario</b> para poder crear filas de usuarios.",
+  hint:"from models import Usuario (o unilo a Registro: Registro, Usuario).",
+  sol:"from models import Usuario",
+  why:"Usuario es la tabla: se usa para crear el objeto al registrar. Podés juntarlo con Registro en una línea: from models import Registro, Usuario.",
+  accept:["from models import Usuario","from models import Registro, Usuario","from models import Usuario, Registro"]});
+st({grp:C3, file:FMM, multi:true,
+  quiero:"El <b>contrato de entrada</b>: qué llega en la petición. Fijate que aquí sí entra <code>contrasena</code> en texto plano (es lo que la persona teclea).",
+  hint:"class UsuarioIn(BaseModel): con usuario: str y contrasena: str.",
+  sol:"class UsuarioIn(BaseModel):\n    usuario: str\n    contrasena: str",
+  why:"UsuarioIn = lo que LLEGA (texto plano, honesto). Usuario = lo que se GUARDA (triturado). Dos moldes distintos, dos momentos del viaje del dato.",
+  accept:["class UsuarioIn(BaseModel):\nusuario: str\ncontrasena: str"]});
+st({grp:C3, file:FMM,
+  quiero:"La ruta <b>POST</b> a <code>/usuarios</code> que, al crear, devuelva <b>201</b>.",
+  hint:"@app.post(\"/usuarios\", status_code=201)",
+  sol:'@app.post("/usuarios", status_code=201)',
+  why:"Mismo patrón que /registros: POST = crear, 201 = Created.",
+  accept:['@app.post("/usuarios", status_code=201)',"@app.post('/usuarios', status_code=201)"]});
+st({grp:C3, file:FMM,
+  quiero:"La <b>función</b> del endpoint, que recibe el dato validado como <code>UsuarioIn</code>.",
+  hint:"def crear_usuario(user: UsuarioIn):",
+  sol:"def crear_usuario(user: UsuarioIn):",
+  why:"'user: UsuarioIn' hace que FastAPI valide el body. Dentro, user.usuario y user.contrasena son lo que se tecleó.",
+  accept:["def crear_usuario(user: UsuarioIn):"]});
+st({grp:C3, file:FMM,
+  quiero:"Abrir una <b>sesión</b> con la base (una conversación nueva).",
+  hint:"db = SessionLocal()",
+  sol:"db = SessionLocal()",
+  why:"Igual que en registros: cada petición fabrica la suya.",
+  accept:["db = SessionLocal()"]});
+st({grp:C3, file:FMM,
+  quiero:"El <b>corazón de la capa</b>: triturar la contraseña que llegó, con una sal nueva, ANTES de guardar nada.",
+  hint:"hash_bytes = bcrypt.hashpw(user.contrasena.encode(), bcrypt.gensalt())",
+  sol:"hash_bytes = bcrypt.hashpw(user.contrasena.encode(), bcrypt.gensalt())",
+  why:"gensalt() = puñado de sal aleatorio (distinto cada vez). hashpw() = triturar. .encode() = pasar el texto a bytes (bcrypt come bytes, no letras). Aquí user.contrasena aparece por última vez: entra a la máquina y no vuelve.",
+  accept:["hash_bytes = bcrypt.hashpw(user.contrasena.encode(), bcrypt.gensalt())"]});
+st({grp:C3, file:FMM, multi:true,
+  quiero:"Armar el <b>objeto Usuario</b> para guardar: el nombre tal cual, y en hash_contrasena el <b>triturado</b> (NO la contraseña).",
+  hint:"nuevo_usuario = Usuario(usuario=user.usuario, hash_contrasena=hash_bytes.decode())",
+  sol:"nuevo_usuario = Usuario(\n    usuario=user.usuario,\n    hash_contrasena=hash_bytes.decode(),\n)",
+  why:"En hash_contrasena va hash_bytes.decode(), NO user.contrasena (esa sería la trampa del texto plano). .decode() vuelve los bytes a texto para guardarlos en la columna String.",
+  accept:["nuevo_usuario = Usuario(\nusuario=user.usuario,\nhash_contrasena=hash_bytes.decode(),\n)"]});
+st({grp:C3, file:FMM,
+  quiero:"<b>Apuntar</b> el usuario en la bandeja de la sesión (aún no en disco).",
+  hint:"db.add(nuevo_usuario)",
+  sol:"db.add(nuevo_usuario)",
+  why:"Lo deja pendiente, como git add.",
+  accept:["db.add(nuevo_usuario)"]});
+st({grp:C3, file:FMM,
+  quiero:"<b>Guardar de verdad</b> en el disco.",
+  hint:"db.commit()",
+  sol:"db.commit()",
+  why:"add (apuntar) → commit (guardar definitivo).",
+  accept:["db.commit()"]});
+st({grp:C3, file:FMM,
+  quiero:"<b>Traer el id</b> que la base le acaba de generar al usuario.",
+  hint:"db.refresh(nuevo_usuario)",
+  sol:"db.refresh(nuevo_usuario)",
+  why:"El objeto nació sin id; refresh lo recarga con su número.",
+  accept:["db.refresh(nuevo_usuario)"]});
+st({grp:C3, file:FMM,
+  quiero:"<b>Cerrar</b> la conversación con la base.",
+  hint:"db.close()",
+  sol:"db.close()",
+  why:"Colgás el teléfono al terminar de usar la sesión.",
+  accept:["db.close()"]});
+st({grp:C3, file:FMM,
+  quiero:"<b>Devolver</b> el usuario creado como respuesta.",
+  hint:"return nuevo_usuario",
+  sol:"return nuevo_usuario",
+  why:"La respuesta trae usuario + hash_contrasena ($2b$12$...). La contraseña original jamás sale: quedó triturada.",
+  accept:["return nuevo_usuario"]});
+
 /* ============================================================
    MOTOR DEL JUEGO
    ============================================================ */
@@ -447,6 +560,14 @@ function render(){
     <div class="fb" id="fb"></div>
   `;
   const inp=document.getElementById("inp");
+  inp.addEventListener("keydown",function(e){
+    if(e.key==="Tab"){          // Tab físico = indentar 4 espacios, no saltar de campo
+      e.preventDefault();
+      const a=this.selectionStart, b=this.selectionEnd;
+      this.value=this.value.slice(0,a)+"    "+this.value.slice(b);
+      this.selectionStart=this.selectionEnd=a+4;
+    }
+  });
   const fb=document.getElementById("fb");
   document.getElementById("hintbtn").onclick=()=>document.getElementById("hint").classList.toggle("show");
   document.getElementById("prev").onclick=()=>{ if(cur>0){cur--; render();} };

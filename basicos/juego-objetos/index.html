@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hospital Tycoon — Nivel 1</title>
+  <!-- style.css = SOLO cómo se ve. game.js = SOLO qué hace. index.html = SOLO qué hay.
+       Misma idea de "una responsabilidad, un archivo" que en las capas del API. -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="topbar">
+    <div>
+      <h1>🏥 Hospital Tycoon</h1>
+      <p class="subtitle">Nivel 1 — Estampa a tu primer paciente</p>
+    </div>
+    <div class="counters">
+      <span>Fichas: <b id="count-fichas">0</b></span>
+      <span>⭐ <b id="count-estrellas">0</b></span>
+    </div>
+  </header>
+
+  <!-- Los 4 conceptos como logros que se encienden al usarlos -->
+  <section class="logros" id="logros">
+    <div class="logro encendido" data-k="clase">🔨 CLASE<small>el molde</small></div>
+    <div class="logro" data-k="objeto">🖨️ OBJETO<small>la ficha</small></div>
+    <div class="logro" data-k="atributo">📝 ATRIBUTO<small>un dato</small></div>
+    <div class="logro" data-k="metodo">▶️ MÉTODO<small>una acción</small></div>
+  </section>
+
+  <main class="board">
+
+    <!-- COLUMNA 1: el molde (la CLASE) -->
+    <section class="panel molde">
+      <h2>El molde · <span class="tag">CLASE</span></h2>
+      <pre class="code-molde">class Paciente:
+    def __init__(self, nombre, edad, diagnostico):
+        self.nombre = nombre
+        self.edad = edad
+        self.diagnostico = diagnostico
+
+    def cumplir_anios(self):
+        self.edad = self.edad + 1
+
+    def es_mayor(self):
+        return self.edad >= 18</pre>
+      <button id="btn-estampar" class="big-btn">🖨️ ESTAMPAR ficha</button>
+      <p class="hint">Un molde vacío. Aprieta para sacar fichas: <b>un molde → muchas fichas</b>.</p>
+    </section>
+
+    <!-- COLUMNA 2: las fichas estampadas (los OBJETOS) -->
+    <section class="panel mesa">
+      <h2>Fichas estampadas · <span class="tag">OBJETOS</span></h2>
+      <div id="fichas" class="fichas"></div>
+      <p id="mesa-vacia" class="empty">Aún no hay fichas. Aprieta <b>ESTAMPAR</b>.</p>
+    </section>
+
+    <!-- COLUMNA 3: el código que se enciende -->
+    <section class="panel consola">
+      <h2>Código que se enciende</h2>
+      <pre id="linea-actual" class="linea-actual"># tus acciones aparecerán aquí</pre>
+      <ol id="log" class="log"></ol>
+    </section>
+
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>

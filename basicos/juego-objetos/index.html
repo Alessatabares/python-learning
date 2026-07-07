@@ -1,70 +1,271 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Hospital Tycoon — Nivel 1</title>
-  <!-- style.css = SOLO cómo se ve. game.js = SOLO qué hace. index.html = SOLO qué hay.
-       Misma idea de "una responsabilidad, un archivo" que en las capas del API. -->
-  <link rel="stylesheet" href="style.css" />
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>🖨️ Molde y Ficha · POO</title>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#161d2e; --panel2:#1d2740; --line:#2a3550;
+    --ink:#e7ecf5; --mut:#93a0bd; --blue:#3b82f6; --teal:#0ea5a4;
+    --green:#22c55e; --amber:#f59e0b; --violet:#8b5cf6; --code:#0b1018;
+    /* cada concepto tiene SU color, y lo mantiene en todos lados */
+    --c-clase:var(--violet); --c-objeto:var(--blue);
+    --c-atributo:var(--amber); --c-metodo:var(--green);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+    background:linear-gradient(180deg,#0c111c,#0f1420);color:var(--ink);line-height:1.5}
+  .wrap{max-width:1100px;margin:0 auto;padding:28px 20px 70px}
+
+  /* ---------- cabecera ---------- */
+  header{display:flex;justify-content:space-between;align-items:flex-end;
+    flex-wrap:wrap;gap:14px;margin-bottom:22px}
+  header h1{margin:0;font-size:24px}
+  header .sub{color:var(--mut);margin:4px 0 0;font-size:14px}
+  .counters{display:flex;gap:20px;font-size:14px;color:var(--mut);text-align:center}
+  .counters b{color:var(--ink);font-size:20px}
+
+  /* ---------- la ruta de los 4 conceptos ---------- */
+  .ruta{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
+  .paso{flex:1 1 130px;min-width:130px;display:flex;flex-direction:column;
+    gap:2px;padding:12px 14px;border-radius:12px;background:var(--panel);
+    border:1px solid var(--line);opacity:.5;transition:.35s}
+  .paso .lbl{font-weight:800;letter-spacing:.4px;display:flex;align-items:center;gap:6px}
+  .paso small{color:var(--mut);font-size:12px}
+  .paso[data-k="clase"]    .lbl{color:var(--c-clase)}
+  .paso[data-k="objeto"]   .lbl{color:var(--c-objeto)}
+  .paso[data-k="atributo"] .lbl{color:var(--c-atributo)}
+  .paso[data-k="metodo"]   .lbl{color:var(--c-metodo)}
+  .paso.on{opacity:1;transform:translateY(-3px)}
+  .paso.on[data-k="clase"]    {border-color:var(--c-clase);   box-shadow:0 6px 18px rgba(139,92,246,.25)}
+  .paso.on[data-k="objeto"]   {border-color:var(--c-objeto);  box-shadow:0 6px 18px rgba(59,130,246,.25)}
+  .paso.on[data-k="atributo"] {border-color:var(--c-atributo);box-shadow:0 6px 18px rgba(245,158,11,.25)}
+  .paso.on[data-k="metodo"]   {border-color:var(--c-metodo);  box-shadow:0 6px 18px rgba(34,197,94,.25)}
+  .check{margin-left:auto;opacity:0;transition:.3s}
+  .paso.on .check{opacity:1}
+
+  /* ---------- tablero ---------- */
+  .board{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+  .panel h2{margin:0 0 14px;font-size:15px;display:flex;align-items:center;gap:8px}
+  .tag{font-size:10px;padding:3px 9px;border-radius:99px;font-weight:800;letter-spacing:.4px}
+  .tag.clase{background:rgba(139,92,246,.16);color:var(--c-clase);border:1px solid var(--c-clase)}
+  .tag.objeto{background:rgba(59,130,246,.16);color:var(--c-objeto);border:1px solid var(--c-objeto)}
+
+  /* ---------- código del molde ---------- */
+  pre{margin:0;font-family:ui-monospace,"SF Mono",Menlo,monospace}
+  .code-molde{background:var(--code);border:1px solid var(--line);border-radius:10px;
+    padding:14px;font-size:12.5px;overflow-x:auto;color:#c7d2e5;line-height:1.55}
+  .kw{color:#c586c0}.fn{color:#4ec9b0}.self{color:#569cd6}.op{color:#93a0bd}
+
+  .big-btn{width:100%;margin-top:14px;padding:14px;border:none;border-radius:12px;
+    background:linear-gradient(180deg,var(--blue),#2563eb);color:white;font-size:15px;
+    font-weight:800;cursor:pointer;transition:transform .05s,filter .2s}
+  .big-btn:hover{filter:brightness(1.1)}
+  .big-btn:active{transform:scale(.98)}
+  .mini-btn{margin-top:10px;width:100%;padding:9px;background:transparent;color:var(--mut);
+    border:1px solid var(--line);border-radius:10px;cursor:pointer;font-size:13px}
+  .mini-btn:hover{color:var(--ink);border-color:var(--mut)}
+  .hint{font-size:12.5px;color:var(--mut);margin:12px 0 0}
+
+  /* ---------- fichas ---------- */
+  .fichas{display:flex;flex-direction:column;gap:12px}
+  .empty{color:var(--mut);font-style:italic;font-size:13px}
+  .ficha{border:1px solid var(--c-objeto);border-radius:12px;padding:12px;
+    background:var(--panel2);animation:pop .3s ease}
+  @keyframes pop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+  .ficha-top{font-weight:800;color:var(--c-objeto);font-family:ui-monospace,monospace;
+    font-size:13px;border-bottom:1px dashed var(--line);padding-bottom:7px;margin-bottom:9px}
+  .ficha label{display:flex;justify-content:space-between;align-items:center;gap:8px;
+    margin:7px 0;font-size:13px;color:var(--c-atributo);font-family:ui-monospace,monospace}
+  .ficha input{flex:1;max-width:58%;padding:7px 9px;background:var(--code);color:var(--ink);
+    border:1px solid var(--line);border-radius:7px;font-size:13px;font-family:ui-monospace,monospace}
+  .ficha input:focus{outline:none;border-color:var(--c-atributo)}
+  .metodos{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
+  .metodos button{background:rgba(34,197,94,.12);color:var(--c-metodo);
+    border:1px solid var(--c-metodo);border-radius:9px;padding:8px 11px;font-size:12.5px;
+    font-family:ui-monospace,monospace;cursor:pointer;transition:.15s}
+  .metodos button:hover{background:var(--c-metodo);color:#04140a}
+  .resultado{margin-top:9px;font-size:13px;min-height:1.2em;font-weight:800;font-family:ui-monospace,monospace}
+  .pulso{animation:pulso .5s ease}
+  @keyframes pulso{50%{color:var(--c-metodo);transform:scale(1.35)}}
+
+  /* ---------- consola ---------- */
+  .linea{background:var(--code);border:1px solid var(--line);border-radius:10px;padding:16px;
+    font-family:ui-monospace,monospace;font-size:14px;min-height:1.5em;overflow-x:auto;
+    color:var(--mut);transition:color .2s;border-left:4px solid var(--line)}
+  .log{margin:14px 0 0;padding:0;list-style:none;font-family:ui-monospace,monospace;
+    font-size:12px;max-height:280px;overflow-y:auto}
+  .log li{margin:5px 0;color:var(--mut);display:flex;gap:8px;align-items:center}
+  .dot{width:8px;height:8px;border-radius:99px;flex:none}
+</style>
 </head>
 <body>
+<div class="wrap">
 
-  <header class="topbar">
+  <header>
     <div>
-      <h1>🏥 Hospital Tycoon</h1>
-      <p class="subtitle">Nivel 1 — Estampa a tu primer paciente</p>
+      <h1>🖨️ Molde y Ficha</h1>
+      <p class="sub">Nivel 1 — clase → objeto → atributo → método</p>
     </div>
     <div class="counters">
-      <span>Fichas: <b id="count-fichas">0</b></span>
-      <span>⭐ <b id="count-estrellas">0</b></span>
+      <span>Fichas<br><b id="cF">0</b></span>
+      <span>⭐<br><b id="cE">0</b></span>
     </div>
   </header>
 
-  <!-- Los 4 conceptos como logros que se encienden al usarlos -->
-  <section class="logros" id="logros">
-    <div class="logro encendido" data-k="clase">🔨 CLASE<small>el molde</small></div>
-    <div class="logro" data-k="objeto">🖨️ OBJETO<small>la ficha</small></div>
-    <div class="logro" data-k="atributo">📝 ATRIBUTO<small>un dato</small></div>
-    <div class="logro" data-k="metodo">▶️ MÉTODO<small>una acción</small></div>
-  </section>
+  <!-- la ruta de los 4 conceptos: se encienden al usarlos -->
+  <div class="ruta">
+    <div class="paso on" data-k="clase"><span class="lbl">🔨 CLASE <span class="check">✓</span></span><small>el molde</small></div>
+    <div class="paso" data-k="objeto"><span class="lbl">🖨️ OBJETO <span class="check">✓</span></span><small>la ficha</small></div>
+    <div class="paso" data-k="atributo"><span class="lbl">📝 ATRIBUTO <span class="check">✓</span></span><small>un dato</small></div>
+    <div class="paso" data-k="metodo"><span class="lbl">▶️ MÉTODO <span class="check">✓</span></span><small>una acción</small></div>
+  </div>
 
-  <main class="board">
+  <div class="board">
 
-    <!-- COLUMNA 1: el molde (la CLASE) -->
-    <section class="panel molde">
-      <h2>El molde · <span class="tag">CLASE</span></h2>
-      <pre class="code-molde">class Paciente:
-    def __init__(self, nombre, edad, diagnostico):
-        self.nombre = nombre
-        self.edad = edad
-        self.diagnostico = diagnostico
+    <!-- molde -->
+    <section class="panel">
+      <h2>El molde <span class="tag clase">CLASE</span></h2>
+      <pre class="code-molde"><span class="kw">class</span> <span class="fn">Paciente</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="self">self</span>, nombre, edad, diagnostico):
+        <span class="self">self</span>.nombre <span class="op">=</span> nombre
+        <span class="self">self</span>.edad <span class="op">=</span> edad
+        <span class="self">self</span>.diagnostico <span class="op">=</span> diagnostico
 
-    def cumplir_anios(self):
-        self.edad = self.edad + 1
+    <span class="kw">def</span> <span class="fn">cumplir_anios</span>(<span class="self">self</span>):
+        <span class="self">self</span>.edad <span class="op">=</span> <span class="self">self</span>.edad <span class="op">+</span> 1
 
-    def es_mayor(self):
-        return self.edad >= 18</pre>
-      <button id="btn-estampar" class="big-btn">🖨️ ESTAMPAR ficha</button>
+    <span class="kw">def</span> <span class="fn">es_mayor</span>(<span class="self">self</span>):
+        <span class="kw">return</span> <span class="self">self</span>.edad <span class="op">&gt;=</span> 18</pre>
+      <button id="estampar" class="big-btn">🖨️ ESTAMPAR ficha</button>
+      <button id="reiniciar" class="mini-btn">↺ reiniciar</button>
       <p class="hint">Un molde vacío. Aprieta para sacar fichas: <b>un molde → muchas fichas</b>.</p>
     </section>
 
-    <!-- COLUMNA 2: las fichas estampadas (los OBJETOS) -->
-    <section class="panel mesa">
-      <h2>Fichas estampadas · <span class="tag">OBJETOS</span></h2>
+    <!-- fichas -->
+    <section class="panel">
+      <h2>Fichas estampadas <span class="tag objeto">OBJETOS</span></h2>
       <div id="fichas" class="fichas"></div>
-      <p id="mesa-vacia" class="empty">Aún no hay fichas. Aprieta <b>ESTAMPAR</b>.</p>
+      <p id="vacia" class="empty">Aún no hay fichas. Aprieta <b>ESTAMPAR</b>.</p>
     </section>
 
-    <!-- COLUMNA 3: el código que se enciende -->
-    <section class="panel consola">
-      <h2>Código que se enciende</h2>
-      <pre id="linea-actual" class="linea-actual"># tus acciones aparecerán aquí</pre>
-      <ol id="log" class="log"></ol>
+    <!-- consola -->
+    <section class="panel">
+      <h2>🖥️ Código que se enciende</h2>
+      <pre id="linea" class="linea"># tus acciones aparecerán aquí</pre>
+      <ul id="log" class="log"></ul>
     </section>
 
-  </main>
+  </div>
+</div>
 
-  <script src="game.js"></script>
+<script>
+/* ===== EL MOLDE, en JavaScript (misma idea que en Python) ===== */
+class Paciente {
+  constructor(nombre, edad, diagnostico){   // el __init__
+    this.nombre = nombre;                    // atributo (this = self)
+    this.edad = edad;
+    this.diagnostico = diagnostico;
+  }
+  cumplir_anios(){ this.edad = Number(this.edad) + 1; }   // método
+  es_mayor(){ return Number(this.edad) >= 18; }           // método
+}
+
+/* colores por concepto (mismos que el CSS) */
+const COLOR = {clase:"#8b5cf6", objeto:"#3b82f6", atributo:"#f59e0b", metodo:"#22c55e"};
+
+let contador = 0, estrellas = 0;
+const $ = (id) => document.getElementById(id);
+
+function encender(k){
+  const p = document.querySelector('.paso[data-k="'+k+'"]');
+  if(p && !p.classList.contains("on")){ p.classList.add("on"); estrellas++; $("cE").textContent = estrellas; }
+}
+function mostrar(linea, k){
+  const el = $("linea");
+  el.textContent = linea;
+  el.style.color = COLOR[k]; el.style.borderLeftColor = COLOR[k];
+  const li = document.createElement("li");
+  li.innerHTML = '<span class="dot" style="background:'+COLOR[k]+'"></span>'+linea;
+  $("log").prepend(li);
+}
+
+/* ESTAMPAR -> nace un OBJETO */
+$("estampar").addEventListener("click", () => {
+  contador++;
+  const v = "p"+contador;
+  const paciente = new Paciente("", 0, "");
+  encender("objeto");
+  mostrar(v+' = Paciente("", 0, "")   # nace un OBJETO', "objeto");
+  $("vacia").style.display = "none";
+  $("cF").textContent = contador;
+  render(v, paciente);
+});
+
+/* REINICIAR */
+$("reiniciar").addEventListener("click", () => {
+  contador = 0; estrellas = 0;
+  $("fichas").innerHTML = ""; $("log").innerHTML = "";
+  $("cF").textContent = "0"; $("cE").textContent = "0";
+  $("vacia").style.display = "";
+  const el = $("linea"); el.textContent = "# tus acciones aparecerán aquí";
+  el.style.color = ""; el.style.borderLeftColor = "";
+  document.querySelectorAll('.paso').forEach(p => { if(p.dataset.k!=="clase") p.classList.remove("on"); });
+});
+
+function fila(attr, tipo){
+  const val = tipo==="number" ? "0" : "";
+  return '<label>'+attr+' <input data-attr="'+attr+'" type="'+tipo+'" value="'+val+'"></label>';
+}
+
+function render(v, paciente){
+  const div = document.createElement("div");
+  div.className = "ficha";
+  div.innerHTML =
+    '<div class="ficha-top">#'+v+' · Paciente</div>' +
+    fila("nombre","text") + fila("edad","number") + fila("diagnostico","text") +
+    '<div class="metodos">' +
+      '<button data-m="cumplir_anios">cumplir_anios()</button>' +
+      '<button data-m="es_mayor">es_mayor()</button>' +
+    '</div><div class="resultado"></div>';
+
+  /* escribir un ATRIBUTO */
+  div.querySelectorAll("input").forEach(input => {
+    input.addEventListener("input", () => {
+      const a = input.dataset.attr;
+      paciente[a] = input.value;
+      encender("atributo");
+      const valor = input.type==="number" ? (input.value||"0") : '"'+input.value+'"';
+      mostrar(v+"."+a+" = "+valor+"   # un ATRIBUTO", "atributo");
+    });
+  });
+
+  /* apretar un MÉTODO */
+  div.querySelectorAll(".metodos button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const m = btn.dataset.m;
+      encender("metodo");
+      if(m==="cumplir_anios"){
+        paciente.cumplir_anios();
+        const ie = div.querySelector('input[data-attr="edad"]');
+        ie.value = paciente.edad; ie.classList.add("pulso");
+        setTimeout(()=>ie.classList.remove("pulso"),500);
+        mostrar(v+".cumplir_anios()   # MÉTODO -> sube self.edad", "metodo");
+      }
+      if(m==="es_mayor"){
+        const r = paciente.es_mayor();
+        const box = div.querySelector(".resultado");
+        box.textContent = "-> " + (r ? "True (mayor de edad)" : "False (menor)");
+        box.style.color = r ? COLOR.metodo : "#ef4444";
+        mostrar(v+".es_mayor()   # devuelve "+(r?"True":"False"), "metodo");
+      }
+    });
+  });
+
+  $("fichas").prepend(div);
+}
+</script>
 </body>
 </html>

@@ -3,102 +3,70 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>🖨️ Molde y Ficha · POO</title>
+<title>⌨️ Recrear la API · clases, objetos, métodos</title>
 <style>
   :root{
     --bg:#0f1420; --panel:#161d2e; --panel2:#1d2740; --line:#2a3550;
     --ink:#e7ecf5; --mut:#93a0bd; --blue:#3b82f6; --teal:#0ea5a4;
-    --green:#22c55e; --amber:#f59e0b; --violet:#8b5cf6; --code:#0b1018;
-    /* cada concepto tiene SU color, y lo mantiene en todos lados */
-    --c-clase:var(--violet); --c-objeto:var(--blue);
-    --c-atributo:var(--amber); --c-metodo:var(--green);
+    --green:#22c55e; --amber:#f59e0b; --violet:#8b5cf6; --code:#0b1018; --red:#ef4444;
   }
   *{box-sizing:border-box}
   body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
     background:linear-gradient(180deg,#0c111c,#0f1420);color:var(--ink);line-height:1.5}
-  .wrap{max-width:1100px;margin:0 auto;padding:28px 20px 70px}
+  .wrap{max-width:820px;margin:0 auto;padding:26px 18px 70px}
 
-  /* ---------- cabecera ---------- */
-  header{display:flex;justify-content:space-between;align-items:flex-end;
-    flex-wrap:wrap;gap:14px;margin-bottom:22px}
-  header h1{margin:0;font-size:24px}
-  header .sub{color:var(--mut);margin:4px 0 0;font-size:14px}
-  .counters{display:flex;gap:20px;font-size:14px;color:var(--mut);text-align:center}
-  .counters b{color:var(--ink);font-size:20px}
+  header{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+  header h1{margin:0;font-size:22px}
+  header .sub{color:var(--mut);margin:4px 0 0;font-size:13px}
+  .stat{color:var(--mut);font-size:13px;text-align:right}
+  .stat b{color:var(--green);font-size:18px}
 
-  /* ---------- la ruta de los 4 conceptos ---------- */
-  .ruta{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
-  .paso{flex:1 1 130px;min-width:130px;display:flex;flex-direction:column;
-    gap:2px;padding:12px 14px;border-radius:12px;background:var(--panel);
-    border:1px solid var(--line);opacity:.5;transition:.35s}
-  .paso .lbl{font-weight:800;letter-spacing:.4px;display:flex;align-items:center;gap:6px}
-  .paso small{color:var(--mut);font-size:12px}
-  .paso[data-k="clase"]    .lbl{color:var(--c-clase)}
-  .paso[data-k="objeto"]   .lbl{color:var(--c-objeto)}
-  .paso[data-k="atributo"] .lbl{color:var(--c-atributo)}
-  .paso[data-k="metodo"]   .lbl{color:var(--c-metodo)}
-  .paso.on{opacity:1;transform:translateY(-3px)}
-  .paso.on[data-k="clase"]    {border-color:var(--c-clase);   box-shadow:0 6px 18px rgba(139,92,246,.25)}
-  .paso.on[data-k="objeto"]   {border-color:var(--c-objeto);  box-shadow:0 6px 18px rgba(59,130,246,.25)}
-  .paso.on[data-k="atributo"] {border-color:var(--c-atributo);box-shadow:0 6px 18px rgba(245,158,11,.25)}
-  .paso.on[data-k="metodo"]   {border-color:var(--c-metodo);  box-shadow:0 6px 18px rgba(34,197,94,.25)}
-  .check{margin-left:auto;opacity:0;transition:.3s}
-  .paso.on .check{opacity:1}
+  /* filtros por archivo */
+  .filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .filtro{padding:7px 12px;border-radius:99px;background:var(--panel);border:1px solid var(--line);
+    color:var(--mut);cursor:pointer;font-size:12.5px;font-family:ui-monospace,monospace}
+  .filtro.on{color:var(--ink);border-color:var(--blue);background:var(--panel2)}
 
-  /* ---------- tablero ---------- */
-  .board{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
-  .panel h2{margin:0 0 14px;font-size:15px;display:flex;align-items:center;gap:8px}
-  .tag{font-size:10px;padding:3px 9px;border-radius:99px;font-weight:800;letter-spacing:.4px}
-  .tag.clase{background:rgba(139,92,246,.16);color:var(--c-clase);border:1px solid var(--c-clase)}
-  .tag.objeto{background:rgba(59,130,246,.16);color:var(--c-objeto);border:1px solid var(--c-objeto)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .chip{font-size:11px;font-weight:800;letter-spacing:.4px;padding:4px 10px;border-radius:99px;
+    font-family:ui-monospace,monospace}
+  .chip.models{background:rgba(14,165,164,.15);color:var(--teal);border:1px solid var(--teal)}
+  .chip.main{background:rgba(59,130,246,.15);color:var(--blue);border:1px solid var(--blue)}
+  .chip.database{background:rgba(245,158,11,.15);color:var(--amber);border:1px solid var(--amber)}
+  .chip.crear{background:rgba(139,92,246,.15);color:var(--violet);border:1px solid var(--violet)}
+  .chip.tipo{background:transparent;color:var(--mut);border:1px solid var(--line)}
 
-  /* ---------- código del molde ---------- */
-  pre{margin:0;font-family:ui-monospace,"SF Mono",Menlo,monospace}
-  .code-molde{background:var(--code);border:1px solid var(--line);border-radius:10px;
-    padding:14px;font-size:12.5px;overflow-x:auto;color:#c7d2e5;line-height:1.55}
-  .kw{color:#c586c0}.fn{color:#4ec9b0}.self{color:#569cd6}.op{color:#93a0bd}
+  .tema{font-size:18px;font-weight:700;margin:0 0 6px}
+  .enun{color:var(--ink);margin:0 0 12px;font-size:15px}
+  .pista-btn{background:none;border:none;color:var(--amber);cursor:pointer;font-size:13px;padding:0;margin-bottom:10px}
+  .pista{display:none;background:rgba(245,158,11,.08);border-left:3px solid var(--amber);
+    padding:8px 12px;border-radius:6px;color:var(--mut);font-size:13px;margin-bottom:12px}
 
-  .big-btn{width:100%;margin-top:14px;padding:14px;border:none;border-radius:12px;
-    background:linear-gradient(180deg,var(--blue),#2563eb);color:white;font-size:15px;
-    font-weight:800;cursor:pointer;transition:transform .05s,filter .2s}
-  .big-btn:hover{filter:brightness(1.1)}
-  .big-btn:active{transform:scale(.98)}
-  .mini-btn{margin-top:10px;width:100%;padding:9px;background:transparent;color:var(--mut);
-    border:1px solid var(--line);border-radius:10px;cursor:pointer;font-size:13px}
-  .mini-btn:hover{color:var(--ink);border-color:var(--mut)}
-  .hint{font-size:12.5px;color:var(--mut);margin:12px 0 0}
+  .filehdr{font-family:ui-monospace,monospace;font-size:12px;color:var(--mut);
+    background:var(--code);border:1px solid var(--line);border-bottom:none;
+    border-radius:8px 8px 0 0;padding:7px 12px}
+  textarea{width:100%;min-height:180px;background:var(--code);color:#c7d2e5;border:1px solid var(--line);
+    border-top:none;border-radius:0 0 8px 8px;padding:12px;font-family:ui-monospace,"SF Mono",Menlo,monospace;
+    font-size:13.5px;line-height:1.55;resize:vertical;tab-size:4}
+  textarea:focus{outline:none;border-color:var(--blue)}
 
-  /* ---------- fichas ---------- */
-  .fichas{display:flex;flex-direction:column;gap:12px}
-  .empty{color:var(--mut);font-style:italic;font-size:13px}
-  .ficha{border:1px solid var(--c-objeto);border-radius:12px;padding:12px;
-    background:var(--panel2);animation:pop .3s ease}
-  @keyframes pop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
-  .ficha-top{font-weight:800;color:var(--c-objeto);font-family:ui-monospace,monospace;
-    font-size:13px;border-bottom:1px dashed var(--line);padding-bottom:7px;margin-bottom:9px}
-  .ficha label{display:flex;justify-content:space-between;align-items:center;gap:8px;
-    margin:7px 0;font-size:13px;color:var(--c-atributo);font-family:ui-monospace,monospace}
-  .ficha input{flex:1;max-width:58%;padding:7px 9px;background:var(--code);color:var(--ink);
-    border:1px solid var(--line);border-radius:7px;font-size:13px;font-family:ui-monospace,monospace}
-  .ficha input:focus{outline:none;border-color:var(--c-atributo)}
-  .metodos{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
-  .metodos button{background:rgba(34,197,94,.12);color:var(--c-metodo);
-    border:1px solid var(--c-metodo);border-radius:9px;padding:8px 11px;font-size:12.5px;
-    font-family:ui-monospace,monospace;cursor:pointer;transition:.15s}
-  .metodos button:hover{background:var(--c-metodo);color:#04140a}
-  .resultado{margin-top:9px;font-size:13px;min-height:1.2em;font-weight:800;font-family:ui-monospace,monospace}
-  .pulso{animation:pulso .5s ease}
-  @keyframes pulso{50%{color:var(--c-metodo);transform:scale(1.35)}}
+  .acciones{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  button.btn{padding:10px 14px;border-radius:9px;border:1px solid var(--line);cursor:pointer;
+    font-size:13px;font-weight:700;background:var(--panel2);color:var(--ink)}
+  button.btn.pri{background:linear-gradient(180deg,var(--blue),#2563eb);border:none;color:white}
+  button.btn:hover{filter:brightness(1.12)}
 
-  /* ---------- consola ---------- */
-  .linea{background:var(--code);border:1px solid var(--line);border-radius:10px;padding:16px;
-    font-family:ui-monospace,monospace;font-size:14px;min-height:1.5em;overflow-x:auto;
-    color:var(--mut);transition:color .2s;border-left:4px solid var(--line)}
-  .log{margin:14px 0 0;padding:0;list-style:none;font-family:ui-monospace,monospace;
-    font-size:12px;max-height:280px;overflow-y:auto}
-  .log li{margin:5px 0;color:var(--mut);display:flex;gap:8px;align-items:center}
-  .dot{width:8px;height:8px;border-radius:99px;flex:none}
+  .resultado{margin-top:12px;font-family:ui-monospace,monospace;font-size:13.5px;min-height:1.2em;font-weight:700}
+  .sol{display:none;margin-top:12px}
+  .sol pre{background:var(--code);border:1px solid var(--green);border-radius:8px;padding:12px;
+    font-family:ui-monospace,monospace;font-size:13px;color:#c7d2e5;overflow-x:auto;line-height:1.55;margin:0}
+
+  .nav{display:flex;justify-content:space-between;align-items:center;margin-top:18px;gap:10px}
+  .nav button{padding:9px 14px;border-radius:9px;border:1px solid var(--line);background:var(--panel);
+    color:var(--ink);cursor:pointer;font-size:13px}
+  .nav button:disabled{opacity:.35;cursor:default}
+  .contador{color:var(--mut);font-size:13px;font-family:ui-monospace,monospace}
 </style>
 </head>
 <body>
@@ -106,166 +74,241 @@
 
   <header>
     <div>
-      <h1>🖨️ Molde y Ficha</h1>
-      <p class="sub">Nivel 1 — clase → objeto → atributo → método</p>
+      <h1>⌨️ Recrear la API</h1>
+      <p class="sub">Situación → tecleás la clase / objeto / método en su archivo → comparás con la solución.</p>
     </div>
-    <div class="counters">
-      <span>Fichas<br><b id="cF">0</b></span>
-      <span>⭐<br><b id="cE">0</b></span>
-    </div>
+    <div class="stat">resueltos<br><b id="resueltos">0</b> / <span id="total">0</span></div>
   </header>
 
-  <!-- la ruta de los 4 conceptos: se encienden al usarlos -->
-  <div class="ruta">
-    <div class="paso on" data-k="clase"><span class="lbl">🔨 CLASE <span class="check">✓</span></span><small>el molde</small></div>
-    <div class="paso" data-k="objeto"><span class="lbl">🖨️ OBJETO <span class="check">✓</span></span><small>la ficha</small></div>
-    <div class="paso" data-k="atributo"><span class="lbl">📝 ATRIBUTO <span class="check">✓</span></span><small>un dato</small></div>
-    <div class="paso" data-k="metodo"><span class="lbl">▶️ MÉTODO <span class="check">✓</span></span><small>una acción</small></div>
-  </div>
+  <div class="filtros" id="filtros"></div>
 
-  <div class="board">
+  <div class="card">
+    <div class="chips">
+      <span class="chip" id="chipArchivo">models.py</span>
+      <span class="chip tipo" id="chipTipo">CLASE</span>
+    </div>
+    <p class="tema" id="tema">—</p>
+    <p class="enun" id="enun">—</p>
+    <button class="pista-btn" id="pistaBtn">💡 ver pista</button>
+    <div class="pista" id="pista"></div>
 
-    <!-- molde -->
-    <section class="panel">
-      <h2>El molde <span class="tag clase">CLASE</span></h2>
-      <pre class="code-molde"><span class="kw">class</span> <span class="fn">Paciente</span>:
-    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="self">self</span>, nombre, edad, diagnostico):
-        <span class="self">self</span>.nombre <span class="op">=</span> nombre
-        <span class="self">self</span>.edad <span class="op">=</span> edad
-        <span class="self">self</span>.diagnostico <span class="op">=</span> diagnostico
+    <div class="filehdr" id="filehdr"># models.py</div>
+    <textarea id="editor" spellcheck="false" placeholder="Tecleá aquí tu código. Usá Tab para indentar."></textarea>
 
-    <span class="kw">def</span> <span class="fn">cumplir_anios</span>(<span class="self">self</span>):
-        <span class="self">self</span>.edad <span class="op">=</span> <span class="self">self</span>.edad <span class="op">+</span> 1
+    <div class="acciones">
+      <button class="btn pri" id="comparar">✔ Comparar</button>
+      <button class="btn" id="verSol">👁 Ver solución</button>
+      <button class="btn" id="limpiar">↺ Limpiar</button>
+    </div>
 
-    <span class="kw">def</span> <span class="fn">es_mayor</span>(<span class="self">self</span>):
-        <span class="kw">return</span> <span class="self">self</span>.edad <span class="op">&gt;=</span> 18</pre>
-      <button id="estampar" class="big-btn">🖨️ ESTAMPAR ficha</button>
-      <button id="reiniciar" class="mini-btn">↺ reiniciar</button>
-      <p class="hint">Un molde vacío. Aprieta para sacar fichas: <b>un molde → muchas fichas</b>.</p>
-    </section>
+    <div class="resultado" id="resultado"></div>
+    <div class="sol" id="sol"><pre id="solPre"></pre></div>
 
-    <!-- fichas -->
-    <section class="panel">
-      <h2>Fichas estampadas <span class="tag objeto">OBJETOS</span></h2>
-      <div id="fichas" class="fichas"></div>
-      <p id="vacia" class="empty">Aún no hay fichas. Aprieta <b>ESTAMPAR</b>.</p>
-    </section>
-
-    <!-- consola -->
-    <section class="panel">
-      <h2>🖥️ Código que se enciende</h2>
-      <pre id="linea" class="linea"># tus acciones aparecerán aquí</pre>
-      <ul id="log" class="log"></ul>
-    </section>
-
+    <div class="nav">
+      <button id="prev">← anterior</button>
+      <span class="contador" id="contador">0 / 0</span>
+      <button id="next">siguiente →</button>
+    </div>
   </div>
 </div>
 
 <script>
-/* ===== EL MOLDE, en JavaScript (misma idea que en Python) ===== */
-class Paciente {
-  constructor(nombre, edad, diagnostico){   // el __init__
-    this.nombre = nombre;                    // atributo (this = self)
-    this.edad = edad;
-    this.diagnostico = diagnostico;
+/* =========================================================
+   18 escenarios. Cada uno: archivo destino + tipo + situación.
+   La solución se guarda como lista de líneas (indentación explícita).
+   ========================================================= */
+const ESCENARIOS = [
+  { archivo:"models.py", tipo:"CLASE", tema:"🩸 Banco de sangre",
+    enun:`Modelo Donante en la tabla "donantes": id (clave primaria), nombre, tipo_sangre y ml_donados (entero).`,
+    pista:`Hereda de Base, define __tablename__, y usa Column(Integer, primary_key=True) para el id.`,
+    sol:[`class Donante(Base):`,`    __tablename__ = "donantes"`,`    id = Column(Integer, primary_key=True)`,`    nombre = Column(String)`,`    tipo_sangre = Column(String)`,`    ml_donados = Column(Integer)`] },
+
+  { archivo:"models.py", tipo:"CLASE", tema:"💉 Campaña de vacunación",
+    enun:`Modelo Vacuna en la tabla "vacunas": id (PK), nombre, lote y dosis_disponibles (entero).`,
+    pista:`Mismo patrón que Donante. dosis_disponibles es Integer.`,
+    sol:[`class Vacuna(Base):`,`    __tablename__ = "vacunas"`,`    id = Column(Integer, primary_key=True)`,`    nombre = Column(String)`,`    lote = Column(String)`,`    dosis_disponibles = Column(Integer)`] },
+
+  { archivo:"models.py", tipo:"CLASE", tema:"📅 Agenda de citas",
+    enun:`Modelo Cita en la tabla "citas": id (PK), paciente, doctor, fecha y hora.`,
+    pista:`fecha y hora se guardan como texto (String) en esta versión.`,
+    sol:[`class Cita(Base):`,`    __tablename__ = "citas"`,`    id = Column(Integer, primary_key=True)`,`    paciente = Column(String)`,`    doctor = Column(String)`,`    fecha = Column(String)`,`    hora = Column(String)`] },
+
+  { archivo:"models.py", tipo:"CLASE", tema:"💊 Farmacia",
+    enun:`Modelo Medicamento en la tabla "medicamentos": id (PK), nombre (que no se repita), stock (entero) y caduca (texto).`,
+    pista:`"que no se repita" = unique=True en la columna nombre.`,
+    sol:[`class Medicamento(Base):`,`    __tablename__ = "medicamentos"`,`    id = Column(Integer, primary_key=True)`,`    nombre = Column(String, unique=True)`,`    stock = Column(Integer)`,`    caduca = Column(String)`] },
+
+  { archivo:"models.py", tipo:"CLASE", tema:"🧪 Laboratorio",
+    enun:`Modelo Muestra en la tabla "muestras": id (PK), tipo, paciente y procesada (booleano que arranca en False).`,
+    pista:`procesada = Column(Boolean, default=False). Necesitás Boolean importado de sqlalchemy.`,
+    sol:[`class Muestra(Base):`,`    __tablename__ = "muestras"`,`    id = Column(Integer, primary_key=True)`,`    tipo = Column(String)`,`    paciente = Column(String)`,`    procesada = Column(Boolean, default=False)`] },
+
+  { archivo:"models.py", tipo:"CLASE", tema:"🔐 Usuarios (pasantes)",
+    enun:`Modelo Usuario en la tabla "usuarios": id (PK), usuario (único) y hash_contrasena. La contraseña en texto NUNCA se guarda.`,
+    pista:`Guardás el hash, no la contraseña. usuario lleva unique=True.`,
+    sol:[`class Usuario(Base):`,`    __tablename__ = "usuarios"`,`    id = Column(Integer, primary_key=True)`,`    usuario = Column(String, unique=True)`,`    hash_contrasena = Column(String)`] },
+
+  { archivo:"models.py", tipo:"CLASE", tema:"📄 Reportes",
+    enun:`Modelo Reporte en la tabla "reportes": id (PK), titulo, autor y paginas (entero).`,
+    pista:`paginas es Integer; el resto String.`,
+    sol:[`class Reporte(Base):`,`    __tablename__ = "reportes"`,`    id = Column(Integer, primary_key=True)`,`    titulo = Column(String)`,`    autor = Column(String)`,`    paginas = Column(Integer)`] },
+
+  { archivo:"models.py", tipo:"MÉTODO", tema:"💊 ¿Hay stock?",
+    enun:`Añadí al modelo Medicamento un método hay_stock(self) que devuelva True si self.stock es mayor que 0.`,
+    pista:`Un método es un def dentro de la clase; usa self para leer el atributo.`,
+    sol:[`    def hay_stock(self):`,`        return self.stock > 0`] },
+
+  { archivo:"models.py", tipo:"MÉTODO", tema:"🔐 Verificar contraseña",
+    enun:`Añadí al modelo Usuario un método verificar(self, texto) que devuelva si "texto" coincide con self.hash_contrasena, usando bcrypt.checkpw. (Ojo con .encode())`,
+    pista:`bcrypt trabaja con bytes: texto.encode() y self.hash_contrasena.encode().`,
+    sol:[`    def verificar(self, texto):`,`        return bcrypt.checkpw(texto.encode(), self.hash_contrasena.encode())`] },
+
+  { archivo:"database.py", tipo:"INFRA", tema:"⚡ Arranque de la conexión",
+    enun:`Montá la instalación: el engine hacia sqlite "clinica.db", la fábrica SessionLocal y la Base declarativa.`,
+    pista:`create_engine(...), sessionmaker(bind=engine), declarative_base(). Los imports van de sqlalchemy y sqlalchemy.orm.`,
+    sol:[`from sqlalchemy import create_engine`,`from sqlalchemy.orm import sessionmaker, declarative_base`,``,`engine = create_engine("sqlite:///clinica.db")`,`SessionLocal = sessionmaker(bind=engine)`,`Base = declarative_base()`] },
+
+  { archivo:"crear_db.py", tipo:"SCRIPT", tema:"🏗️ Construir las tablas (una vez)",
+    enun:`Importá engine y Base, importá models para que las tablas queden registradas, y creá todas las tablas.`,
+    pista:`import models es clave: sin él, Base.metadata está vacío. Luego Base.metadata.create_all(bind=engine).`,
+    sol:[`from database import engine, Base`,`import models`,``,`Base.metadata.create_all(bind=engine)`] },
+
+  { archivo:"main.py", tipo:"SCHEMA", tema:"🛂 Validar la entrada (donante)",
+    enun:`Esquema Pydantic DonanteIn con nombre (str), tipo_sangre (str) y ml_donados (int). Sin id (ese lo pone la base).`,
+    pista:`Hereda de BaseModel. Los tipos van con dos puntos: nombre: str.`,
+    sol:[`class DonanteIn(BaseModel):`,`    nombre: str`,`    tipo_sangre: str`,`    ml_donados: int`] },
+
+  { archivo:"main.py", tipo:"SCHEMA", tema:"🛂 Validar la entrada (cita)",
+    enun:`Esquema Pydantic CitaIn con paciente, doctor, fecha y hora (todos str).`,
+    pista:`Cuatro campos str. Sin id.`,
+    sol:[`class CitaIn(BaseModel):`,`    paciente: str`,`    doctor: str`,`    fecha: str`,`    hora: str`] },
+
+  { archivo:"main.py", tipo:"OBJETO", tema:"➕ Registrar un donante",
+    enun:`Endpoint POST /donantes (status 201): abrí sesión, creá un OBJETO Donante con los datos de d (DonanteIn), add/commit/refresh/close y devolvelo.`,
+    pista:`db = SessionLocal(); nuevo = Donante(...); db.add(nuevo); db.commit(); db.refresh(nuevo); db.close(); return nuevo.`,
+    sol:[`@app.post("/donantes", status_code=201)`,`def crear_donante(d: DonanteIn):`,`    db = SessionLocal()`,`    nuevo = Donante(nombre=d.nombre, tipo_sangre=d.tipo_sangre, ml_donados=d.ml_donados)`,`    db.add(nuevo)`,`    db.commit()`,`    db.refresh(nuevo)`,`    db.close()`,`    return nuevo`] },
+
+  { archivo:"main.py", tipo:"OBJETO", tema:"➕ Registrar una vacuna",
+    enun:`Endpoint POST /vacunas (status 201): creá un objeto Vacuna con los datos de v (VacunaIn), guardalo y devolvelo.`,
+    pista:`Mismo ciclo: SessionLocal → Vacuna(...) → add → commit → refresh → close → return.`,
+    sol:[`@app.post("/vacunas", status_code=201)`,`def crear_vacuna(v: VacunaIn):`,`    db = SessionLocal()`,`    nueva = Vacuna(nombre=v.nombre, lote=v.lote, dosis_disponibles=v.dosis_disponibles)`,`    db.add(nueva)`,`    db.commit()`,`    db.refresh(nueva)`,`    db.close()`,`    return nueva`] },
+
+  { archivo:"main.py", tipo:"ENDPOINT", tema:"📋 Listar donantes",
+    enun:`Endpoint GET /donantes: abrí sesión, consultá TODOS los Donante, cerrá y devolvelos.`,
+    pista:`db.query(Donante).all()`,
+    sol:[`@app.get("/donantes")`,`def listar_donantes():`,`    db = SessionLocal()`,`    donantes = db.query(Donante).all()`,`    db.close()`,`    return donantes`] },
+
+  { archivo:"main.py", tipo:"ENDPOINT", tema:"🔎 Ver un donante por id",
+    enun:`Endpoint GET /donantes/{id}: buscá el Donante por id; si no existe, lanzá 404; si existe, devolvelo.`,
+    pista:`.filter(Donante.id == id).first(); si es None → raise HTTPException(status_code=404, detail="...").`,
+    sol:[`@app.get("/donantes/{id}")`,`def obtener_donante(id: int):`,`    db = SessionLocal()`,`    donante = db.query(Donante).filter(Donante.id == id).first()`,`    db.close()`,`    if donante is None:`,`        raise HTTPException(status_code=404, detail="donante no encontrado")`,`    return donante`] },
+
+  { archivo:"main.py", tipo:"OBJETO", tema:"🔐 Registrar un pasante (con hashing)",
+    enun:`Endpoint POST /usuarios (201): hasheá u.contrasena con bcrypt (con sal), creá el Usuario con usuario y el hash, guardalo y devolvelo.`,
+    pista:`hash_bytes = bcrypt.hashpw(u.contrasena.encode(), bcrypt.gensalt()); guardás hash_bytes.decode().`,
+    sol:[`@app.post("/usuarios", status_code=201)`,`def crear_usuario(u: UsuarioIn):`,`    db = SessionLocal()`,`    hash_bytes = bcrypt.hashpw(u.contrasena.encode(), bcrypt.gensalt())`,`    nuevo = Usuario(usuario=u.usuario, hash_contrasena=hash_bytes.decode())`,`    db.add(nuevo)`,`    db.commit()`,`    db.refresh(nuevo)`,`    db.close()`,`    return nuevo`] },
+];
+
+/* ---------- estado ---------- */
+const CLASES_ARCHIVO = { "models.py":"models", "main.py":"main", "database.py":"database", "crear_db.py":"crear" };
+const $ = (id)=>document.getElementById(id);
+let filtro = "Todos";
+let lista = ESCENARIOS.slice();
+let i = 0;
+const respuestas = {};                 // texto tecleado por escenario
+const resueltos = new Set();
+
+/* ---------- filtros ---------- */
+const archivos = ["Todos", ...new Set(ESCENARIOS.map(s=>s.archivo))];
+$("filtros").innerHTML = archivos.map(a=>`<span class="filtro" data-a="${a}">${a}</span>`).join("");
+$("filtros").querySelectorAll(".filtro").forEach(f=>{
+  f.addEventListener("click", ()=>{
+    filtro = f.dataset.a; i = 0;
+    lista = (filtro==="Todos") ? ESCENARIOS.slice() : ESCENARIOS.filter(s=>s.archivo===filtro);
+    render();
+  });
+});
+
+/* ---------- normalizar para comparar (tolerante) ---------- */
+function norm(txt){
+  return txt.split("\n")
+    .map(l=>l.replace(/\s+$/,""))
+    .filter(l=>l.trim()!=="")
+    .map(l=>{
+      const lead=(l.match(/^ */)[0]).length;
+      const nivel=Math.round(lead/4);
+      const cont=l.trim().replace(/\s+/g," ");
+      return nivel+"|"+cont;
+    }).join("\n");
+}
+
+/* ---------- pintar el escenario actual ---------- */
+function idOf(s){ return ESCENARIOS.indexOf(s); }
+function render(){
+  const s = lista[i];
+  $("total").textContent = ESCENARIOS.length;
+  $("resueltos").textContent = resueltos.size;
+  $("chipArchivo").textContent = s.archivo;
+  $("chipArchivo").className = "chip " + CLASES_ARCHIVO[s.archivo];
+  $("chipTipo").textContent = s.tipo;
+  $("tema").textContent = s.tema;
+  $("enun").textContent = s.enun;
+  $("pista").textContent = s.pista; $("pista").style.display="none"; $("pistaBtn").textContent="💡 ver pista";
+  $("filehdr").textContent = "# " + s.archivo;
+  $("editor").value = respuestas[idOf(s)] || "";
+  $("resultado").textContent = "";
+  $("sol").style.display="none"; $("verSol").textContent="👁 Ver solución";
+  $("solPre").textContent = s.sol.join("\n");
+  $("contador").textContent = (i+1)+" / "+lista.length;
+  $("prev").disabled = (i===0);
+  $("next").disabled = (i===lista.length-1);
+}
+
+/* ---------- textarea: Tab indenta, Enter mantiene indentación ---------- */
+$("editor").addEventListener("keydown", (e)=>{
+  const t=e.target, s=t.selectionStart, end=t.selectionEnd, v=t.value;
+  if(e.key==="Tab"){
+    e.preventDefault();
+    t.value = v.slice(0,s) + "    " + v.slice(end);
+    t.selectionStart = t.selectionEnd = s + 4;
   }
-  cumplir_anios(){ this.edad = Number(this.edad) + 1; }   // método
-  es_mayor(){ return Number(this.edad) >= 18; }           // método
-}
-
-/* colores por concepto (mismos que el CSS) */
-const COLOR = {clase:"#8b5cf6", objeto:"#3b82f6", atributo:"#f59e0b", metodo:"#22c55e"};
-
-let contador = 0, estrellas = 0;
-const $ = (id) => document.getElementById(id);
-
-function encender(k){
-  const p = document.querySelector('.paso[data-k="'+k+'"]');
-  if(p && !p.classList.contains("on")){ p.classList.add("on"); estrellas++; $("cE").textContent = estrellas; }
-}
-function mostrar(linea, k){
-  const el = $("linea");
-  el.textContent = linea;
-  el.style.color = COLOR[k]; el.style.borderLeftColor = COLOR[k];
-  const li = document.createElement("li");
-  li.innerHTML = '<span class="dot" style="background:'+COLOR[k]+'"></span>'+linea;
-  $("log").prepend(li);
-}
-
-/* ESTAMPAR -> nace un OBJETO */
-$("estampar").addEventListener("click", () => {
-  contador++;
-  const v = "p"+contador;
-  const paciente = new Paciente("", 0, "");
-  encender("objeto");
-  mostrar(v+' = Paciente("", 0, "")   # nace un OBJETO', "objeto");
-  $("vacia").style.display = "none";
-  $("cF").textContent = contador;
-  render(v, paciente);
+  if(e.key==="Enter"){
+    e.preventDefault();
+    const inicio = v.lastIndexOf("\n", s-1) + 1;
+    const linea = v.slice(inicio, s);
+    let indent = (linea.match(/^ */)[0]);
+    if(linea.trim().endsWith(":")) indent += "    ";   // tras "clase:" o "def:" indenta más
+    t.value = v.slice(0,s) + "\n" + indent + v.slice(end);
+    t.selectionStart = t.selectionEnd = s + 1 + indent.length;
+  }
 });
+$("editor").addEventListener("input", ()=>{ respuestas[idOf(lista[i])] = $("editor").value; });
 
-/* REINICIAR */
-$("reiniciar").addEventListener("click", () => {
-  contador = 0; estrellas = 0;
-  $("fichas").innerHTML = ""; $("log").innerHTML = "";
-  $("cF").textContent = "0"; $("cE").textContent = "0";
-  $("vacia").style.display = "";
-  const el = $("linea"); el.textContent = "# tus acciones aparecerán aquí";
-  el.style.color = ""; el.style.borderLeftColor = "";
-  document.querySelectorAll('.paso').forEach(p => { if(p.dataset.k!=="clase") p.classList.remove("on"); });
+/* ---------- botones ---------- */
+$("pistaBtn").addEventListener("click", ()=>{
+  const p=$("pista"); const abierto = p.style.display==="block";
+  p.style.display = abierto ? "none":"block";
+  $("pistaBtn").textContent = abierto ? "💡 ver pista":"💡 ocultar pista";
 });
+$("verSol").addEventListener("click", ()=>{
+  const d=$("sol"); const abierto = d.style.display==="block";
+  d.style.display = abierto ? "none":"block";
+  $("verSol").textContent = abierto ? "👁 Ver solución":"🙈 Ocultar solución";
+});
+$("comparar").addEventListener("click", ()=>{
+  const s = lista[i];
+  const ok = norm($("editor").value) === norm(s.sol.join("\n"));
+  const r = $("resultado");
+  if($("editor").value.trim()===""){ r.style.color="var(--mut)"; r.textContent="✍ Escribí algo primero."; return; }
+  if(ok){ r.style.color="var(--green)"; r.textContent="✅ ¡Correcto! Coincide con la solución.";
+          resueltos.add(idOf(s)); $("resueltos").textContent=resueltos.size; }
+  else  { r.style.color="var(--red)"; r.textContent="❌ Todavía no coincide. Mirá la solución y compará línea a línea."; }
+});
+$("limpiar").addEventListener("click", ()=>{ $("editor").value=""; respuestas[idOf(lista[i])]=""; $("resultado").textContent=""; $("editor").focus(); });
+$("prev").addEventListener("click", ()=>{ if(i>0){i--;render();} });
+$("next").addEventListener("click", ()=>{ if(i<lista.length-1){i++;render();} });
 
-function fila(attr, tipo){
-  const val = tipo==="number" ? "0" : "";
-  return '<label>'+attr+' <input data-attr="'+attr+'" type="'+tipo+'" value="'+val+'"></label>';
-}
-
-function render(v, paciente){
-  const div = document.createElement("div");
-  div.className = "ficha";
-  div.innerHTML =
-    '<div class="ficha-top">#'+v+' · Paciente</div>' +
-    fila("nombre","text") + fila("edad","number") + fila("diagnostico","text") +
-    '<div class="metodos">' +
-      '<button data-m="cumplir_anios">cumplir_anios()</button>' +
-      '<button data-m="es_mayor">es_mayor()</button>' +
-    '</div><div class="resultado"></div>';
-
-  /* escribir un ATRIBUTO */
-  div.querySelectorAll("input").forEach(input => {
-    input.addEventListener("input", () => {
-      const a = input.dataset.attr;
-      paciente[a] = input.value;
-      encender("atributo");
-      const valor = input.type==="number" ? (input.value||"0") : '"'+input.value+'"';
-      mostrar(v+"."+a+" = "+valor+"   # un ATRIBUTO", "atributo");
-    });
-  });
-
-  /* apretar un MÉTODO */
-  div.querySelectorAll(".metodos button").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const m = btn.dataset.m;
-      encender("metodo");
-      if(m==="cumplir_anios"){
-        paciente.cumplir_anios();
-        const ie = div.querySelector('input[data-attr="edad"]');
-        ie.value = paciente.edad; ie.classList.add("pulso");
-        setTimeout(()=>ie.classList.remove("pulso"),500);
-        mostrar(v+".cumplir_anios()   # MÉTODO -> sube self.edad", "metodo");
-      }
-      if(m==="es_mayor"){
-        const r = paciente.es_mayor();
-        const box = div.querySelector(".resultado");
-        box.textContent = "-> " + (r ? "True (mayor de edad)" : "False (menor)");
-        box.style.color = r ? COLOR.metodo : "#ef4444";
-        mostrar(v+".es_mayor()   # devuelve "+(r?"True":"False"), "metodo");
-      }
-    });
-  });
-
-  $("fichas").prepend(div);
-}
+render();
 </script>
 </body>
 </html>

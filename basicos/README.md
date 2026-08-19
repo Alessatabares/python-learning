@@ -55,9 +55,9 @@ python build/build_integrador.py
   **actualiza** la carta en su sitio, nunca la duplica.
 - **deck_id determinista** (`1500_AA_C`): sin colisión con el repo ECOE.
 
-Total actual: **252 tarjetas** (81 Eje Clínico + 171 Integrador). El área **Diagramas**
-aporta 15 (4 Eje Clínico + 11 Integrador) y **Anatomía del Backend** aporta 33
-(9 Eje Clínico + 24 Integrador).
+Total actual: **321 tarjetas** (101 Eje Clínico + 220 Integrador). Las áreas más recientes:
+**Anatomía del Backend** aporta 33 (9 + 24) y **Protocolo HTTP** aporta 69 (20 + 49),
+el área más grande del repo.
 
 ## Áreas
 
@@ -96,6 +96,17 @@ aporta 15 (4 Eje Clínico + 11 Integrador) y **Anatomía del Backend** aporta 33
   hidratación) y las **4 razones** por las que la lógica de backend no puede vivir
   en el navegador (sandbox/seguridad, CORS, drivers y *connection pool* de base de
   datos, poder de cómputo).
+- **Protocolo HTTP** — del video *"HTTP protocol"* (`youtu.be/a3C1DMswClQ`), el área más
+  extensa: las dos ideas base (**statelessness** y modelo cliente-servidor), HTTP sobre
+  TCP y la capa 7 del modelo OSI, la evolución 1.0 → 3.0, **anatomía del mensaje**
+  (línea inicial, headers, línea en blanco, body), los **4 tipos de headers**
+  (request / general / representation / security) y de qué protege cada header de
+  seguridad, métodos e **idempotencia**, **CORS completo** (same-origin policy,
+  `Origin` ↔ `Access-Control-Allow-Origin`, las 3 condiciones del **preflight**
+  `OPTIONS` y sus permisos), los **status codes** por familias (2xx, 3xx, 4xx, 5xx),
+  **caching** (`Cache-Control`, `ETag`, `Last-Modified`, `If-None-Match` → `304`),
+  negociación de contenido y compresión (`Accept*`, gzip), `keep-alive`, archivos
+  grandes (`multipart` + `boundary`, streaming por chunks) y SSL/TLS/HTTPS.
 - **Diagramas** — cómo convertir tus **árboles de decisión médicos** (estilo ECOE)
   en páginas web interactivas. Herramientas que dibujan (**Mermaid** texto→diagrama,
   `graph TD`, nodos/aristas/formas; **Markmap** outline→mindmap colapsable), acceso

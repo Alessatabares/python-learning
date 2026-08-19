@@ -27,6 +27,7 @@ AREAS = [
     ("FastAPI",           "FastAPI",   "FastAPI",   "fastapi",   7),
     ("Diagramas",         "Diagramas", "Diagramas", "diagramas", 8),
     ("Anatomia del Backend", "Anatomia Backend", "AnatomiaBackend", "anatomia_backend", 9),
+    ("Protocolo HTTP",     "HTTP",      "HTTP",      "http",      10),
 ]
 
 

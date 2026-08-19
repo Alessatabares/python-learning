@@ -55,8 +55,9 @@ python build/build_integrador.py
   **actualiza** la carta en su sitio, nunca la duplica.
 - **deck_id determinista** (`1500_AA_C`): sin colisión con el repo ECOE.
 
-Total actual: **219 tarjetas** (72 Eje Clínico + 147 Integrador). El área **Diagramas**
-aporta 15 (4 Eje Clínico + 11 Integrador).
+Total actual: **252 tarjetas** (81 Eje Clínico + 171 Integrador). El área **Diagramas**
+aporta 15 (4 Eje Clínico + 11 Integrador) y **Anatomía del Backend** aporta 33
+(9 Eje Clínico + 24 Integrador).
 
 ## Áreas
 
@@ -85,6 +86,16 @@ aporta 15 (4 Eje Clínico + 11 Integrador).
   ORM async (SQLAlchemy, `Depends`, `add`/`commit`/`refresh`, `select`),
   media con ImageKit + `.env`, y auth JWT con `fastapi-users` (login, `SECRET`,
   `current_active_user`, relaciones `ForeignKey`, proteger/autorizar rutas).
+- **Anatomía del Backend** — del video *"What is a backend?"* (`youtu.be/6Ss4dJD9Kzg`):
+  el recorrido **físico** de una petición hasta el servidor — DNS (registros A vs
+  CNAME, subdominios) → IP pública de la instancia → **firewall** / security group
+  (puertos 80, 443, 22) → **nginx** como reverse proxy (`server_name`, reenvío a
+  `localhost:3001`, redirección 80→443 con certbot) → el proceso node vivo bajo
+  **pm2**. Además: para qué existe un backend (persistir datos, estado centralizado,
+  el ejemplo del *like*), cómo carga un frontend (HTML → recursos → pintado →
+  hidratación) y las **4 razones** por las que la lógica de backend no puede vivir
+  en el navegador (sandbox/seguridad, CORS, drivers y *connection pool* de base de
+  datos, poder de cómputo).
 - **Diagramas** — cómo convertir tus **árboles de decisión médicos** (estilo ECOE)
   en páginas web interactivas. Herramientas que dibujan (**Mermaid** texto→diagrama,
   `graph TD`, nodos/aristas/formas; **Markmap** outline→mindmap colapsable), acceso

@@ -55,9 +55,9 @@ python build/build_integrador.py
   **actualiza** la carta en su sitio, nunca la duplica.
 - **deck_id determinista** (`1500_AA_C`): sin colisión con el repo ECOE.
 
-Total actual: **321 tarjetas** (101 Eje Clínico + 220 Integrador). Las áreas más recientes:
-**Anatomía del Backend** aporta 33 (9 + 24) y **Protocolo HTTP** aporta 69 (20 + 49),
-el área más grande del repo.
+Total actual: **423 tarjetas** (131 Eje Clínico + 292 Integrador). Las áreas más recientes:
+**Research** aporta 102 en tres capas (30 + 72) y **Protocolo HTTP** aporta 69 (20 + 49),
+el área individual más grande del repo.
 
 ## Áreas
 
@@ -107,6 +107,36 @@ el área más grande del repo.
   **caching** (`Cache-Control`, `ETag`, `Last-Modified`, `If-None-Match` → `304`),
   negociación de contenido y compresión (`Accept*`, gzip), `keep-alive`, archivos
   grandes (`multipart` + `boundary`, streaming por chunks) y SSL/TLS/HTTPS.
+- **Research (meta-análisis) — 3 capas** — sistema para aprender a hacer un
+  meta-análisis médico, derivado de *Doing Meta-Analysis with R* (Harrer, Cuijpers,
+  Furukawa & Ebert, `doing-meta.guide`) y del **Cochrane Handbook v6.5**. Se organiza en
+  tres capas **ordenadas por dependencia**, porque R solo ejecuta decisiones tomadas
+  antes:
+  - **Capa 1 · Diseños y evidencia** — RCT (paralelo, cluster, cross-over), cohorte,
+    caso-control, transversal · qué medida de efecto **nace** de cada diseño · PICO y
+    elegibilidad · PROSPERO y *outcome switching* · **RoB 2** (5 dominios), ROBINS-I,
+    NOS, QUADAS-2 · familias de sesgo (selección, realización, detección, atrición,
+    reporte) · **GRADE** (5 razones para bajar, 3 para subir, tabla SoF).
+  - **Capa 2 · Estadística de la síntesis** — medidas de efecto (OR, RR, RD/NNT, HR,
+    MD, SMD/Hedges g) y por qué los ratios se agrupan en log · pooling (varianza
+    inversa, Mantel-Haenszel, Peto) · fijos vs aleatorios · estimadores de τ² (DL,
+    REML, PM) y **Hartung-Knapp** · heterogeneidad (Q, I², τ², **intervalo de
+    predicción**, leave-one-out, Baujat) · subgrupos y meta-regresión · sesgo de
+    publicación (funnel, Egger, Peters, trim-and-fill, la regla k ≥ 10).
+  - **Capa 3 · R y ejecución** — R mínimo para quien viene de Python (`<-`, indexación
+    base 1, `$`, `NA`) · paquete **`meta`**: `metabin()`, `metacont()`, `metagen()`,
+    `metaprop()` y los argumentos que deciden el resultado (`sm`, `method`,
+    `method.tau`, `method.random.ci = "HK"`) · leer la salida (pesos, I² con IC,
+    intervalo de predicción) · figuras: `forest()`, `funnel()`, `metabias()`,
+    `metainf()`, `baujat()`, **robvis**, **PRISMA2020** · reproducibilidad con `renv`
+    y Quarto.
+
+  > **Regla de diseño: ningún concepto huérfano.** Cada concepto existe en las tres
+  > capas y se estudia como un **trazo vertical**. Ej.: *OR* → C1 "un caso-control no
+  > puede dar RR" → C2 "se agrupa en log, var = 1/a+1/b+1/c+1/d" → C3 `metabin(sm="OR")`.
+  > Y no se estudia capa por capa, sino por **rebanadas verticales** (un concepto,
+  > sus tres capas, en una sentada). Diseño completo en `metanalisis-anki/DISENO.md`.
+
 - **Diagramas** — cómo convertir tus **árboles de decisión médicos** (estilo ECOE)
   en páginas web interactivas. Herramientas que dibujan (**Mermaid** texto→diagrama,
   `graph TD`, nodos/aristas/formas; **Markmap** outline→mindmap colapsable), acceso

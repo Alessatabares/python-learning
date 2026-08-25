@@ -28,6 +28,10 @@ AREAS = [
     ("Diagramas",         "Diagramas", "Diagramas", "diagramas", 8),
     ("Anatomia del Backend", "Anatomia Backend", "AnatomiaBackend", "anatomia_backend", 9),
     ("Protocolo HTTP",     "HTTP",      "HTTP",      "http",      10),
+    # --- Sistema de meta-analisis (research) : 3 capas ---
+    ("Research - Capa 1 Disenos",     "Research::Capa 1 - Disenos",     "Research_Capa1_Disenos",     "research_disenos",     11),
+    ("Research - Capa 2 Estadistica", "Research::Capa 2 - Estadistica", "Research_Capa2_Estadistica", "research_estadistica", 12),
+    ("Research - Capa 3 R",           "Research::Capa 3 - R",           "Research_Capa3_R",           "research_r",           13),
 ]
 
 

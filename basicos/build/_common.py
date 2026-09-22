@@ -32,6 +32,8 @@ AREAS = [
     ("Research - Capa 1 Disenos",     "Research::Capa 1 - Disenos",     "Research_Capa1_Disenos",     "research_disenos",     11),
     ("Research - Capa 2 Estadistica", "Research::Capa 2 - Estadistica", "Research_Capa2_Estadistica", "research_estadistica", 12),
     ("Research - Capa 3 R",           "Research::Capa 3 - R",           "Research_Capa3_R",           "research_r",           13),
+    # --- Machine Learning aplicado (proyecto de vision medica / OCT) ---
+    ("Machine Learning", "Machine Learning", "MachineLearning", "machine_learning", 14),
 ]
 
 
